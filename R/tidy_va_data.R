@@ -12,7 +12,12 @@ tidy_va_data <- function(raw_data){
       ITN.use,
       starts_with("sampling.method"),
       starts_with("n_")
-    ) |>
+    )  |>
+    # remove missing lat longs
+    dplyr::filter(
+      !is.na(lon) &
+        !is.na(lat)
+    )|>
     # remove points where insecticide is used
     dplyr::mutate(
       no_ic = case_when(
@@ -28,11 +33,6 @@ tidy_va_data <- function(raw_data){
     ) |>
     dplyr::filter(
       no_ic & no_itn
-    ) |>
-    # remove missing lat longs
-    dplyr::filter(
-      !is.na(lon) &
-      !is.na(lat)
     )
 
 }
