@@ -23,7 +23,7 @@ list(
  ),
  tar_target(
    raw_data,
-   read_csv(raw_data_file)
+   read_csv(raw_data_file, guess_max = 30000)
  ),
  tar_target(
    va_data,

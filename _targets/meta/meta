@@ -1,5 +1,5 @@
 name|type|data|command|depend|seed|path|time|size|bytes|format|repository|iteration|parent|children|seconds|warnings|error
-raw_data|stem|2e0ed6ac97e9202c|cb0622c639d99d20|a4ea093b2781b076|-979620141||t19800.0377139811s|b3c8e10b9bf5f3df|1974824|rds|local|vector|||1.039|1m22mOne or more parsing issues, call problems on your data frame for details,e.g.  dat  vroom...  problemsdat|
+raw_data|stem|fb06932c2fd960e8|62c3fcc17ba2b9d2|a4ea093b2781b076|-979620141||t19800.2500354817s|ccfac7753da0005e|1985784|rds|local|vector|||2.562||
 raw_data_file|stem|02112c6d9533e13f|272284abe6405103|ef46db3751d8e999|2110307107|data/final_species_20240314.csv|t19796.915173132s|859dc20cc791ec7b|31584104|file|local|vector|||1.309||
-tidy_va_data|function|f75bcd1ebbe5cd61
-va_data|stem|7875b984dc389f33|1a0364ba42a508a4|5d52a978aba65aae|-613409158||t19800.209727061s|53d32a7449ad5e4a|758|rds|local|vector|||0.088||
+tidy_va_data|function|fc4a8a4c503e4d35|||||||||||||||
+va_data|stem|858222bbf924a572|1a0364ba42a508a4|fbaa2fc34756fc00|-613409158||t19800.259787214s|03d2a06e12984217|135454|rds|local|vector|||0.022||
