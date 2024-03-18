@@ -1,13 +1,7 @@
-# Created by use_targets().
-# Follow the comments below to fill in this target script.
-# Then follow the manual to check and run the pipeline:
-#   https://books.ropensci.org/targets/walkthrough.html#inspect-the-pipeline
 
 # Load packages required to define the pipeline:
 library(targets)
-# library(tarchetypes) # Load other packages as needed.
 
-# Set target options:
 tar_option_set(
   packages = c(
     "tibble",
@@ -16,22 +10,26 @@ tar_option_set(
     "readr",
     "tidyr",
     "terra"
-  )
-)
-
-# Run the R scripts in the R/ folder with your custom functions:
-tar_source()
-# source("other_functions.R") # Source other scripts as needed.
-
-# Replace the target list below with your own:
-list(
-  tar_target(
-    name = data,
-    command = tibble(x = rnorm(100), y = rnorm(100))
-    # format = "feather" # efficient storage for large data frames
   ),
-  tar_target(
-    name = model,
-    command = coefficients(lm(y ~ x, data = data))
-  )
+  worspace_on_error = TRUE
 )
+
+# tar_load_globals()
+# tar_load_everything()
+
+# Run the R scripts in the R/ folder
+tar_source(files = "R")
+
+
+list(
+ tar_target(
+   raw_data_file,
+   "data/final_species_20240314.csv",
+   format = "file"
+ ),
+ tar_target(
+   raw_data,
+   read_csv(raw_data_file)
+ )
+)
+

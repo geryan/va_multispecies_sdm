@@ -1,0 +1,3 @@
+name|type|data|command|depend|seed|path|time|size|bytes|format|repository|iteration|parent|children|seconds|warnings|error
+raw_data|stem|2e0ed6ac97e9202c|cb0622c639d99d20|a4ea093b2781b076|-979620141||t19800.0377139811s|b3c8e10b9bf5f3df|1974824|rds|local|vector|||1.039|1m22mOne or more parsing issues, call problems on your data frame for details,e.g.  dat  vroom...  problemsdat|
+raw_data_file|stem|02112c6d9533e13f|272284abe6405103|ef46db3751d8e999|2110307107|data/final_species_20240314.csv|t19796.915173132s|859dc20cc791ec7b|31584104|file|local|vector|||1.309||
