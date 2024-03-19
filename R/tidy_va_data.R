@@ -8,10 +8,20 @@ tidy_va_data <- function(raw_data){
       larval.site.data,
       lon = longitude_1,
       lat = latitude_1,
+      area.type,
       insecticide.control,
       ITN.use,
       starts_with("sampling.method"),
-      starts_with("n_")
+      starts_with("n_"),
+      binary.presence,
+      binary.absence,
+      month_st,
+      month_end,
+      year_st,
+      year_end,
+      species,
+      #SPECIES1,
+      #SPECIES2,
     )  |>
     # remove missing lat longs
     dplyr::filter(
