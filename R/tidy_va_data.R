@@ -2,8 +2,11 @@ tidy_va_data <- function(raw_data){
 
   raw_data |>
     dplyr::select(
+      source_ID,
       occ_data,
       bio_data,
+      binary.presence,
+      binary.absence,
       adult.data,
       larval.site.data,
       lon = longitude_1,
@@ -19,9 +22,7 @@ tidy_va_data <- function(raw_data){
       month_end,
       year_st,
       year_end,
-      species,
-      #SPECIES1,
-      #SPECIES2,
+      species
     )  |>
     # remove missing lat longs
     dplyr::filter(

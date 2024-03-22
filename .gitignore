@@ -4,3 +4,4 @@
 .Ruserdata
 data/final_species_20240314.csv
 extras/*.csv
+.DS_Store

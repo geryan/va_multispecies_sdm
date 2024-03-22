@@ -23,10 +23,17 @@ list(
  ),
  tar_target(
    raw_data,
-   read_csv(raw_data_file, guess_max = 30000)
+   read_csv(
+    file = raw_data_file,
+    guess_max = 30000
+   )
  ),
  tar_target(
    va_data,
    tidy_va_data(raw_data)
+ ),
+ tar_target(
+   pa_data,
+   pa_from_va(va_data)
  )
 )
