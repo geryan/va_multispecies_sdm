@@ -44,6 +44,7 @@ tidy_va_data <- function(raw_data){
     ) |>
     dplyr::filter(
       no_ic & no_itn
-    )
+    ) |>
+    filter(occ_data == 1)
 
 }
