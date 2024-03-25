@@ -1,6 +1,9 @@
 name|type|data|command|depend|seed|path|time|size|bytes|format|repository|iteration|parent|children|seconds|warnings|error
-pa_data|stem|9551b3215495fc46|b159763a9b81eac5|fe44b6203d436aa9|1826686162||t19807.1103065391s|6840256f052795da|66066|rds|local|vector|||6.094||
-pa_from_va|function|79303c58e5fd1cf7|||||||||||||||
+clean_species|function|5a5ae5f754bc735c|||||||||||||||
+filter_few|function|274a235bfbf2569d|||||||||||||||
+pa_data|stem|581355bf828aba97|bc42d4d855e1761b|f517414012b17d5b|1826686162||t19807.1740194531s|a1c456b03adbfbf8|44|rds|local|vector|||0||
+pa_data_all|stem|d47617eb108c9f3f|b159763a9b81eac5|0ec76d0dc5ad810b|-710169651||t19807.1740194217s|a6e6becccb41e29e|29126|rds|local|vector|||6.078||
+pa_from_va|function|2d06bcf8782504e2|||||||||||||||
 raw_data|stem|fb06932c2fd960e8|590d3b5d06f05dde|a4ea093b2781b076|-979620141||t19804.2260060245s|ccfac7753da0005e|1985784|rds|local|vector|||4.056||
 raw_data_file|stem|02112c6d9533e13f|272284abe6405103|ef46db3751d8e999|2110307107|data/final_species_20240314.csv|t19796.915173132s|859dc20cc791ec7b|31584104|file|local|vector|||1.309||
 tidy_va_data|function|4b8838b97d7c8079|||||||||||||||
