@@ -1,4 +1,4 @@
-pa_from_va <- function(va_data){
+records_from_va <- function(va_data){
   va_data |>
     rowwise() |> # NB this rowwise is necessary for the below `any` to work by row, but may be slow on a very large dataset
     mutate(

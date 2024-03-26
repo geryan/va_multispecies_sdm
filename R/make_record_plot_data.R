@@ -1,5 +1,5 @@
-make_pa_plot_data <- function(pa_data_records){
-  pad <- pa_data_records |>
+make_record_plot_data <- function(data_records){
+  pad <- data_records |>
     filter(pa == "pa") |>
     group_by(species) |>
     summarise(
@@ -12,7 +12,7 @@ make_pa_plot_data <- function(pa_data_records){
     ) |>
     select(-n)
 
-  pod <- pa_data_records |>
+  pod <- data_records |>
     filter(pa == "po") |>
     group_by(species) |>
     summarise(

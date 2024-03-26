@@ -1,6 +1,6 @@
-make_pa_plot <- function(pa_plot_data) {
+make_record_plot <- function(record_plot_data) {
 
-  pa_plot_data |>
+  record_plot_data |>
     mutate(
       data_type = case_when(
         data_type == "po_presence" ~ "Presence only",

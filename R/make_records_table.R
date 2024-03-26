@@ -1,9 +1,9 @@
-make_records_table <- function(pa_data_records) {
+make_records_table <- function(data_records) {
 
   table(
-    pa_data_records$species,
-    pa_data_records$presence,
-    pa_data_records$pa
+    data_records$species,
+    data_records$presence,
+    data_records$pa
   )
 
 }

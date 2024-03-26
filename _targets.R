@@ -35,33 +35,33 @@ list(
    tidy_va_data(raw_data)
  ),
  tar_target(
-   pa_data_all,
-   pa_from_va(va_data)
+   record_data_all,
+   records_from_va(va_data)
  ),
  tar_target(
-   pa_data_records,
-   filter_few(pa_data_all) |>
+   data_records,
+   filter_few(record_data_all) |>
      filter(species != "GAMBIAE COMPLEX")
    # potentially remove later or put elsewhere
  ),
  # summary stats and figures
  tar_target(
-   pa_records_table,
-   make_records_table(pa_data_records)
+   records_table,
+   make_records_table(data_records)
  ),
  tar_target(
-   pa_plot_data,
-   make_pa_plot_data(pa_data_records)
+   record_plot_data,
+   make_record_plot_data(data_records)
  ),
  tar_target(
-   pa_plot,
-   make_pa_plot(pa_plot_data)
+   record_plot,
+   make_record_plot(record_plot_data)
  ),
  tar_target(
-   pa_plot_file,
+   record_plot_file,
    ggsave(
-     filename = "figures/pa_po_count_plot.png",
-     plot = pa_plot,
+     filename = "figures/record_count_plot.png",
+     plot = record_plot,
      width = 2400,
      height = 1500,
      units = "px"
