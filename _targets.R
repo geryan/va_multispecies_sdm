@@ -1,4 +1,5 @@
 library(targets)
+library(geotargets)
 
 tar_option_set(
   packages = c(
@@ -8,7 +9,8 @@ tar_option_set(
     "readr",
     "tidyr",
     "terra",
-    "ggplot2"
+    "ggplot2",
+    "geotargets"
   ),
   workspace_on_error = TRUE
 )
@@ -17,10 +19,12 @@ tar_source(files = "R")
 
 
 list(
+
+
   # data wrangling and cleaning
  tar_target(
    raw_data_file,
-   "data/final_species_20240314.csv",
+   "data/tabular/final_species_20240314.csv",
    format = "file"
  ),
  tar_target(
@@ -44,6 +48,8 @@ list(
      filter(species != "GAMBIAE COMPLEX")
    # potentially remove later or put elsewhere
  ),
+
+
  # summary stats and figures
  tar_target(
    records_table,
@@ -66,7 +72,21 @@ list(
      height = 1500,
      units = "px"
    )
- )
+ ),
+
+
+ # spatial data prep
+ tar_terra_rast(
+   africa_mask,
+   sdmtools::make_africa_mask(
+     file_name = "africa_mask.tiff",
+
+   )
+ )#,
+ # tar_target(
+ #   covariate_rasters,
+ #   prepare_covariates(africa_mask)
+ # )
 )
 
 
