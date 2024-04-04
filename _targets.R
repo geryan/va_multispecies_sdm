@@ -79,8 +79,7 @@ list(
  tar_terra_rast(
    africa_mask,
    sdmtools::make_africa_mask(
-     file_name = "africa_mask.tiff",
-
+     file_name = "data/raster/africa_mask.tiff",
    )
  )#,
  # tar_target(
