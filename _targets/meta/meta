@@ -1,6 +1,6 @@
 name|type|data|command|depend|seed|path|time|size|bytes|format|repository|iteration|parent|children|seconds|warnings|error
-.Random.seed|object|ae6d40a7a6ef42c3|||||||||||||||
-africa_mask|stem|3e3b5b019ffa5f8f|73e6977d6ac5694d|ef46db3751d8e999|-1182157979||t19809.2552611381s|98231a4c395e7a8c|7267278|format_custom&read=ZnVuY3Rpb24gKHBhdGgpIAp0ZXJyYTo6cmFzdChwYXRoKQ&write=ZnVuY3Rpb24gKG9iamVjdCwgcGF0aCkgCnsKICAgIHRlcnJhOjp3cml0ZVJhc3RlcihvYmplY3QsIHBhdGgsIGZpbGV0eXBlID0gIkdUaWZmIiwgb3ZlcndyaXRlID0gVFJVRSwgCiAgICAgICAgZ2RhbCA9IGNoYXJhY3RlcigwKSkKfQ&marshal=ZnVuY3Rpb24gKG9iamVjdCkgCnRlcnJhOjp3cmFwKG9iamVjdCk&unmarshal=ZnVuY3Rpb24gKG9iamVjdCkgCnRlcnJhOjp1bndyYXAob2JqZWN0KQ&convert=&copy=&repository=|local|vector|||486.568|crs not all geometries were transferred, use svc for a geometry collection|
+.Random.seed|object|4a6725833e263268|||||||||||||||
+africa_mask|stem|3e3b5b019ffa5f8f|e3c1ae879135b09a|ef46db3751d8e999|-1182157979||t19818.2362495956s|98231a4c395e7a8c|7267278|format_custom&read=ZnVuY3Rpb24gKHBhdGgpIAp0ZXJyYTo6cmFzdChwYXRoKQ&write=ZnVuY3Rpb24gKG9iamVjdCwgcGF0aCkgCnsKICAgIHRlcnJhOjp3cml0ZVJhc3RlcihvYmplY3QsIHBhdGgsIGZpbGV0eXBlID0gIkdUaWZmIiwgb3ZlcndyaXRlID0gVFJVRSwgCiAgICAgICAgZ2RhbCA9IGNoYXJhY3RlcigwKSkKfQ&marshal=ZnVuY3Rpb24gKG9iamVjdCkgCnRlcnJhOjp3cmFwKG9iamVjdCk&unmarshal=ZnVuY3Rpb24gKG9iamVjdCkgCnRlcnJhOjp1bndyYXAob2JqZWN0KQ&convert=&copy=&repository=|local|vector|||301.129|crs not all geometries were transferred, use svc for a geometry collection|
 clean_species|function|5a5ae5f754bc735c|||||||||||||||
 data_records|stem|b57836bfd4d0c35b|ec10f5fc7cc74703|53d653edcfab8b0e|364517769||t19808.2217531274s|eac315877c60e418|22906|rds|local|vector|||0.005||
 filter_few|function|9615edf0f56fbd38|||||||||||||||
@@ -25,5 +25,6 @@ record_plot_data|stem|652e139f21f5e516|69d0bf7d19a73bfa|d54271c8b0a08a6e|-193480
 record_plot_file|stem|4f7e50178e0ac03b|1093abc1ab128753|0ed8c2322f0c72bc|2071495197||t19808.2228817677s|0b52c5847220add9|82|rds|local|vector|||0.417||
 records_from_va|function|2d06bcf8782504e2|||||||||||||||
 records_table|stem|ddee531d4080ad78|5442a20fc329aae0|77cd3fd587de7ba7|-694436918||t19808.2228761708s|72edd60c3d768dd3|291|rds|local|vector|||0.002||
+tcw|stem||43f23887148698ca|138d3c636b790b6b|-395740353||t19818.2362620495s||0|format_custom&read=ZnVuY3Rpb24gKHBhdGgpIAp0ZXJyYTo6cmFzdChwYXRoKQ&write=ZnVuY3Rpb24gKG9iamVjdCwgcGF0aCkgCnsKICAgIHRlcnJhOjp3cml0ZVJhc3RlcihvYmplY3QsIHBhdGgsIGZpbGV0eXBlID0gIkdUaWZmIiwgb3ZlcndyaXRlID0gVFJVRSwgCiAgICAgICAgZ2RhbCA9IGNoYXJhY3RlcigwKSkKfQ&marshal=ZnVuY3Rpb24gKG9iamVjdCkgCnRlcnJhOjp3cmFwKG9iamVjdCk&unmarshal=ZnVuY3Rpb24gKG9iamVjdCkgCnRlcnJhOjp1bndyYXAob2JqZWN0KQ&convert=&copy=&repository=|local|vector|||0.007||mask extents do not match
 tidy_va_data|function|4b8838b97d7c8079|||||||||||||||
 va_data|stem|168f262d2322cc94|1a0364ba42a508a4|c6e4df5da7cde5fe|-613409158||t19807.0018757058s|1338ea0246676747|108664|rds|local|vector|||0.024||

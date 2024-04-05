@@ -76,12 +76,17 @@ list(
 
 
  # spatial data prep
- tar_terra_rast(
+ geotargets::tar_terra_rast(
    africa_mask,
    sdmtools::make_africa_mask(
      file_name = "data/raster/africa_mask.tiff",
    )
  )#,
+ # geotargets::tar_terra_rast(
+ #   tcw,
+ #   terra::rast("~/Documents/tki_work/vector_atlas/an_stephensi/anopheles_stephensi_expansion/data/MAP_covariates/TCW/TCW_v6.2021.Annual.mean.1km.Data.tif") |>
+ #     mask(mask = africa_mask)
+ # )
  # tar_target(
  #   covariate_rasters,
  #   prepare_covariates(africa_mask)
