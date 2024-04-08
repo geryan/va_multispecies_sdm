@@ -1,7 +1,8 @@
 name|type|data|command|depend|seed|path|time|size|bytes|format|repository|iteration|parent|children|seconds|warnings|error
-.Random.seed|object|4a6725833e263268|||||||||||||||
+.Random.seed|object|2b0bcf06fd9abd93|||||||||||||||
 africa_mask|stem|3e3b5b019ffa5f8f|e3c1ae879135b09a|ef46db3751d8e999|-1182157979||t19818.2362495956s|98231a4c395e7a8c|7267278|format_custom&read=ZnVuY3Rpb24gKHBhdGgpIAp0ZXJyYTo6cmFzdChwYXRoKQ&write=ZnVuY3Rpb24gKG9iamVjdCwgcGF0aCkgCnsKICAgIHRlcnJhOjp3cml0ZVJhc3RlcihvYmplY3QsIHBhdGgsIGZpbGV0eXBlID0gIkdUaWZmIiwgb3ZlcndyaXRlID0gVFJVRSwgCiAgICAgICAgZ2RhbCA9IGNoYXJhY3RlcigwKSkKfQ&marshal=ZnVuY3Rpb24gKG9iamVjdCkgCnRlcnJhOjp3cmFwKG9iamVjdCk&unmarshal=ZnVuY3Rpb24gKG9iamVjdCkgCnRlcnJhOjp1bndyYXAob2JqZWN0KQ&convert=&copy=&repository=|local|vector|||301.129|crs not all geometries were transferred, use svc for a geometry collection|
 clean_species|function|5a5ae5f754bc735c|||||||||||||||
+covariate_rasters|stem||af3d023cba9aa13c|ef46db3751d8e999|-831377567||t19821.2377260462s||0|format_custom&read=ZnVuY3Rpb24gKHBhdGgpIAp0ZXJyYTo6cmFzdChwYXRoKQ&write=ZnVuY3Rpb24gKG9iamVjdCwgcGF0aCkgCnsKICAgIHRlcnJhOjp3cml0ZVJhc3RlcihvYmplY3QsIHBhdGgsIGZpbGV0eXBlID0gIkdUaWZmIiwgb3ZlcndyaXRlID0gVFJVRSwgCiAgICAgICAgZ2RhbCA9IGNoYXJhY3RlcigwKSkKfQ&marshal=ZnVuY3Rpb24gKG9iamVjdCkgCnRlcnJhOjp3cmFwKG9iamVjdCk&unmarshal=ZnVuY3Rpb24gKG9iamVjdCkgCnRlcnJhOjp1bndyYXAob2JqZWN0KQ&convert=&copy=&repository=|local|vector|||0.147||could not find function prepare_covariates
 data_records|stem|b57836bfd4d0c35b|ec10f5fc7cc74703|53d653edcfab8b0e|364517769||t19808.2217531274s|eac315877c60e418|22906|rds|local|vector|||0.005||
 filter_few|function|9615edf0f56fbd38|||||||||||||||
 make_pa_plot|function|4b85ab97cc07bcad|||||||||||||||
