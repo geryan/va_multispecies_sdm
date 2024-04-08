@@ -1,8 +1,9 @@
 name|type|data|command|depend|seed|path|time|size|bytes|format|repository|iteration|parent|children|seconds|warnings|error
-.Random.seed|object|2b0bcf06fd9abd93|||||||||||||||
+.Random.seed|object|14260815f79e0e2b|||||||||||||||
 africa_mask|stem|3e3b5b019ffa5f8f|e3c1ae879135b09a|ef46db3751d8e999|-1182157979||t19818.2362495956s|98231a4c395e7a8c|7267278|format_custom&read=ZnVuY3Rpb24gKHBhdGgpIAp0ZXJyYTo6cmFzdChwYXRoKQ&write=ZnVuY3Rpb24gKG9iamVjdCwgcGF0aCkgCnsKICAgIHRlcnJhOjp3cml0ZVJhc3RlcihvYmplY3QsIHBhdGgsIGZpbGV0eXBlID0gIkdUaWZmIiwgb3ZlcndyaXRlID0gVFJVRSwgCiAgICAgICAgZ2RhbCA9IGNoYXJhY3RlcigwKSkKfQ&marshal=ZnVuY3Rpb24gKG9iamVjdCkgCnRlcnJhOjp3cmFwKG9iamVjdCk&unmarshal=ZnVuY3Rpb24gKG9iamVjdCkgCnRlcnJhOjp1bndyYXAob2JqZWN0KQ&convert=&copy=&repository=|local|vector|||301.129|crs not all geometries were transferred, use svc for a geometry collection|
+bias|stem|6d6d975055a47842|e5d753249ad7700f|7efaac1a39e3dc75|800066774||t19821.285389583s|6c1378715ce358fc|92442665|format_custom&read=ZnVuY3Rpb24gKHBhdGgpIAp0ZXJyYTo6cmFzdChwYXRoKQ&write=ZnVuY3Rpb24gKG9iamVjdCwgcGF0aCkgCnsKICAgIHRlcnJhOjp3cml0ZVJhc3RlcihvYmplY3QsIHBhdGgsIGZpbGV0eXBlID0gIkdUaWZmIiwgb3ZlcndyaXRlID0gVFJVRSwgCiAgICAgICAgZ2RhbCA9IGNoYXJhY3RlcigwKSkKfQ&marshal=ZnVuY3Rpb24gKG9iamVjdCkgCnRlcnJhOjp3cmFwKG9iamVjdCk&unmarshal=ZnVuY3Rpb24gKG9iamVjdCkgCnRlcnJhOjp1bndyYXAob2JqZWN0KQ&convert=&copy=&repository=|local|vector|||5.797||
 clean_species|function|5a5ae5f754bc735c|||||||||||||||
-covariate_rasters|stem||af3d023cba9aa13c|ef46db3751d8e999|-831377567||t19821.2377260462s||0|format_custom&read=ZnVuY3Rpb24gKHBhdGgpIAp0ZXJyYTo6cmFzdChwYXRoKQ&write=ZnVuY3Rpb24gKG9iamVjdCwgcGF0aCkgCnsKICAgIHRlcnJhOjp3cml0ZVJhc3RlcihvYmplY3QsIHBhdGgsIGZpbGV0eXBlID0gIkdUaWZmIiwgb3ZlcndyaXRlID0gVFJVRSwgCiAgICAgICAgZ2RhbCA9IGNoYXJhY3RlcigwKSkKfQ&marshal=ZnVuY3Rpb24gKG9iamVjdCkgCnRlcnJhOjp3cmFwKG9iamVjdCk&unmarshal=ZnVuY3Rpb24gKG9iamVjdCkgCnRlcnJhOjp1bndyYXAob2JqZWN0KQ&convert=&copy=&repository=|local|vector|||0.147||could not find function prepare_covariates
+covariate_rasters|stem|6fe4e0dc3fe3d9c6|af3d023cba9aa13c|53720eb7a852e42d|-831377567||t19821.2533586375s|81622f30c9c16ebf|427270257|format_custom&read=ZnVuY3Rpb24gKHBhdGgpIAp0ZXJyYTo6cmFzdChwYXRoKQ&write=ZnVuY3Rpb24gKG9iamVjdCwgcGF0aCkgCnsKICAgIHRlcnJhOjp3cml0ZVJhc3RlcihvYmplY3QsIHBhdGgsIGZpbGV0eXBlID0gIkdUaWZmIiwgb3ZlcndyaXRlID0gVFJVRSwgCiAgICAgICAgZ2RhbCA9IGNoYXJhY3RlcigwKSkKfQ&marshal=ZnVuY3Rpb24gKG9iamVjdCkgCnRlcnJhOjp3cmFwKG9iamVjdCk&unmarshal=ZnVuY3Rpb24gKG9iamVjdCkgCnRlcnJhOjp1bndyYXAob2JqZWN0KQ&convert=&copy=&repository=|local|vector|||1260.775|crs not all geometries were transferred, use svc for a geometry collection|
 data_records|stem|b57836bfd4d0c35b|ec10f5fc7cc74703|53d653edcfab8b0e|364517769||t19808.2217531274s|eac315877c60e418|22906|rds|local|vector|||0.005||
 filter_few|function|9615edf0f56fbd38|||||||||||||||
 make_pa_plot|function|4b85ab97cc07bcad|||||||||||||||
@@ -18,6 +19,8 @@ pa_plot|stem|e43010323151fcae|05eb3243ad400847|9fe8a06da59a4143|-2130043658||t19
 pa_plot_data|stem|652e139f21f5e516|25789a1dd8cde0ba|a2773ed50ce3918b|-737625050||t19807.2222565848s|494b560fddd003d2|368|rds|local|vector|||0.02||
 pa_plot_file|stem|ae96226eff564635|c46e817a8699b154|cd1a24a5fdb0220c|-566436595||t19807.2447153844s|e655bbbdcbba1d63|81|rds|local|vector|||0.215||
 pa_records_table|stem|ddee531d4080ad78|790ca5eb15f800d7|e065fa183bca8948|-1698550271||t19807.2024652774s|72edd60c3d768dd3|291|rds|local|vector|||0.001||
+prepare_bias|function|10f6624f785edec2|||||||||||||||
+prepare_covariates|function|0895453bbec017f7|||||||||||||||
 raw_data|stem|fb06932c2fd960e8|590d3b5d06f05dde|a4ea093b2781b076|-979620141||t19804.2260060245s|ccfac7753da0005e|1985784|rds|local|vector|||4.056||
 raw_data_file|stem|02112c6d9533e13f|06a00d89ca9db8ad|ef46db3751d8e999|2110307107|data/tabular/final_species_20240314.csv|t19796.915173132s|859dc20cc791ec7b|31584104|file|local|vector|||1.352||
 record_data_all|stem|d47617eb108c9f3f|26beb3d71b0eccb3|70124f2d817f76b0|243590078||t19808.221753001s|a6e6becccb41e29e|29126|rds|local|vector|||6.052||

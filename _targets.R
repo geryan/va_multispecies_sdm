@@ -76,6 +76,7 @@ list(
 
 
  # spatial data prep
+
  # geotargets::tar_terra_rast(
  #   africa_mask,
  #   sdmtools::make_africa_mask(
@@ -86,6 +87,10 @@ list(
  geotargets::tar_terra_rast(
    covariate_rasters,
    prepare_covariates()
+ ),
+ geotargets::tar_terra_rast(
+   bias,
+   prepare_bias(covariate_rasters[[1]])
  )
 )
 
