@@ -1,19 +1,34 @@
-multisdm_data <- function(x){
+multisdm_data <- function(x, covs){
 
   z <- x |>
     dplyr::filter(
       species %in% c(
         "arabiensis",
-        "coluzzi",
-        "funestis",
+        "coluzzii",
+        "funestus",
         "gambiae"
       )
     )
 
   pa <- z |>
-    filter(pa == "pa")
+    filter(pa == "pa") |>
+    dplyr::select(lon, lat, species, presence) |>
+    group_by(lon, lat, species) |>
+    summarise(presence = max(presence), .groups = "drop") |>
+    tidyr::pivot_wider(
+      names_from = species,
+      values_from = presence
+    ) |>
+    mutate(
+      across(
+        arabiensis:coluzzii,
+        ~ ifelse(is.na(.x), 0, .x)
+      )
+    )
+
 
   po <- z |>
-    filter(pa == "po")
+    filter(pa == "po") |>
+    select(lon, lat, species)
 
 }
