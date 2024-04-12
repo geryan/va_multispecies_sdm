@@ -121,6 +121,7 @@ list(
      BG = mspp_data$bg,
      region.size = sum(is.na(values(covariate_rasters[[1]])))
    )
+   # Error in -2 * wt * y : non-numeric argument to binary operator
    # failure here is caused by this line
    # devold <- sum(dev.resids(y, mu, weights)[good.resp]) in
    # block.glm.fit call within multispeciesPP
