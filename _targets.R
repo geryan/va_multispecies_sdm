@@ -91,7 +91,12 @@ list(
  geotargets::tar_terra_rast(
    bias,
    prepare_bias(covariate_rasters[[1]])
+ ),
+ geotargets::tar_terra_rast(
+   model_layers,
+   c(covariate_rasters, bias)
  )
+
 )
 
 
