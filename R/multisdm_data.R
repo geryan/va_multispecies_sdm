@@ -1,6 +1,6 @@
-multisdm_data <- function(x, covs){
+multisdm_data <- function(records, background, modlyr){
 
-  z <- x |>
+  z <- records |>
     dplyr::filter(
       species %in% c(
         "arabiensis",
@@ -38,20 +38,41 @@ multisdm_data <- function(x, covs){
 
 
   pa_covs <- extract_covariates(
-    covariates = covs,
+    covariates = modlyr,
     presences_and_absences = pa |>
       rename(x = lon, y = lat)
   ) |>
-    select(tcw, tcb, built_volume, everything())
+    select(
+      tcw,
+      tcb,
+      built_volume,
+      everything()
+    ) |>
+    drop_na()
 
-  extract_covariates(
-    covariates = covs,
+  po_covs <- extract_covariates(
+    covariates = modlyr,
     presences = po |>
       rename(x = lon, y = lat)
   ) |>
     bind_cols(po) |>
-    select(-presence, -lat, -lon)
+    select(-presence, -lat, -lon) |>
+    drop_na() |>
+    make_mpp_list(species)
 
 
+  bg <- extract_covariates(
+    covariates = modlyr,
+    presences = background |>
+      as_tibble()
+  ) |>
+    select(-presence)
+
+
+  list(pa = pa_covs, po = po_covs, bg = bg)
 
 }
+
+
+
+

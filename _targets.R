@@ -10,7 +10,8 @@ tar_option_set(
     "tidyr",
     "terra",
     "ggplot2",
-    "geotargets"
+    "geotargets", # install.packages("geotargets", repos = c("https://njtierney.r-universe.dev", "https://cran.r-project.org"))
+    "multispeciesPP" # install_github("wfithian/multispeciesPP")
   ),
   workspace_on_error = TRUE
 )
@@ -77,13 +78,6 @@ list(
 
  # spatial data prep
 
- # geotargets::tar_terra_rast(
- #   africa_mask,
- #   sdmtools::make_africa_mask(
- #     file_name = "data/raster/africa_mask.tif",
- #   )
- # ),
-
  geotargets::tar_terra_rast(
    covariate_rasters,
    prepare_covariates()
@@ -95,6 +89,41 @@ list(
  geotargets::tar_terra_rast(
    model_layers,
    c(covariate_rasters, bias)
+ ),
+ tar_target(
+   bg_points,
+   terra::spatSample(
+     x = covariate_rasters[[1]],
+     size = 10000,
+     na.rm = TRUE,
+     as.points = TRUE
+   ) %>%
+     crds()
+ ),
+
+
+ # model data collation and fitting
+ tar_target(
+   mspp_data,
+   multisdm_data(
+     records = data_records,
+     background = bg_points,
+     modlyr = model_layers
+   )
+ ),
+ tar_target(
+   mpp_fit,
+   multispeciesPP(
+     sdm.formula = ~ tcw + tcb + built_volume,
+     bias.formula = ~ bias,
+     PA = mspp_data$pa,
+     PO = mspp_data$po,
+     BG = mspp_data$bg,
+     region.size = sum(is.na(values(covariate_rasters[[1]])))
+   )
+   # failure here is caused by this line
+   # devold <- sum(dev.resids(y, mu, weights)[good.resp]) in
+   # block.glm.fit call within multispeciesPP
  )
 
 )
