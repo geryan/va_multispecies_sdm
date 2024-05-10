@@ -77,14 +77,33 @@ list(
 
 
  # spatial data prep
-
+ tar_target(
+   mask_name,
+   "data/raster/africa_mask.tif",
+   format = "file"
+ ),
+ geotargets::tar_terra_rast(
+   africa_mask,
+   prepare_mask(mask_name)
+ ),
  geotargets::tar_terra_rast(
    covariate_rasters,
-   prepare_covariates()
+   prepare_covariates(africa_mask)
+ ),
+ tar_target(
+   bias_name,
+   "/Users/gryan/Documents/tki_work/vector_atlas/africa_anopheles_sampling_bias/outputs/travel_time.tif", # travel time to research station
+   #"~/Documents/tki_work/vector_atlas/vector_sdm_course/data/downloads/travel_time_to_cities_2.tif", # travel time to city
+   format = "file"
  ),
  geotargets::tar_terra_rast(
    bias,
-   prepare_bias(covariate_rasters[[1]])
+   prepare_bias(
+     africa_mask,
+     bias_name
+   ) |>
+     standardise_rast()
+
  ),
  geotargets::tar_terra_rast(
    model_layers,
@@ -119,7 +138,11 @@ list(
      PA = mspp_data$pa,
      PO = mspp_data$po,
      BG = mspp_data$bg,
-     region.size = sum(is.na(values(covariate_rasters[[1]])))
+     region.size = sum(is.na(values(covariate_rasters[[1]]))),
+     inverse.hessian = FALSE,
+     penalty.l2.sdm = 0.5,
+     penalty.l2.bias = 0.5,
+     penalty.l2.intercept = 1e-04
    )
    # Error in -2 * wt * y : non-numeric argument to binary operator
    # failure here is caused by this line
