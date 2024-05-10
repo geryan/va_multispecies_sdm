@@ -48,7 +48,8 @@ multisdm_data <- function(records, background, modlyr){
       built_volume,
       everything()
     ) |>
-    drop_na()
+    drop_na() |>
+    as.data.frame()
 
   po_covs <- extract_covariates(
     covariates = modlyr,
@@ -66,7 +67,9 @@ multisdm_data <- function(records, background, modlyr){
     presences = background |>
       as_tibble()
   ) |>
-    select(-presence)
+    select(-presence) |>
+    drop_na() |>
+    as.data.frame()
 
 
   list(pa = pa_covs, po = po_covs, bg = bg)
