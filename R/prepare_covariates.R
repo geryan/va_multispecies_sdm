@@ -1,14 +1,5 @@
 prepare_covariates <- function(africa_mask){
 
-  africa_mask <- sdmtools::make_africa_mask()
-
-  pop <- terra::rast(("~/Documents/tki_work/vector_atlas/an_stephensi/anopheles_stephensi_expansion/data/MAP_covariates/WorldPop/WorldPop_UNAdj_v3_DRC_fix.2020.Annual.Data.1km.Data.tif")) |>
-    crop(africa_mask) |>
-    mask(africa_mask)
-
-  africa_mask <- mask(africa_mask, pop) |> # cut out large water bodies
-    writereadrast("data/raster/africa_mask.tif")
-
   tcw <- terra::rast("~/Documents/tki_work/vector_atlas/an_stephensi/anopheles_stephensi_expansion/data/MAP_covariates/TCW/TCW_v6.2021.Annual.mean.1km.Data.tif") |>
     terra::crop(africa_mask) |>
     terra::mask(africa_mask) |>
