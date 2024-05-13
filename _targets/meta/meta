@@ -1,5 +1,5 @@
 name|type|data|command|depend|seed|path|time|size|bytes|format|repository|iteration|parent|children|seconds|warnings|error
-.Random.seed|object|e2633424cfb0d6c6|||||||||||||||
+.Random.seed|object|f6f430b68f70991a|||||||||||||||
 africa_mask|stem|a0d20c1afa566328|5bbb9429623a5c96|609d88e22423d134|1824532452||t19849.2243563959s|f2b79e21926e447d|8567938|format_custom&read=ZnVuY3Rpb24gKHBhdGgpIAp0ZXJyYTo6cmFzdChwYXRoKQ&write=ZnVuY3Rpb24gKG9iamVjdCwgcGF0aCkgCnsKICAgIHRlcnJhOjp3cml0ZVJhc3RlcihvYmplY3QsIHBhdGgsIGZpbGV0eXBlID0gIkdUaWZmIiwgb3ZlcndyaXRlID0gVFJVRSwgCiAgICAgICAgZ2RhbCA9IGNoYXJhY3RlcigwKSkKfQ&marshal=ZnVuY3Rpb24gKG9iamVjdCkgCnRlcnJhOjp3cmFwKG9iamVjdCk&unmarshal=ZnVuY3Rpb24gKG9iamVjdCkgCnRlcnJhOjp1bndyYXAob2JqZWN0KQ&convert=&copy=&repository=|local|vector|||33.384|crs not all geometries were transferred, use svc for a geometry collection|
 bg_points|stem|79ef0f4ab292c186|a1eef34aa7bd0507|ab80878a413dd9c1|1048788436||t19849.2398912597s|44e7374669466069|81688|rds|local|vector|||1267.908||
 bias|stem|47c600bb88c44cb5|6057cfed960684c5|01c5ec072c0408fc|469872941||t19850.233289961s|3afbb57f5cf785cf|170481816|format_custom&read=ZnVuY3Rpb24gKHBhdGgpIAp0ZXJyYTo6cmFzdChwYXRoKQ&write=ZnVuY3Rpb24gKG9iamVjdCwgcGF0aCkgCnsKICAgIHRlcnJhOjp3cml0ZVJhc3RlcihvYmplY3QsIHBhdGgsIGZpbGV0eXBlID0gIkdUaWZmIiwgb3ZlcndyaXRlID0gVFJVRSwgCiAgICAgICAgZ2RhbCA9IGNoYXJhY3RlcigwKSkKfQ&marshal=ZnVuY3Rpb24gKG9iamVjdCkgCnRlcnJhOjp3cmFwKG9iamVjdCk&unmarshal=ZnVuY3Rpb24gKG9iamVjdCkgCnRlcnJhOjp1bndyYXAob2JqZWN0KQ&convert=&copy=&repository=|local|vector|||8.689||
@@ -17,8 +17,8 @@ make_records_table|function|e53a1219d75840f8|||||||||||||||
 mask_name|stem|a0d20c1afa566328|19ef5ac631b2c701|2c530c1562a7fbd1|-890077148|data/raster/africa_mask.tif|t19849.2243375562s|f2b79e21926e447d|8567938|file|local|vector|||0||
 model_layers|stem|bec9003ec575c66e|072b98cece26305d|1b2f84f5ec260fae|-1685975051||t19850.2341347954s|4ef06e3cd60292b0|598127644|format_custom&read=ZnVuY3Rpb24gKHBhdGgpIAp0ZXJyYTo6cmFzdChwYXRoKQ&write=ZnVuY3Rpb24gKG9iamVjdCwgcGF0aCkgCnsKICAgIHRlcnJhOjp3cml0ZVJhc3RlcihvYmplY3QsIHBhdGgsIGZpbGV0eXBlID0gIkdUaWZmIiwgb3ZlcndyaXRlID0gVFJVRSwgCiAgICAgICAgZ2RhbCA9IGNoYXJhY3RlcigwKSkKfQ&marshal=ZnVuY3Rpb24gKG9iamVjdCkgCnRlcnJhOjp3cmFwKG9iamVjdCk&unmarshal=ZnVuY3Rpb24gKG9iamVjdCkgCnRlcnJhOjp1bndyYXAob2JqZWN0KQ&convert=&copy=&repository=|local|vector|||0.001||
 mpp_fit|stem|11dd24c8c4c30277|a208dd82d336bef0|cb8dd1f7a267cc69|-1858689123||t19850.2477984737s|649f829c0248a3d6|2475957|rds|local|vector|||3.538|glm.fit algorithm stopped at boundary value|
-mspp_data|stem|84710ae15f7a618e|fe5a3fbdca79df67|467d3ce1136ef1a0|687487444||t19850.2477494982s|f1cbd7aac99c7972|193290|rds|local|vector|||3.811||
-multisdm_data|function|42afd612bbcf237d|||||||||||||||
+mspp_data|stem|84710ae15f7a618e|fe5a3fbdca79df67|f99abf5a8aa048d7|687487444||t19855.976850637s|f1cbd7aac99c7972|193290|rds|local|vector|||3.779||
+multisdm_data|function|6a6960ab6e44c755|||||||||||||||
 multisdmdata|stem|ccd49ecba4df568d|636f39d2987192ef|7e6adc7840affb21|-435029205||t19825.1874953119s||37779|rds|local|vector|||0.002||unused argument alist
 pa_data|stem|b57836bfd4d0c35b|76bf3a6a7bd4f399|936bb9c753476c5d|1826686162||t19807.1958227901s|eac315877c60e418|22906|rds|local|vector|||0.011||
 pa_data_all|stem|d47617eb108c9f3f|b159763a9b81eac5|0ec76d0dc5ad810b|-710169651||t19807.1740194217s|a6e6becccb41e29e|29126|rds|local|vector|||6.078||
@@ -41,3 +41,15 @@ records_from_va|function|c73caeb5eb28a1ae|||||||||||||||
 records_table|stem|f4a1c680bd03ca73|c1cd512c6fc73bfd|709e5930d37aa248|228895651||t19849.2400610649s|261958e199aa3742|291|rds|local|vector|||0.002||
 tidy_va_data|function|1f8e56ff1d942e22|||||||||||||||
 va_data|stem|1a63d3248c384fae|53e32e716c047a42|7dfa12ca466f1b54|-1156806124||t19849.2243573869s|6687478f02a29eac|108664|rds|local|vector|||0.019||
+prepare_bias|function|1da934e6fe11e4de
+tidy_va_data|function|1f8e56ff1d942e22
+clean_species|function|d745dae74aeb811a
+format_mpp_data|function|6a6960ab6e44c755
+.Random.seed|object|c83be183b534045f
+prepare_covariates|function|cb8b3494cb5c3b1a
+filter_few|function|c5c8909a44af479d
+make_record_plot|function|1db94e342475a8ce
+prepare_mask|function|3672cdd5f1a4078f
+make_record_plot_data|function|9f9d7b55211fb8c5
+make_records_table|function|e53a1219d75840f8
+records_from_va|function|c73caeb5eb28a1ae

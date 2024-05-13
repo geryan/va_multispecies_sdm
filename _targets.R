@@ -112,7 +112,7 @@ list(
  tar_target(
    bg_points,
    terra::spatSample(
-     x = covariate_rasters[[1]],
+     x = africa_mask,
      size = 10000,
      na.rm = TRUE,
      as.points = TRUE
@@ -123,8 +123,8 @@ list(
 
  # model data collation and fitting
  tar_target(
-   mspp_data,
-   multisdm_data(
+   mpp_data,
+   format_mpp_data(
      records = data_records,
      background = bg_points,
      modlyr = model_layers
@@ -135,10 +135,10 @@ list(
    multispeciesPP(
      sdm.formula = ~ tcw + tcb + built_volume,
      bias.formula = ~ bias,
-     PA = mspp_data$pa,
-     PO = mspp_data$po,
-     BG = mspp_data$bg,
-     region.size = sum(is.na(values(covariate_rasters[[1]]))),
+     PA = mpp_data$pa,
+     PO = mpp_data$po,
+     BG = mpp_data$bg,
+     region.size = sum(is.na(values(africa_mask))),
      inverse.hessian = FALSE,
      penalty.l2.sdm = 0.5,
      penalty.l2.bias = 0.5,

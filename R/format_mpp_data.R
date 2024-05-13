@@ -1,4 +1,4 @@
-multisdm_data <- function(records, background, modlyr){
+format_mpp_data <- function(records, background, modlyr){
 
   z <- records |>
     dplyr::filter(
