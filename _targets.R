@@ -109,6 +109,9 @@ list(
    model_layers,
    c(covariate_rasters, bias)
  ),
+ tar_seed_set(
+   tar_seed_create("bg_points")
+ ),
  tar_target(
    bg_points,
    terra::spatSample(
