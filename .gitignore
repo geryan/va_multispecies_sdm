@@ -7,3 +7,4 @@ extras/*.csv
 .DS_Store
 figures
 data
+outputs

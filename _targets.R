@@ -67,7 +67,7 @@ list(
  tar_target(
    record_plot_file,
    ggsave(
-     filename = "figures/record_count_plot.png",
+     filename = "outputs/figures/record_count_plot.png",
      plot = record_plot,
      width = 2400,
      height = 1500,
@@ -107,7 +107,8 @@ list(
  ),
  geotargets::tar_terra_rast(
    model_layers,
-   c(covariate_rasters, bias)
+   c(covariate_rasters, bias) |>
+     sdmtools::mask_all()
  ),
  tar_seed_set(
    tar_seed_create("bg_points")
@@ -121,7 +122,7 @@ list(
      as.points = TRUE
    ) %>%
      crds()
- ),
+ ), #mfing slow but setting of seed stops it rerunning
 
 
  # model data collation and fitting
@@ -140,20 +141,25 @@ list(
      bias.formula = ~ bias,
      PA = mpp_data$pa,
      PO = mpp_data$po,
-     BG = mpp_data$bg,
-     region.size = sum(is.na(values(africa_mask))),
-     inverse.hessian = FALSE,
-     penalty.l2.sdm = 0.5,
-     penalty.l2.bias = 0.5,
-     penalty.l2.intercept = 1e-04
+     BG = mpp_data$bg
    )
-   # Error in -2 * wt * y : non-numeric argument to binary operator
-   # failure here is caused by this line
-   # devold <- sum(dev.resids(y, mu, weights)[good.resp]) in
-   # block.glm.fit call within multispeciesPP
+ ),
+ tar_terra_rast(
+   preds,
+   predict_mpp_rast_all(
+     model = mpp_fit,
+     data = model_layers,
+     filename = "outputs/preds.tif"#,
+     #overwrite = TRUE
+   )
  )
 
 )
+
+
+
+
+
 
 
 # tar_load_everything()
