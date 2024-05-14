@@ -5,13 +5,15 @@ tar_option_set(
   packages = c(
     "tibble",
     "dplyr",
-    "sdmtools",
+    "sdmtools",  # remotes::install_github("idem-lab/sdmtools)
     "readr",
     "tidyr",
     "terra",
     "ggplot2",
     "geotargets", # install.packages("geotargets", repos = c("https://njtierney.r-universe.dev", "https://cran.r-project.org"))
-    "multispeciesPP" # install_github("wfithian/multispeciesPP")
+    "multispeciesPP", # remotes::install_github("wfithian/multispeciesPP")
+    "idpalette", # remotes::install_github("idem-lab/idpalette)
+    "rasterVis"
   ),
   workspace_on_error = TRUE
 )
@@ -151,6 +153,25 @@ list(
      data = model_layers,
      filename = "outputs/preds.tif"#,
      #overwrite = TRUE
+   )
+ ),
+ tar_target(
+   pred_plot,
+   levelplot(
+     preds,
+     col.regions = idpalette("idem", 20),
+     layout = c(2,2)
+   )
+ ),
+ tar_target(
+   pred_plot_file,
+   sdmtools::save_plot(
+     p = pred_plot,
+     filename = "outputs/figures/pred_plot.png",
+     width = 2400,
+     #height = 1500,
+     units = "px",
+     res = 300
    )
  )
 

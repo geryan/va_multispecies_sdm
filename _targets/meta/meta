@@ -30,6 +30,8 @@ pa_plot|stem|e43010323151fcae|05eb3243ad400847|9fe8a06da59a4143|-2130043658||t19
 pa_plot_data|stem|652e139f21f5e516|25789a1dd8cde0ba|a2773ed50ce3918b|-737625050||t19807.2222565848s|494b560fddd003d2|368|rds|local|vector|||0.02||
 pa_plot_file|stem|ae96226eff564635|c46e817a8699b154|cd1a24a5fdb0220c|-566436595||t19807.2447153844s|e655bbbdcbba1d63|81|rds|local|vector|||0.215||
 pa_records_table|stem|ddee531d4080ad78|790ca5eb15f800d7|e065fa183bca8948|-1698550271||t19807.2024652774s|72edd60c3d768dd3|291|rds|local|vector|||0.001||
+pred_plot|stem|1646942fe64e5fe2|f2790a17fee26ba0|bba9fd79029d0ec1|-90725040||t19857.2086263807s|833022efe08c9b50|8866781|rds|local|vector|||0.472||
+pred_plot_file|stem|5e085c0529751f8a|001a9d3ed2e0e5e8|63d0f439cb08e1af|1940420764||t19857.2693841264s|988429bb6428792b|83|rds|local|vector|||0.738||
 preds|stem|1affe0fba16c10a6|3b703b661d85c539|cb7226695f540207|150387013||t19857.1810895084s|d0053add56b021ac|651235997|format_custom&read=ZnVuY3Rpb24gKHBhdGgpIAp0ZXJyYTo6cmFzdChwYXRoKQ&write=ZnVuY3Rpb24gKG9iamVjdCwgcGF0aCkgCnsKICAgIHRlcnJhOjp3cml0ZVJhc3RlcihvYmplY3QsIHBhdGgsIGZpbGV0eXBlID0gIkdUaWZmIiwgb3ZlcndyaXRlID0gVFJVRSwgCiAgICAgICAgZ2RhbCA9IGNoYXJhY3RlcigwKSkKfQ&marshal=ZnVuY3Rpb24gKG9iamVjdCkgCnRlcnJhOjp3cmFwKG9iamVjdCk&unmarshal=ZnVuY3Rpb24gKG9iamVjdCkgCnRlcnJhOjp1bndyYXAob2JqZWN0KQ&convert=&copy=&repository=|local|vector|||0.014|outputspreds.tif existsUsing existing fileto regenerate, delete existing outputspreds.tif or set overwrite  TRUE|
 prepare_bias|function|1da934e6fe11e4de|||||||||||||||
 prepare_covariates|function|cb8b3494cb5c3b1a|||||||||||||||
@@ -42,5 +44,6 @@ record_plot_data|stem|722b87ebda647fcf|8ab3404bae51c841|cee5b4e97e02805c|-122892
 record_plot_file|stem|583a77221e576f9d|2d69a7202c429a64|8474a5f35e2ed697|-51883050||t19857.0831395094s|ba51273727d9db07|90|rds|local|vector|||0.587||
 records_from_va|function|c73caeb5eb28a1ae|||||||||||||||
 records_table|stem|f4a1c680bd03ca73|c1cd512c6fc73bfd|709e5930d37aa248|228895651||t19849.2400610649s|261958e199aa3742|291|rds|local|vector|||0.002||
+save_plot|function|fe2eb652b7d3fc94|||||||||||||||
 tidy_va_data|function|1f8e56ff1d942e22|||||||||||||||
 va_data|stem|1a63d3248c384fae|53e32e716c047a42|7dfa12ca466f1b54|-1156806124||t19849.2243573869s|6687478f02a29eac|108664|rds|local|vector|||0.019||
