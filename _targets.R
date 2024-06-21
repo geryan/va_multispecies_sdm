@@ -92,12 +92,9 @@ list(
    covariate_rasters,
    prepare_covariates(africa_mask)
  ),
- tar_terra_tast(
+ tar_terra_rast(
    new_mask,
-   make_new_mask(
-     covs,
-     africa_mask
-   )
+   make_new_mask(covariate_rasters)
  ),
  tar_target(
    bias_name,
@@ -108,7 +105,7 @@ list(
  geotargets::tar_terra_rast(
    bias,
    prepare_bias(
-     africa_mask,
+     new_mask,
      bias_name
    ) |>
      standardise_rast()
@@ -116,8 +113,7 @@ list(
  ),
  geotargets::tar_terra_rast(
    model_layers,
-   c(covariate_rasters, bias) |>
-     sdmtools::mask_all()
+   c(covariate_rasters, bias)
  ),
  tar_seed_set(
    tar_seed_create("bg_points")
