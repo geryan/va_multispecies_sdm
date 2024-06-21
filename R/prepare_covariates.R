@@ -30,8 +30,27 @@ prepare_covariates <- function(africa_mask){
     "rainfall"
   )
 
+
+  new_mask <- africa_mask |>
+    mask(covs[[1]]) |>
+    mask(covs[[2]]) |>
+    mask(covs[[3]]) |>
+    mask(covs[[4]]) |>
+    mask(covs[[5]]) |>
+    mask(covs[[6]]) |>
+    mask(covs[[7]]) |>
+    mask(covs[[8]])
+
+  cm <- mask(covs, new_mask)
+
+  # mask_nas <- sum(is.na(values(new_mask)))
+  #
+  # cov_nas <- apply(values(cm), 2, function(x)(sum(is.na(x))))
+  #
+  # mask_nas - cov_nas
+
   covs <- sdmtools::writereadrast(
-    x = covs,
+    x = cm,
     filename = "data/covs.tif"
   )
 

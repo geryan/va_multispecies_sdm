@@ -48,7 +48,7 @@ list(
  tar_target(
    data_records,
    filter_few(record_data_all) |>
-     filter(species != "GAMBIAE COMPLEX")
+     filter(species != "gambiae_complex")
    # potentially remove later or put elsewhere
  ),
 
@@ -91,6 +91,13 @@ list(
  geotargets::tar_terra_rast(
    covariate_rasters,
    prepare_covariates(africa_mask)
+ ),
+ tar_terra_tast(
+   new_mask,
+   make_new_mask(
+     covs,
+     africa_mask
+   )
  ),
  tar_target(
    bias_name,
