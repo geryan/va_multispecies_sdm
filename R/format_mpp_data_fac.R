@@ -1,4 +1,4 @@
-format_mpp_data <- function(records, background, modlyr){
+format_mpp_data_fac <- function(records, background, modlyr){
 
   z <- records |>
     dplyr::filter(
@@ -54,7 +54,10 @@ format_mpp_data <- function(records, background, modlyr){
       everything()
     ) |>
     drop_na() |>
-    as.data.frame()
+    as.data.frame() |>
+    mutate(
+      landcover = as.factor(landcover)
+    )
 
   po_covs <- extract_covariates(
     covariates = modlyr,
@@ -64,6 +67,9 @@ format_mpp_data <- function(records, background, modlyr){
     bind_cols(po) |>
     select(-presence, -lat, -lon) |>
     drop_na() |>
+    mutate(
+      landcover = as.factor(landcover)
+    ) |>
     make_mpp_list(species)
 
 
@@ -74,7 +80,8 @@ format_mpp_data <- function(records, background, modlyr){
   ) |>
     select(-presence) |>
     drop_na() |>
-    as.data.frame()
+    as.data.frame() |>
+    mutate(landcover = as.factor(landcover))
 
 
   list(pa = pa_covs, po = po_covs, bg = bg)

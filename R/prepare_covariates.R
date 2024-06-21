@@ -16,8 +16,13 @@ prepare_covariates <- function(africa_mask){
 
   rainfall <- rcms("~/Documents/tki_work/vector_atlas/an_stephensi/anopheles_stephensi_expansion/data/MAP_covariates/Rainfall/chirps-v2-0.2021.Annual.sum.1km.NN.tif", africa_mask)
 
+  mech <- rast("data/raster/An_gambiae_mechanistic_abundance.tif") |>
+    crop(africa_mask) |>
+    max() |>
+    match_ref(africa_mask) |>
+    std_rast()
 
-  covs <- c(tcw, tcb, built_volume, landcover, lst_day, lst_night, evi, rainfall)
+  covs <- c(tcw, tcb, built_volume, landcover, lst_day, lst_night, evi, rainfall, mech)
 
   names(covs) <- terra::varnames(covs) <- c(
     "tcw",
@@ -27,7 +32,8 @@ prepare_covariates <- function(africa_mask){
     lst_day",
     "lst_night",
     "evi",
-    "rainfall"
+    "rainfall",
+    "mech"
   )
 
 
@@ -39,7 +45,8 @@ prepare_covariates <- function(africa_mask){
     mask(covs[[5]]) |>
     mask(covs[[6]]) |>
     mask(covs[[7]]) |>
-    mask(covs[[8]])
+    mask(covs[[8]]) |>
+    mask(covs[[9]])
 
   cm <- mask(covs, new_mask)
 

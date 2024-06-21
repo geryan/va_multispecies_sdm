@@ -5,7 +5,7 @@ make_new_mask <- function(
 
   z <- covariate_rasters[[1]]
 
-  idx <- which(!is.na(values(x)))
+  idx <- which(!is.na(values(z)))
 
   z[idx] <- 1
 
