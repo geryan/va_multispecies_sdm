@@ -7,7 +7,7 @@ clean_species <- function(x){
       x == "gambiae _ coluzzii"~ "coluzzi",
       x == "gambiae (S_M)" ~ "gambiae_complex",
       x == "gambiae (S/M)" ~ "gambiae_complex",
-      X == "GAMBIAE COMPLEX" ~ "gambiae_complex",
+      x == "GAMBIAE COMPLEX" ~ "gambiae_complex",
       x == "marshalii"~ "marshallii",
       x == "marshalli"~ "marshallii",
       x == "mouchetti"~ "moucheti",
