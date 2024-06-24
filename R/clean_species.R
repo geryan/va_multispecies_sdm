@@ -4,7 +4,7 @@ clean_species <- function(x){
     case_when(
       x == "carnevalai" ~ "carnevalei",
       x == "d'thali" ~ "dthali",
-      x == "gambiae _ coluzzii"~ "coluzzi",
+      x == "gambiae _ coluzzii"~ "coluzzii",
       x == "gambiae (S_M)" ~ "gambiae_complex",
       x == "gambiae (S/M)" ~ "gambiae_complex",
       x == "GAMBIAE COMPLEX" ~ "gambiae_complex",

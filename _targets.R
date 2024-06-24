@@ -13,7 +13,8 @@ tar_option_set(
     "geotargets", # install.packages("geotargets", repos = c("https://njtierney.r-universe.dev", "https://cran.r-project.org"))
     "multispeciesPP", # remotes::install_github("wfithian/multispeciesPP")
     "idpalette", # remotes::install_github("idem-lab/idpalette)
-    "rasterVis"
+    "rasterVis",
+    "tidyterra"
   ),
   workspace_on_error = TRUE
 )
@@ -22,7 +23,6 @@ tar_source(files = "R")
 
 
 list(
-
 
   # data wrangling and cleaning
  tar_target(
@@ -140,222 +140,312 @@ list(
    )
  ),
 
+#
+#
+#  ### Model 1
+#  tar_target(
+#    mpp_fit_1,
+#    multispeciesPP(
+#      sdm.formula = ~ tcw + tcb + built_volume,
+#      bias.formula = ~ bias,
+#      PA = mpp_data$pa,
+#      PO = mpp_data$po,
+#      BG = mpp_data$bg
+#    )
+#  ),
+#  tar_terra_rast(
+#    preds_1,
+#    predict_mpp_rast_all(
+#      model = mpp_fit_1,
+#      data = model_layers,
+#      filename = "outputs/preds_1.tif",
+#      overwrite = TRUE
+#    )
+#  ),
+#  tar_target(
+#    pred_plot_1,
+#    levelplot(
+#      preds_1,
+#      col.regions = idpalette("idem", 20),
+#      layout = c(2,2)
+#    )
+#  ),
+#  tar_target(
+#    pred_plot_file_1,
+#    sdmtools::save_plot(
+#      p = pred_plot_1,
+#      filename = "outputs/figures/pred_plot_1.png",
+#      width = 2400,
+#      #height = 1500,
+#      units = "px",
+#      res = 300
+#    )
+#  ),
+#
+#
+#  ### Model 2
+#  tar_target(
+#    mpp_fit_2,
+#    multispeciesPP(
+#      sdm.formula =  ~ tcw + tcb + built_volume + landcover + lst_day + lst_night + evi + rainfall,
+#      bias.formula = ~ bias,
+#      PA = mpp_data$pa,
+#      PO = mpp_data$po,
+#      BG = mpp_data$bg
+#    )
+#  ),
+#  tar_terra_rast(
+#    preds_2,
+#    predict_mpp_rast_all(
+#      model = mpp_fit_2,
+#      data = model_layers,
+#      filename = "outputs/preds_2.tif",
+#      overwrite = TRUE
+#    )
+#  ),
+#  tar_target(
+#    pred_plot_2,
+#    levelplot(
+#      preds_2,
+#      col.regions = idpalette("idem", 20),
+#      layout = c(2,2)
+#    )
+#  ),
+#  tar_target(
+#    pred_plot_file_2,
+#    sdmtools::save_plot(
+#      p = pred_plot_2,
+#      filename = "outputs/figures/pred_plot_2.png",
+#      width = 2400,
+#      #height = 1500,
+#      units = "px",
+#      res = 300
+#    )
+#  ),
+#
+#  ### Model 3
+#  tar_target(
+#    mpp_fit_3,
+#    multispeciesPP(
+#      sdm.formula =  ~ tcw + tcb + built_volume + landcover + lst_day + lst_night + evi + rainfall + mech,
+#      bias.formula = ~ bias,
+#      PA = mpp_data$pa,
+#      PO = mpp_data$po,
+#      BG = mpp_data$bg
+#    )
+#  ),
+#  tar_terra_rast(
+#    preds_3,
+#    predict_mpp_rast_all(
+#      model = mpp_fit_3,
+#      data = model_layers,
+#      filename = "outputs/preds_3.tif",
+#      overwrite = TRUE
+#    )
+#  ),
+#  tar_target(
+#    pred_plot_3,
+#    levelplot(
+#      preds_3,
+#      col.regions = idpalette("idem", 20),
+#      layout = c(2,2)
+#    )
+#  ),
+#  tar_target(
+#    pred_plot_file_3,
+#    sdmtools::save_plot(
+#      p = pred_plot_3,
+#      filename = "outputs/figures/pred_plot_3.png",
+#      width = 2400,
+#      #height = 1500,
+#      units = "px",
+#      res = 300
+#    )
+#  ),
+#
+#  ### Model 4
+#  tar_target(
+#    mpp_fit_4,
+#    multispeciesPP(
+#      sdm.formula =  ~ tcw + built_volume + landcover + evi + lst_night + rainfall + mech,
+#      bias.formula = ~ bias,
+#      PA = mpp_data$pa,
+#      PO = mpp_data$po,
+#      BG = mpp_data$bg
+#    )
+#  ),
+#  tar_terra_rast(
+#    preds_4,
+#    predict_mpp_rast_all(
+#      model = mpp_fit_4,
+#      data = model_layers,
+#      filename = "outputs/preds_4.tif",
+#      overwrite = TRUE
+#    )
+#  ),
+#  tar_target(
+#    pred_plot_4,
+#    levelplot(
+#      preds_4,
+#      col.regions = idpalette("idem", 20),
+#      layout = c(2,2)
+#    )
+#  ),
+#  tar_target(
+#    pred_plot_file_4,
+#    sdmtools::save_plot(
+#      p = pred_plot_4,
+#      filename = "outputs/figures/pred_plot_4.png",
+#      width = 2400,
+#      #height = 1500,
+#      units = "px",
+#      res = 300
+#    )
+#  ),
+#
+#  ### Model 5
+#
+#  tar_target(
+#    mpp_data_f,
+#    format_mpp_data_fac(
+#      records = data_records,
+#      background = bg_points,
+#      modlyr = model_layers
+#    )
+#  ),
+#  tar_target(
+#    mpp_fit_5,
+#    multispeciesPP(
+#      sdm.formula =  ~ tcw + built_volume + landcover + evi + lst_night + rainfall + mech,
+#      bias.formula = ~ bias,
+#      PA = mpp_data$pa,
+#      PO = mpp_data$po,
+#      BG = mpp_data$bg
+#    )
+#  ),
+#  tar_terra_rast(
+#    preds_5,
+#    predict_mpp_rast_all(
+#      model = mpp_fit_5,
+#      data = model_layers,
+#      filename = "outputs/preds_5.tif",
+#      overwrite = TRUE
+#    )
+#  ),
+#  tar_target(
+#    pred_plot_5,
+#    levelplot(
+#      preds_5,
+#      col.regions = idpalette("idem", 20),
+#      layout = c(2,2)
+#    )
+#  ),
+#  tar_target(
+#    pred_plot_file_5,
+#    sdmtools::save_plot(
+#      p = pred_plot_5,
+#      filename = "outputs/figures/pred_plot_5.png",
+#      width = 2400,
+#      #height = 1500,
+#      units = "px",
+#      res = 300
+#    )
+#  ),
 
- ### Model 1
+
+# alt data prep
+
  tar_target(
-   mpp_fit_1,
+   pa_dat_plot,
+   ggplot() +
+     geom_spatraster(
+       data = africa_mask
+     ) +
+     geom_point(
+       data = data_records |> mutate(presence = as.character(presence)),
+       aes(
+         x = lon,
+         y = lat,
+         colour = presence,
+         shape = presence,
+
+       )
+     ) +
+     facet_wrap(~species) +
+     theme_minimal() +
+     scale_fill_viridis_c(
+       option = "G",
+       begin = 1,
+      end = 0.5,
+       na.value = "white"
+     ) +
+     scale_colour_viridis_d(
+       option = "A"
+     )
+ ),
+ tar_target(
+   rcrds,
+   prep_rcrds(va_data)
+ ),
+
+
+tar_target(
+  mpp_rcrds,
+  format_mpp_data(
+    records = rcrds,
+    background = bg_points,
+    modlyr = model_layers
+  )
+),
+
+ tar_target(
+   mpp_fit_6,
    multispeciesPP(
-     sdm.formula = ~ tcw + tcb + built_volume,
+     sdm.formula =  ~ tcw + built_volume + landcover + evi + lst_night + rainfall,
      bias.formula = ~ bias,
-     PA = mpp_data$pa,
-     PO = mpp_data$po,
-     BG = mpp_data$bg
+     PA = mpp_rcrds$pa,
+     PO = mpp_rcrds$po,
+     BG = mpp_rcrds$bg
    )
  ),
  tar_terra_rast(
-   preds_1,
+   preds_6,
    predict_mpp_rast_all(
-     model = mpp_fit_1,
+     model = mpp_fit_6,
      data = model_layers,
-     filename = "outputs/preds_1.tif",
+     filename = "outputs/preds_6.tif",
      overwrite = TRUE
    )
  ),
  tar_target(
-   pred_plot_1,
+   pred_plot_6,
    levelplot(
-     preds_1,
+     preds_6,
      col.regions = idpalette("idem", 20),
      layout = c(2,2)
    )
  ),
  tar_target(
-   pred_plot_file_1,
+   pred_plot_file_6,
    sdmtools::save_plot(
-     p = pred_plot_1,
-     filename = "outputs/figures/pred_plot_1.png",
+     p = pred_plot_6,
+     filename = "outputs/figures/pred_plot_6.png",
      width = 2400,
      #height = 1500,
      units = "px",
      res = 300
    )
  ),
+tar_target(
+  gambiae_plot
+  gambiaeplot(preds_6)
+)
 
-
- ### Model 2
- tar_target(
-   mpp_fit_2,
-   multispeciesPP(
-     sdm.formula =  ~ tcw + tcb + built_volume + landcover + lst_day + lst_night + evi + rainfall,
-     bias.formula = ~ bias,
-     PA = mpp_data$pa,
-     PO = mpp_data$po,
-     BG = mpp_data$bg
-   )
- ),
- tar_terra_rast(
-   preds_2,
-   predict_mpp_rast_all(
-     model = mpp_fit_2,
-     data = model_layers,
-     filename = "outputs/preds_2.tif",
-     overwrite = TRUE
-   )
- ),
- tar_target(
-   pred_plot_2,
-   levelplot(
-     preds_2,
-     col.regions = idpalette("idem", 20),
-     layout = c(2,2)
-   )
- ),
- tar_target(
-   pred_plot_file_2,
-   sdmtools::save_plot(
-     p = pred_plot_2,
-     filename = "outputs/figures/pred_plot_2.png",
-     width = 2400,
-     #height = 1500,
-     units = "px",
-     res = 300
-   )
- ),
-
- ### Model 3
- tar_target(
-   mpp_fit_3,
-   multispeciesPP(
-     sdm.formula =  ~ tcw + tcb + built_volume + landcover + lst_day + lst_night + evi + rainfall + mech,
-     bias.formula = ~ bias,
-     PA = mpp_data$pa,
-     PO = mpp_data$po,
-     BG = mpp_data$bg
-   )
- ),
- tar_terra_rast(
-   preds_3,
-   predict_mpp_rast_all(
-     model = mpp_fit_3,
-     data = model_layers,
-     filename = "outputs/preds_3.tif",
-     overwrite = TRUE
-   )
- ),
- tar_target(
-   pred_plot_3,
-   levelplot(
-     preds_3,
-     col.regions = idpalette("idem", 20),
-     layout = c(2,2)
-   )
- ),
- tar_target(
-   pred_plot_file_3,
-   sdmtools::save_plot(
-     p = pred_plot_3,
-     filename = "outputs/figures/pred_plot_3.png",
-     width = 2400,
-     #height = 1500,
-     units = "px",
-     res = 300
-   )
- ),
-
- ### Model 4
- tar_target(
-   mpp_fit_4,
-   multispeciesPP(
-     sdm.formula =  ~ tcw + built_volume + landcover + evi + lst_night + rainfall + mech,
-     bias.formula = ~ bias,
-     PA = mpp_data$pa,
-     PO = mpp_data$po,
-     BG = mpp_data$bg
-   )
- ),
- tar_terra_rast(
-   preds_4,
-   predict_mpp_rast_all(
-     model = mpp_fit_4,
-     data = model_layers,
-     filename = "outputs/preds_4.tif",
-     overwrite = TRUE
-   )
- ),
- tar_target(
-   pred_plot_4,
-   levelplot(
-     preds_4,
-     col.regions = idpalette("idem", 20),
-     layout = c(2,2)
-   )
- ),
- tar_target(
-   pred_plot_file_4,
-   sdmtools::save_plot(
-     p = pred_plot_4,
-     filename = "outputs/figures/pred_plot_4.png",
-     width = 2400,
-     #height = 1500,
-     units = "px",
-     res = 300
-   )
- ),
-
- ### Model 5
-
- tar_target(
-   mpp_data_f,
-   format_mpp_data_fac(
-     records = data_records,
-     background = bg_points,
-     modlyr = model_layers
-   )
- ),
- tar_target(
-   mpp_fit_5,
-   multispeciesPP(
-     sdm.formula =  ~ tcw + built_volume + landcover + evi + lst_night + rainfall + mech,
-     bias.formula = ~ bias,
-     PA = mpp_data$pa,
-     PO = mpp_data$po,
-     BG = mpp_data$bg
-   )
- ),
- tar_terra_rast(
-   preds_5,
-   predict_mpp_rast_all(
-     model = mpp_fit_5,
-     data = model_layers,
-     filename = "outputs/preds_5.tif",
-     overwrite = TRUE
-   )
- ),
- tar_target(
-   pred_plot_5,
-   levelplot(
-     preds_5,
-     col.regions = idpalette("idem", 20),
-     layout = c(2,2)
-   )
- ),
- tar_target(
-   pred_plot_file_5,
-   sdmtools::save_plot(
-     p = pred_plot_5,
-     filename = "outputs/figures/pred_plot_5.png",
-     width = 2400,
-     #height = 1500,
-     units = "px",
-     res = 300
-   )
- )
 )
 
 
 
 
 
-
-
 # tar_load_everything()
+# tar_load_globals()
