@@ -24,7 +24,8 @@ ggplot() +
     end = 0,
     na.value = "white"
   ) +
-  theme_void()
+  theme_void() +
+  labs(title = expression(italic("Anopheles gambiae")))
 
 ## arabiensis
 
@@ -55,7 +56,8 @@ ggplot() +
     end = 0,
     na.value = "white"
   ) +
-  theme_void()
+  theme_void()  +
+  labs(title = expression(italic("Anopheles arabiensis")))
 
 
 # coluzzii
@@ -89,7 +91,8 @@ ggplot() +
     end = 0,
     na.value = "white"
   ) +
-  theme_void()
+  theme_void() +
+  labs(title = expression(italic("Anopheles coluzzii")))
 
 
 
