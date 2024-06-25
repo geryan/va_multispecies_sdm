@@ -27,6 +27,40 @@ ggplot() +
   theme_void() +
   labs(title = expression(italic("Anopheles gambiae")))
 
+
+
+gambiae <- preds_7[["gambiae"]]
+
+gambiae_vals <- values(gambiae)
+hist(gambiae_vals[which(gambiae_vals < 0.1)])
+hist(gambiae_vals[which(gambiae_vals < 0.01)])
+hist(gambiae_vals[which(gambiae_vals < 0.005)])
+
+thold <- 0.0025
+
+gambiae_scale <- gambiae
+
+gambiae_vals_scale <- ifelse(gambiae_vals > thold, thold, gambiae_vals)/thold
+
+gambiae_scale[] <- gambiae_vals_scale
+
+plot(gambiae_scale)
+
+
+ggplot() +
+  geom_spatraster(
+    data = gambiae_scale
+  ) +
+  scale_fill_viridis_c(
+    option = "G",
+    begin = 1,
+    end = 0,
+    na.value = "white"
+  ) +
+  theme_void() +
+  labs(title = expression(italic("Anopheles gambiae")))
+
+
 ## arabiensis
 
 arabiensis <- preds_6[["arabiensis"]]
