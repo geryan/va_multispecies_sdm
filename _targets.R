@@ -109,8 +109,12 @@ list(
      bias_name
    ) |>
      standardise_rast()
-
  ),
+ tar_terra_vect(
+   new_mask_v,
+   as.polygons(new_mask)
+ ),
+
  geotargets::tar_terra_rast(
    model_layers,
    c(covariate_rasters, bias)
@@ -121,7 +125,7 @@ list(
  tar_target(
    bg_points,
    terra::spatSample(
-     x = africa_mask,
+     x = new_mask,
      size = 10000,
      na.rm = TRUE,
      as.points = TRUE
@@ -355,91 +359,229 @@ list(
 
 # alt data prep
 
- tar_target(
-   pa_dat_plot,
-   ggplot() +
-     geom_spatraster(
-       data = africa_mask
-     ) +
-     geom_point(
-       data = data_records |> mutate(presence = as.character(presence)),
-       aes(
-         x = lon,
-         y = lat,
-         colour = presence,
-         shape = presence,
+#  tar_target(
+#    pa_dat_plot,
+#    ggplot() +
+#      geom_spatraster(
+#        data = africa_mask
+#      ) +
+#      geom_point(
+#        data = data_records |> mutate(presence = as.character(presence)),
+#        aes(
+#          x = lon,
+#          y = lat,
+#          colour = presence,
+#          shape = presence,
+#
+#        )
+#      ) +
+#      facet_wrap(~species) +
+#      theme_minimal() +
+#      scale_fill_viridis_c(
+#        option = "G",
+#        begin = 1,
+#       end = 0.5,
+#        na.value = "white"
+#      ) +
+#      scale_colour_viridis_d(
+#        option = "A"
+#      )
+#  ),
+#  tar_target(
+#    rcrds,
+#    prep_rcrds(va_data)
+#  ),
+#
+#
+# tar_target(
+#   mpp_rcrds,
+#   format_mpp_data(
+#     records = rcrds,
+#     background = bg_points,
+#     modlyr = model_layers
+#   )
+# ),
+#
+#  tar_target(
+#    mpp_fit_6,
+#    multispeciesPP(
+#      sdm.formula =  ~ tcw + built_volume + landcover + evi + lst_night + rainfall,
+#      bias.formula = ~ bias,
+#      PA = mpp_rcrds$pa,
+#      PO = mpp_rcrds$po,
+#      BG = mpp_rcrds$bg
+#    )
+#  ),
+#  tar_terra_rast(
+#    preds_6,
+#    predict_mpp_rast_all(
+#      model = mpp_fit_6,
+#      data = model_layers,
+#      filename = "outputs/preds_6.tif",
+#      overwrite = TRUE
+#    )
+#  ),
+#  tar_target(
+#    pred_plot_6,
+#    levelplot(
+#      preds_6,
+#      col.regions = idpalette("idem", 20),
+#      layout = c(2,2)
+#    )
+#  ),
+#  tar_target(
+#    pred_plot_file_6,
+#    sdmtools::save_plot(
+#      p = pred_plot_6,
+#      filename = "outputs/figures/pred_plot_6.png",
+#      width = 2400,
+#      #height = 1500,
+#      units = "px",
+#      res = 300
+#    )
+#  ),
+#
+#  # model 7
+# tar_target(
+#   mpp_fit_7,
+#   multispeciesPP(
+#     sdm.formula =  ~ tcw + built_volume + landcover + evi + lst_night + rainfall + offset(mech),
+#     bias.formula = ~ bias,
+#     PA = mpp_rcrds$pa,
+#     PO = mpp_rcrds$po,
+#     BG = mpp_rcrds$bg
+#   )
+# ),
+# tar_terra_rast(
+#   preds_7,
+#   predict_mpp_rast_all(
+#     model = mpp_fit_7,
+#     data = model_layers,
+#     filename = "outputs/preds_7.tif",
+#     overwrite = TRUE
+#   )
+# ),
+# tar_target(
+#   pred_plot_7,
+#   levelplot(
+#     preds_7,
+#     col.regions = idpalette("idem", 20),
+#     layout = c(2,2)
+#   )
+# ),
+#
+# tar_target(
+#   pred_plot_file_7,
+#   sdmtools::save_plot(
+#     p = pred_plot_7,
+#     filename = "outputs/figures/pred_plot_7.png",
+#     width = 2400,
+#     #height = 1500,
+#     units = "px",
+#     res = 300
+#   )
+# ),
 
-       )
-     ) +
-     facet_wrap(~species) +
-     theme_minimal() +
-     scale_fill_viridis_c(
-       option = "G",
-       begin = 1,
-      end = 0.5,
-       na.value = "white"
-     ) +
-     scale_colour_viridis_d(
-       option = "A"
-     )
+
+ ## new approach to buffering absences
+
+ tar_target(
+   rcrds_2,
+   prep_rcrds_2(va_data, new_mask_v)
  ),
+
+
  tar_target(
-   rcrds,
-   prep_rcrds(va_data)
+   mpp_rcrds_2,
+   format_mpp_data(
+     records = rcrds_2,
+     background = bg_points,
+     modlyr = model_layers
+   )
  ),
 
+  # model 8
+  tar_target(
+    mpp_fit_8,
+    multispeciesPP(
+      sdm.formula =  ~ tcw + built_volume + landcover + evi + lst_night + rainfall,
+      bias.formula = ~ bias,
+      PA = mpp_rcrds_2$pa,
+      PO = mpp_rcrds_2$po,
+      BG = mpp_rcrds_2$bg
+    )
+  ),
+  tar_terra_rast(
+    preds_8,
+    predict_mpp_rast_all(
+      model = mpp_fit_8,
+      data = model_layers,
+      filename = "outputs/preds_8.tif",
+      overwrite = TRUE
+    )
+  ),
+  tar_target(
+    pred_plot_8,
+    levelplot(
+      preds_8,
+      col.regions = idpalette("idem", 20),
+      layout = c(2,2)
+    )
+  ),
 
-tar_target(
-  mpp_rcrds,
-  format_mpp_data(
-    records = rcrds,
-    background = bg_points,
-    modlyr = model_layers
-  )
-),
+  tar_target(
+    pred_plot_file_8,
+    sdmtools::save_plot(
+      p = pred_plot_8,
+      filename = "outputs/figures/pred_plot_8.png",
+      width = 2400,
+      #height = 1500,
+      units = "px",
+      res = 300
+    )
+    ),
 
+
+ # model _9
  tar_target(
-   mpp_fit_6,
+   mpp_fit_9,
    multispeciesPP(
-     sdm.formula =  ~ tcw + built_volume + landcover + evi + lst_night + rainfall,
+     sdm.formula =  ~ tcw + built_volume + landcover + evi + lst_night + rainfall + offset(mech),
      bias.formula = ~ bias,
-     PA = mpp_rcrds$pa,
-     PO = mpp_rcrds$po,
-     BG = mpp_rcrds$bg
+     PA = mpp_rcrds_2$pa,
+     PO = mpp_rcrds_2$po,
+     BG = mpp_rcrds_2$bg
    )
  ),
  tar_terra_rast(
-   preds_6,
+   preds_9,
    predict_mpp_rast_all(
-     model = mpp_fit_6,
+     model = mpp_fit_9,
      data = model_layers,
-     filename = "outputs/preds_6.tif",
+     filename = "outputs/preds_9.tif",
      overwrite = TRUE
    )
  ),
  tar_target(
-   pred_plot_6,
+   pred_plot_9,
    levelplot(
-     preds_6,
+     preds_9,
      col.regions = idpalette("idem", 20),
      layout = c(2,2)
    )
  ),
+
  tar_target(
-   pred_plot_file_6,
+   pred_plot_file_9,
    sdmtools::save_plot(
-     p = pred_plot_6,
-     filename = "outputs/figures/pred_plot_6.png",
+     p = pred_plot_9,
+     filename = "outputs/figures/pred_plot_9.png",
      width = 2400,
      #height = 1500,
      units = "px",
      res = 300
    )
- ),
-tar_target(
-  gambiae_plot
-  gambiaeplot(preds_6)
-)
+ )
 
 )
 
