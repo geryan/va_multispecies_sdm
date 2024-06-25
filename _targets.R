@@ -546,7 +546,7 @@ list(
  tar_target(
    mpp_fit_9,
    multispeciesPP(
-     sdm.formula =  ~ tcw + built_volume + landcover + evi + lst_night + rainfall + offset(mech),
+     sdm.formula =  ~ tcw + built_volume + landcover + evi + lst_night + rainfall + mech,
      bias.formula = ~ bias,
      PA = mpp_rcrds_2$pa,
      PO = mpp_rcrds_2$po,
