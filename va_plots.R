@@ -507,6 +507,34 @@ ggsave(
   units = "px"
 )
 
+ggplot(
+) +
+  geom_spatraster(data = new_mask) +
+  geom_point(
+    data = rcrds_2 |>
+      filter(species %in% c("gambiae", "arabiensis", "funestus", "coluzzii")) |>
+      filter(presence == 1),
+    aes(x = lon, y = lat),
+    colour = "hotpink"
+  ) +
+  facet_wrap(~species) +
+  theme_void() +
+  scale_fill_viridis_c(
+    option = "G",
+    begin = 0.7,
+    end = 0.5,
+    na.value = "white"
+  ) +
+  theme_void() +
+  guides(fill = "none")
+
+ggsave(
+  "outputs/figures/presences.png",
+  width = 2000,
+  height = 1600,
+  units = "px"
+)
+
 ## hacky plots
 
 plot(mech)
@@ -698,4 +726,34 @@ ggsave(
   units = "px"
 )
 
+
+
+ggplot() +
+  geom_spatraster(
+    data = new_mask
+  ) +
+  scale_fill_viridis_c(
+    option = "G",
+    begin = 0.4,
+    end = 0,
+    na.value = "white"
+  ) +
+  theme_void() +
+  geom_point(
+    data = background,
+    aes(
+      x = x,
+      y = y
+    ),
+    colour = "grey90",
+    size = 0.1
+  ) +
+  guides(fill = "none")
+
+ggsave(
+  "outputs/figures/background.png",
+  width = 2000,
+  height = 1600,
+  units = "px"
+)
 
