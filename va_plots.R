@@ -757,3 +757,35 @@ ggsave(
   units = "px"
 )
 
+
+###
+
+arid <- covariate_rasters[["landcover"]]
+
+arvals <- values(arid)
+unique(arvals)
+zz <- unique(arvals)[order(unique(arvals))]
+arixx <- zz[length(zz) - 2]
+arvals <- ifelse(arvals == arixx, 1, 0)
+arid[] <- arvals
+plot(arid)
+
+
+ggplot() +
+  theme_void()+
+  geom_spatraster(data = arid) +
+  scale_fill_viridis_c(
+    option = "A",
+    begin = 0.5,
+    end = 1,
+    na.value = "white"
+  ) +
+  geom_point(
+    data = rcrds_2,
+    aes(
+      x = lon,
+      y = lat,
+      colour = presence
+    )
+  )
+

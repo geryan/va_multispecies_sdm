@@ -581,7 +581,82 @@ list(
      units = "px",
      res = 300
    )
- )
+ ),
+
+
+### Sahara simulated absences
+  tar_target(
+    sahara_sim_points,
+    expand_grid(
+      species = unique(rcrds_2$species),
+      lon = -10:25,
+      lat = seq(from = 20, to = 25, by = 0.2)
+    ) |>
+      mutate(
+        presence = 0,
+        pa = "pa"
+      )
+  ),
+
+tar_target(
+  rcrds_3,
+  bind_rows(
+    rcrds_2,
+    sahara_sim_points
+  )
+),
+
+
+tar_target(
+  mpp_rcrds_3,
+  format_mpp_data(
+    records = rcrds_3,
+    background = bg_points,
+    modlyr = model_layers
+  )
+),
+
+# model 10
+tar_target(
+  mpp_fit_10,
+  multispeciesPP(
+    sdm.formula =  ~ tcw + built_volume + landcover + evi + lst_night + rainfall,
+    bias.formula = ~ bias,
+    PA = mpp_rcrds_3$pa,
+    PO = mpp_rcrds_3$po,
+    BG = mpp_rcrds_3$bg
+  )
+),
+tar_terra_rast(
+  preds_10,
+  predict_mpp_rast_all(
+    model = mpp_fit_10,
+    data = model_layers,
+    filename = "outputs/preds_10.tif",
+    overwrite = TRUE
+  )
+),
+tar_target(
+  pred_plot_10,
+  levelplot(
+    preds_10,
+    col.regions = idpalette("idem", 20),
+    layout = c(2,2)
+  )
+),
+
+tar_target(
+  pred_plot_file_10,
+  sdmtools::save_plot(
+    p = pred_plot_10,
+    filename = "outputs/figures/pred_plot_10.png",
+    width = 2400,
+    #height = 1500,
+    units = "px",
+    res = 300
+  )
+)
+
 
 )
 
