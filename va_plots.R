@@ -789,3 +789,162 @@ ggplot() +
     )
   )
 
+
+
+ggplot() +
+  theme_void()+
+  geom_spatraster(data = arid) +
+  scale_fill_viridis_c(
+    option = "A",
+    begin = 0.5,
+    end = 1,
+    na.value = "white"
+  ) +
+  geom_point(
+    data = rcrds_3,
+    aes(
+      x = lon,
+      y = lat,
+      colour = presence
+    )
+  )
+
+
+#### Model 10
+
+gambiae <- preds_10[["gambiae"]]
+
+gambiae_vals <- values(gambiae)
+hist(gambiae_vals[which(gambiae_vals < 0.1)])
+hist(gambiae_vals[which(gambiae_vals < 0.01)])
+hist(gambiae_vals[which(gambiae_vals < 0.005)])
+
+thold <- 0.0025
+
+gambiae_scale <- gambiae
+
+gambiae_vals_scale <- ifelse(gambiae_vals > thold, thold, gambiae_vals)/thold
+
+gambiae_scale[] <- gambiae_vals_scale
+
+plot(gambiae_scale)
+
+
+ggplot() +
+  geom_spatraster(
+    data = gambiae_scale
+  ) +
+  scale_fill_viridis_c(
+    option = "G",
+    begin = 1,
+    end = 0,
+    na.value = "white"
+  ) +
+  theme_void() +
+  labs(title = expression(italic("Anopheles gambiae")))
+
+
+## arabiensis
+
+arabiensis <- preds_10[["arabiensis"]]
+
+arabiensis_vals <- values(arabiensis)
+hist(arabiensis_vals[which(arabiensis_vals < 0.3)])
+
+thold <- 0.3
+
+arabiensis_scale <- arabiensis
+
+arabiensis_vals_scale <- ifelse(arabiensis_vals > thold, thold, arabiensis_vals)/thold
+
+arabiensis_scale[] <- arabiensis_vals_scale
+
+plot(arabiensis_scale)
+
+
+ggplot() +
+  geom_spatraster(
+    data = arabiensis_scale
+  ) +
+  scale_fill_viridis_c(
+    option = "G",
+    begin = 1,
+    end = 0,
+    na.value = "white"
+  ) +
+  theme_void()  +
+  labs(title = expression(italic("Anopheles arabiensis")))
+
+
+# coluzzii
+
+coluzzii <- preds_10[["coluzzii"]]
+
+coluzzii_vals <- values(coluzzii)
+hist(coluzzii_vals[which(coluzzii_vals < 0.3)])
+hist(coluzzii_vals[which(coluzzii_vals < 0.05)])
+hist(coluzzii_vals[which(coluzzii_vals < 0.01)])
+
+
+thold <- 0.01
+
+coluzzii_scale <- coluzzii
+
+coluzzii_vals_scale <- ifelse(coluzzii_vals > thold, thold, coluzzii_vals)/thold
+
+coluzzii_scale[] <- coluzzii_vals_scale
+
+plot(coluzzii_scale)
+
+
+ggplot() +
+  geom_spatraster(
+    data = coluzzii_scale
+  ) +
+  scale_fill_viridis_c(
+    option = "G",
+    begin = 1,
+    end = 0,
+    na.value = "white"
+  ) +
+  theme_void() +
+  labs(title = expression(italic("Anopheles coluzzii")))
+
+
+
+# funestus
+
+funestus <- preds_10[["funestus"]]
+
+funestus_vals <- values(funestus)
+hist(funestus_vals[which(funestus_vals < 0.3)])
+hist(funestus_vals[which(funestus_vals < 0.15)])
+hist(funestus_vals[which(funestus_vals < 0.1)])
+
+
+thold <- 0.15
+
+funestus_scale <- funestus
+
+funestus_vals_scale <- ifelse(funestus_vals > thold, thold, funestus_vals)/thold
+
+funestus_scale[] <- funestus_vals_scale
+
+plot(funestus_scale)
+
+
+ggplot() +
+  geom_spatraster(
+    data = funestus_scale
+  ) +
+  scale_fill_viridis_c(
+    option = "G",
+    begin = 1,
+    end = 0,
+    na.value = "white"
+  ) +
+  theme_void() +
+  labs(title = expression(italic("Anopheles funestus")))
+
+
+plot(c(gambiae_scale, arabiensis_scale, coluzzii_scale, funestus_scale))
