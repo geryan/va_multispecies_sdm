@@ -655,8 +655,7 @@ tar_target(
     units = "px",
     res = 300
   )
-)
-
+),
 
 )
 
