@@ -16,4 +16,4 @@ zz <- lapply(
   }
 )
 
-do.call(bind_rows, z)
+unlist(zz)
