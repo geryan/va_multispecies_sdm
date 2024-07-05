@@ -22,7 +22,11 @@ prepare_covariates <- function(africa_mask){
     match_ref(africa_mask) |>
     std_rast()
 
-  covs <- c(tcw, tcb, built_volume, landcover, lst_day, lst_night, evi, rainfall, mech)
+  surface_water <- rcms("data/raster/sw.tif", africa_mask)
+
+  #sw_focal <- focal(surface_water, w = 11, fun = mean, na.rm = TRUE, filename = "data/raster/sw_focal.tif", overwrite = TRUE)
+
+  covs <- c(tcw, tcb, built_volume, landcover, lst_day, lst_night, evi, rainfall, mech, surface_water)
 
   names(covs) <- terra::varnames(covs) <- c(
     "tcw",
