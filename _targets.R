@@ -14,7 +14,8 @@ tar_option_set(
     "multispeciesPP", # remotes::install_github("wfithian/multispeciesPP")
     "idpalette", # remotes::install_github("idem-lab/idpalette)
     "rasterVis",
-    "tidyterra"
+    "tidyterra",
+    "geodata"
   ),
   workspace_on_error = TRUE
 )
