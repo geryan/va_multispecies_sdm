@@ -66,3 +66,25 @@ r4 <- zaf[49:64] |>
     filename = "sw3.tif",
     overwrite = TRUE
   )
+
+
+r1 <- rast("sw1.tif")
+r2 <- rast("sw2.tif")
+r3 <- rast("sw3.tif")
+r4 <- rast("sw4.tif")
+
+
+nm <- rast("new_mask.tif")
+
+rs1 <- resample(r1, nm, filename = "rsw1.tif", overwrite = TRUE)
+rs2 <- resample(r2, nm, filename = "rsw2.tif", overwrite = TRUE)
+rs3 <- resample(r3, nm, filename = "rsw3.tif", overwrite = TRUE)
+rs4 <- resample(r4, nm, filename = "rsw4.tif", overwrite = TRUE)
+
+
+r <- sprc(rs1, rs2, rs3, rs4) |>
+  merge(
+    filename = "sw.tif",
+    overwrite = TRUE
+  )
+
