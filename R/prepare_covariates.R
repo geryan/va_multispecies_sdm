@@ -67,7 +67,22 @@ prepare_covariates <- function(africa_mask){
       }
     ) |>
     sprc() |>
-    merge(filename = "data/raster/elevation30s.tif")
+    merge() |>
+    crop(africa_mask) |>
+    mask(africa_mask) |>
+    scale() |>
+    writereadrast(
+      filename =  "data/raster/elevation30s.tif",
+      layernames = "elevation"
+    )
+
+
+  footprint <- footprint(
+    year = 2009,
+    path = "data/raster/geodata"
+  ) |>
+    crop(africa_mask) |>
+    mask(africa_mask)
 
   covs <- c(tcw, tcb, built_volume, landcover, lst_day, lst_night, evi, rainfall, mech, surface_water)
 
