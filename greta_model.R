@@ -18,6 +18,8 @@ library(tidyterra)
 # using mpp_rcrds_2
 tar_load(mpp_rcrds_2)
 tar_load(model_layers)
+
+
 str(mpp_rcrds_2)
 
 mppdat <- mpp_rcrds_2
@@ -50,6 +52,7 @@ mech_dat[mech_dat == 0] <- minmech
 log_mech_dat <- log(mech_dat) |>
   matrix(data = _, ncol = 1)
 
+
 npa <- nrow(mppdat$pa)
 nbg <- nrow(mppdat$bg)
 npo <- tibble(po = mppdat$po) |>
@@ -61,7 +64,6 @@ bg.samp <- (npa + 1):(npa + nbg)
 po.samp <- (npa + nbg +1):(npa + npo + nbg)
 
 area_bg <- sum(!is.na(mechvals))/nbg
-
 npospp <- sapply(mppdat$po, nrow)
 
 x <- all_locations |>
@@ -117,11 +119,13 @@ alpha <- normal(0, intercept_sd, dim = n_species)
 beta <- normal(0, beta_sd, dim = c(n_cov_abund, n_species))
 
 # log rates across all sites
+
 log_lambda_larval_habitat <- sweep(x %*% beta, 2, alpha, FUN = "+")
 
 log_lambda_adults <- log_mech_dat
 
 log_lambda <- sweep(log_lambda_larval_habitat, 1, log_lambda_adults, "+")
+
 # can easily replace this model with something more interesting, like a low-rank
 # GP on covariate space or something mechanistic
 
@@ -139,7 +143,6 @@ bias <- exp(log_bias)
 
 # compute probability of presence (and detection) at the PA sites, assuming
 # area/effort of 1 in all these sites, for identifiability
-
 
 ### can compute separately for each PA PO and RELABUND
 area_pa <- 1
@@ -163,7 +166,6 @@ distribution(po.count[po_idx]) <- poisson(po_rate_po)
 # area_bg <- 3654.515 <- whole area / nnbg
 po_rate_bg <- exp(log_lambda[bg.samp, ] + log_bias[bg.samp,] + log(area_bg))
 distribution(po.count[bg.samp, ]) <- poisson(po_rate_bg)
-
 
 
 # define and fit the model by MAP and MCMC
@@ -207,7 +209,6 @@ r_hats
 mcmc_trace(draws)
 
 mcmc_intervals(draws)
-
 # greta estimates and uncertainty
 greta_map_estimates <- with(map$par, c(rbind(t(alpha), beta)))
 greta_sims <- calculate(rbind(t(alpha), beta),
