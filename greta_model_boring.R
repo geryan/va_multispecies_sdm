@@ -13,9 +13,12 @@ library(tidyterra)
 # for PO area is strongly negative offset, so tiny area
 # (becomes -ve once logged)
 # PA area assume 1?
-
-
-
+.libPaths("~/home/user/R/gr_lib/")
+.libPaths()
+library("dplyr")
+library("tidyr")
+library("targets")
+library("greta")
 tar_load(model_layers)
 
 # using mpp_rcrds_2
@@ -24,7 +27,7 @@ tar_load(model_layers)
 #mppdat <- mpp_rcrds_2
 
 # using mpp_data - better
-# tar_load(mpp_data)
+tar_load(mpp_data)
 mppdat <- mpp_data
 
 # all_locations <- bind_rows(
@@ -280,7 +283,7 @@ distribution(po.count[bg.samp, ]) <- poisson(po_rate_bg)
 # define and fit the model by MAP and MCMC
 m <- model(alpha, beta, gamma, delta)
 
-plot(m)
+# plot(m)
 
 
 
@@ -294,7 +297,7 @@ inits <- function(){
   n_g <- nsp
 
   ina <- -1e-2
-  inb <- 1e-1
+  inb <- -1e-1
   ing <- 0 #1e-4
   ind <- 1e-4
 
@@ -345,6 +348,7 @@ initplotdatt <- pa |>
     by = c("id", "sp")
   )
 
+library(ggplot2)
 ggplot(initplotdatt) +
   geom_violin(
     aes(x = as.factor(p), y = p_init)
@@ -381,15 +385,39 @@ greta_mcmc_lower <- c(apply(greta_sims, 2:3, quantile, 0.025))
 
 model_layers
 
+library("terra")
 all_layer_values <- values(model_layers)
 naidx <- is.na(all_layer_values[,1])
 
 
-x_predict <- all_layer_values[!naidx, c("tcw", "tcb", "built_volume", "lst_day", "evi", "rainfall")]
+x_predict <- all_layer_values[
+  !naidx,
+  c(
+    "arid",
+    "built_volume",
+    "cropland",
+    "elevation",
+    "evi_mean",
+    "footprint",
+    "lst_day_mean",
+    "lst_night_mean",
+    "pop",
+    "pressure_mean",
+    "rainfall_mean",
+    "soil_clay",
+    "solrad_mean",
+    "surface_water",
+    "tcb_mean",
+    "tcw_mean",
+    "windspeed_mean",
+    "easting",
+    "northing"
+    )
+]
 
 log_lambda_predict <- sweep(x_predict %*% beta, 2, alpha, FUN = "+")
 
-p_predict <- icloglog(log_lambda_predict[pa.samp, ] + log(area_pa))
+p_predict <- icloglog(log_lambda_predict + log(area_pa))
 
 preds <- calculate(p_predict, values = draws, nsim = 1)
 
@@ -397,4 +425,12 @@ preds <- calculate(p_predict, values = draws, nsim = 1)
 # add in rel abund data where available as an additional likelihood
 # use a multinomial obs model where p is from predicted abundances
 #
+
+mod_pred_aa <- mod_pred_af <- mod_pred_ac <- mod_pred_ag <- model_layers[[1]]
+
+mod_pred_aa[!naidx] <- preds$p_predict[,,1]
+mod_pred_af[!naidx] <- preds$p_predict[,,2]
+mod_pred_ac[!naidx] <- preds$p_predict[,,3]
+mod_pred_ag[!naidx] <- preds$p_predict[,,4]
+
 
