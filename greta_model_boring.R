@@ -15,42 +15,125 @@ library(tidyterra)
 # PA area assume 1?
 
 
-# using mpp_rcrds_2
-tar_load(mpp_rcrds_2)
+
 tar_load(model_layers)
 
+# using mpp_rcrds_2
+# tar_load(mpp_rcrds_2)
+# str(mpp_rcrds_2)
+#mppdat <- mpp_rcrds_2
 
-str(mpp_rcrds_2)
+# using mpp_data - better
+# tar_load(mpp_data)
+mppdat <- mpp_data
 
-mppdat <- mpp_rcrds_2
+# all_locations <- bind_rows(
+#   mppdat$pa |>
+#     select(tcw, tcb, built_volume, lst_day, evi, rainfall, mech, bias),
+#   mppdat$bg |>
+#     select(tcw, tcb, built_volume, lst_day, evi, rainfall, mech, bias),
+#   tibble(po = mppdat$po) |>
+#     unnest(po) |>
+#     as.data.frame() |>
+#     select(tcw, tcb, built_volume, lst_day, evi, rainfall, mech, bias)
+# )
 
 all_locations <- bind_rows(
   mppdat$pa |>
-    select(tcw, tcb, built_volume, lst_day, evi, rainfall, mech, bias),
+    select(
+      ag_microclim,
+      research_tt_by_country,
+      arid,
+      built_volume,
+      cropland,
+      elevation,
+      evi_mean,
+      footprint,
+      lst_day_mean,
+      lst_night_mean,
+      pop,
+      pressure_mean,
+      rainfall_mean,
+      soil_clay,
+      solrad_mean,
+      surface_water,
+      tcb_mean,
+      tcw_mean,
+      windspeed_mean,
+      easting,
+      northing
+    ),
   mppdat$bg |>
-    select(tcw, tcb, built_volume, lst_day, evi, rainfall, mech, bias),
+    select(
+      ag_microclim,
+      research_tt_by_country,
+      arid,
+      built_volume,
+      cropland,
+      elevation,
+      evi_mean,
+      footprint,
+      lst_day_mean,
+      lst_night_mean,
+      pop,
+      pressure_mean,
+      rainfall_mean,
+      soil_clay,
+      solrad_mean,
+      surface_water,
+      tcb_mean,
+      tcw_mean,
+      windspeed_mean,
+      easting,
+      northing
+    ),
   tibble(po = mppdat$po) |>
     unnest(po) |>
     as.data.frame() |>
-    select(tcw, tcb, built_volume, lst_day, evi, rainfall, mech, bias)
+    select(
+      ag_microclim,
+      research_tt_by_country,
+      arid,
+      built_volume,
+      cropland,
+      elevation,
+      evi_mean,
+      footprint,
+      lst_day_mean,
+      lst_night_mean,
+      pop,
+      pressure_mean,
+      rainfall_mean,
+      soil_clay,
+      solrad_mean,
+      surface_water,
+      tcb_mean,
+      tcw_mean,
+      windspeed_mean,
+      easting,
+      northing
+    )
 )
 
-mech <- model_layers[["mech"]]
-mechvals <- values(mech)
-minmech <- min(mechvals[mechvals > 0], na.rm = TRUE)
-mechvals[mechvals == 0] <- minmech
 
-mech_alt <- mech
-mech_alt[] <- mechvals
-
-mech_log <- log(mech_alt)
-plot(mech_log)
-
-
-mech_dat <- all_locations$mech
-mech_dat[mech_dat == 0] <- minmech
-log_mech_dat <- log(mech_dat) |>
-  matrix(data = _, ncol = 1)
+#
+#
+# mech <- model_layers[["ag_microclim"]]
+# mechvals <- values(mech)
+# minmech <- min(mechvals[mechvals > 0], na.rm = TRUE)
+# mechvals[mechvals == 0] <- minmech
+#
+# mech_alt <- mech
+# mech_alt[] <- mechvals
+#
+# mech_log <- log(mech_alt)
+# plot(mech_log)
+#
+#
+# mech_dat <- all_locations$ag_microclim
+# mech_dat[mech_dat == 0] <- minmech
+# log_mech_dat <- log(mech_dat) |>
+#   matrix(data = _, ncol = 1)
 
 
 npa <- nrow(mppdat$pa)
@@ -67,11 +150,30 @@ area_bg <- sum(!is.na(mechvals))/nbg
 npospp <- sapply(mppdat$po, nrow)
 
 x <- all_locations |>
-  select(tcw, tcb, built_volume, lst_day, evi, rainfall) |>
+  #select(tcw, tcb, built_volume, lst_day, evi, rainfall) |>
+  select(arid,
+         built_volume,
+         cropland,
+         elevation,
+         evi_mean,
+         footprint,
+         lst_day_mean,
+         lst_night_mean,
+         pop,
+         pressure_mean,
+         rainfall_mean,
+         soil_clay,
+         solrad_mean,
+         surface_water,
+         tcb_mean,
+         tcw_mean,
+         windspeed_mean,
+         easting,
+         northing) |>
   as.matrix()
 
 z <- all_locations |>
-  select(bias) |>
+  select(research_tt_by_country) |>
   as.matrix()
 
 n.pixel <- nrow(x)
@@ -106,6 +208,11 @@ po.count[(npa+nbg+npospp[1]+npospp[2]+npospp[3]+1):(npa+nbg+npospp[1]+npospp[2]+
 penalty.l2.sdm <- penalty.l2.bias <- 0.1
 penalty.l2.intercept <- 1e-4
 
+# trying others
+# penalty.l2.sdm <- penalty.l2.bias <- 0.2
+# penalty.l2.intercept <- 1e-2
+
+
 intercept_sd <- sqrt(1 / penalty.l2.intercept)
 beta_sd <- sqrt(1 / penalty.l2.sdm)
 delta_sd <- sqrt(1 / penalty.l2.bias)
@@ -120,11 +227,13 @@ beta <- normal(0, beta_sd, dim = c(n_cov_abund, n_species))
 
 # log rates across all sites
 
-log_lambda_larval_habitat <- sweep(x %*% beta, 2, alpha, FUN = "+")
+# log_lambda_larval_habitat <- sweep(x %*% beta, 2, alpha, FUN = "+")
+#
+# log_lambda_adults <- log_mech_dat
+#
+# log_lambda <- sweep(log_lambda_larval_habitat, 1, log_lambda_adults, "+")
 
-log_lambda_adults <- log_mech_dat
-
-log_lambda <- sweep(log_lambda_larval_habitat, 1, log_lambda_adults, "+")
+log_lambda <- sweep(x %*% beta, 2, alpha, FUN = "+")
 
 # can easily replace this model with something more interesting, like a low-rank
 # GP on covariate space or something mechanistic
@@ -173,34 +282,83 @@ m <- model(alpha, beta, gamma, delta)
 
 plot(m)
 
-map <- opt(m, optimiser = adam(), max_iterations = 500)
+
+
 
 inits <- function(){
 
-  ina <- 0
-  inb <- 0
-  ing <- 0
-  ind <- 0
+  nsp <- 4
+  ncv <- 19
+  n_a <- nsp
+  n_b <- nsp * ncv
+  n_g <- nsp
+
+  ina <- -1e-2
+  inb <- 1e-1
+  ing <- 0 #1e-4
+  ind <- 1e-4
 
   initials(
-    alpha = rep(ina, 4),
+    alpha = rep(ina, n_a),
     beta = matrix(
-      data = rep(inb, 4*6),
-      ncol = 4,
-      nrow = 6
+      data = rep(inb, n_b),
+      ncol = ,
+      nrow = ncv
     ),
-    gamma = rep(ing, 4),
+    gamma = rep(ing, n_g),
     delta = ind
   )
 
 }
 
-calculate(p, values = inits())
 
+
+# calculate estimates based on initials and compare with data
+p_inits <- calculate(p, values = inits())
+
+#library(tidyr)
+initplotdatt <- pa |>
+  as_tibble() |>
+  mutate(
+    id = row_number()
+  ) |>
+  pivot_longer(
+    cols = -id,
+    names_to = "sp",
+    values_to = "p"
+  ) |>
+  left_join(
+    y = tibble(
+      arabiensis = p_inits$p[,1],
+      funestus = p_inits$p[,2],
+      coluzzii = p_inits$p[,3],
+      gambiae = p_inits$p[,4]
+    )  |>
+      mutate(
+        id = row_number()
+      ) |>
+      pivot_longer(
+        cols = -id,
+        names_to = "sp",
+        values_to = "p_init"
+      ),
+    by = c("id", "sp")
+  )
+
+ggplot(initplotdatt) +
+  geom_violin(
+    aes(x = as.factor(p), y = p_init)
+  ) +
+  facet_wrap(~sp)
 
 
 draws <- mcmc(m, warmup = 1000, n_samples = 3000, initial_values = inits())
 
+# I have NFI what this is doing
+map <- opt(m, optimiser = adam(), max_iterations = 500)
+
+
+#draws <- mcmc(m, warmup = 1000, n_samples = 3000)
 
 r_hats <- coda::gelman.diag(draws, autoburnin = FALSE, multivariate = FALSE)
 max(r_hats$psrf[, 2])

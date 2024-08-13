@@ -63,7 +63,7 @@ r3 <- zaf[33:48] |>
 r4 <- zaf[49:64] |>
   sprc() |>
   merge(
-    filename = "sw3.tif",
+    filename = "sw4.tif",
     overwrite = TRUE
   )
 

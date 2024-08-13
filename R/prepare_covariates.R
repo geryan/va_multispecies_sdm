@@ -4,7 +4,7 @@ prepare_covariates <- function(africa_mask){
 
   tcb <- rcms("~/Documents/tki_work/vector_atlas/an_stephensi/anopheles_stephensi_expansion/data/MAP_covariates/TCB/TCB_v6.2021.Annual.mean.1km.Data.tif", africa_mask)
 
-  built_volume <- rcms("~/Documents/tki_work/vector_atlas/an_stephensi/anopheles_stephensi_expansion/output/rasters/covariates/built_volume.grd", africa_mask)
+  built_volume <- rcms("~/Documents/tki_work/vector_atlas/an_stephensi/anopheles_stephensi_expansion/output/rasters/covariates/built_volume.tif", africa_mask)
 
   landcover <- rast("~/Documents/tki_work/vector_atlas/an_stephensi/anopheles_stephensi_expansion/data/MAP_covariates/Landcover/IGBP_Landcover.2020.Annual.Data.1km.majority-class.tif") |>
     crop(africa_mask) |>
@@ -95,7 +95,8 @@ prepare_covariates <- function(africa_mask){
     "lst_night",
     "evi",
     "rainfall",
-    "mech"
+    "mech",
+    "surface_water"
   )
 
 
@@ -108,7 +109,8 @@ prepare_covariates <- function(africa_mask){
     mask(covs[[6]]) |>
     mask(covs[[7]]) |>
     mask(covs[[8]]) |>
-    mask(covs[[9]])
+    mask(covs[[9]]) |>
+    mask(covs[[10]])
 
   cm <- mask(covs, new_mask)
 

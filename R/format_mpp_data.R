@@ -47,12 +47,12 @@ format_mpp_data <- function(records, background, modlyr){
     presences_and_absences = pa |>
       rename(x = lon, y = lat)
   ) |>
-    select(
-      tcw,
-      tcb,
-      built_volume,
-      everything()
-    ) |>
+    # select(
+    #   tcw,
+    #   tcb,
+    #   built_volume,
+    #   everything()
+    # ) |>
     drop_na() |>
     as.data.frame()
 
