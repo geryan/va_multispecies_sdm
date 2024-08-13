@@ -15,15 +15,23 @@ library(tidyterra)
 # PA area assume 1?
 
 
-# using mpp_rcrds_2
-tar_load(mpp_rcrds_2)
+
+
 tar_load(model_layers)
 
-
-str(mpp_rcrds_2)
-
+# using mpp_rcrds_2
+# tar_load(mpp_rcrds_2)
+# str(mpp_rcrds_2)
 #mppdat <- mpp_rcrds_2
-mppdat <- mpp_data
+
+# using mpp_data - better
+# tar_load(mpp_data)
+# mppdat <- mpp_data
+
+# masked
+tar_load(mpp_data_mech)
+mppdat <- mpp_data_mech
+
 
 # all_locations <- bind_rows(
 #   mppdat$pa |>
@@ -116,20 +124,21 @@ all_locations <- bind_rows(
 
 
 
-mech <- model_layers[["ag_microclim"]]
-mechvals <- values(mech)
-minmech <- min(mechvals[mechvals > 0], na.rm = TRUE)
-mechvals[mechvals == 0] <- minmech
+mech <- model_layers_mech[["ag_microclim"]]
 
 mech_alt <- mech
-mech_alt[] <- mechvals
+#mech_alt[] <- mechvals
 
-mech_log <- log(mech_alt)
+mech_log <- log(mech)
 plot(mech_log)
 
 
 mech_dat <- all_locations$ag_microclim
-mech_dat[mech_dat == 0] <- minmech
+
+idx <- which(mech_dat <= exp(-30))
+
+mech_dat[idx] <- exp(-30)
+
 log_mech_dat <- log(mech_dat) |>
   matrix(data = _, ncol = 1)
 
@@ -203,12 +212,12 @@ po.count[(npa+nbg+npospp[1]+npospp[2]+npospp[3]+1):(npa+nbg+npospp[1]+npospp[2]+
 
 # define parameters with normal priors, matching the ridge regression setup in
 # multispeciesPP defaults
-#penalty.l2.sdm <- penalty.l2.bias <- 0.1
-#penalty.l2.intercept <- 1e-4
+penalty.l2.sdm <- penalty.l2.bias <- 0.1
+penalty.l2.intercept <- 1e-4
 
 # trying others
-penalty.l2.sdm <- penalty.l2.bias <- 0.2
-penalty.l2.intercept <- 1e-2
+# penalty.l2.sdm <- penalty.l2.bias <- 0.2
+# penalty.l2.intercept <- 1e-2
 
 
 intercept_sd <- sqrt(1 / penalty.l2.intercept)
@@ -253,6 +262,21 @@ bias <- exp(log_bias)
 area_pa <- 1
 #area_pa <- uniform(0,1)
 
+# for relabund
+# log_lambda ~ unscaled abundance
+# need in scaling factor plus random effect of trap type
+# per covid model to get size and prob for negbin
+# expected_abundance <- exp(log_lambda[abund,] + trap_effect + species_scaling_factor)
+#
+# sqrt_inv_size <- normal(0, 0.5, truncation = c(0, Inf), dim = 1)
+# size <- 1 / sqrt(sqrt_inv_size)
+# prob <- 1 / (1 + expected_abundance / size)
+# distribution(abundance) <- negative_binomial(size = size, prob = prob)
+
+# predict for each species lambda + species_scaling_factor
+# mod to per relative abundance paper also for output
+# i.e. lambda / rowsums(lambda)
+
 p <- icloglog(log_lambda[pa.samp, ] + log(area_pa))
 distribution(pa) <- bernoulli(p)
 
@@ -276,7 +300,7 @@ distribution(po.count[bg.samp, ]) <- poisson(po_rate_bg)
 # define and fit the model by MAP and MCMC
 m <- model(alpha, beta, gamma, delta)
 
-plot(m)
+# plot(m)
 
 
 
@@ -290,7 +314,7 @@ inits <- function(){
   n_g <- nsp
 
   ina <- -1e-2
-  inb <- 1e-1
+  inb <- -1e-1
   ing <- 0 #1e-4
   ind <- 1e-4
 
@@ -311,6 +335,7 @@ inits <- function(){
 
 # calculate estimates based on initials and compare with data
 p_inits <- calculate(p, values = inits())
+ll_inits <- calculate(log_lambda[pa.samp,], values = inits())
 
 #library(tidyr)
 initplotdatt <- pa |>

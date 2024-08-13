@@ -132,6 +132,11 @@ list(
  ),
 
  tar_terra_rast(
+   model_layers_mech,
+   prepare_model_layers_mech(model_layers)
+ ),
+
+ tar_terra_rast(
    unstandardised_layers,
    rast("~/Documents/tki_work/vector_atlas/africa_spatial_data/outputs/raster/africa_static_vars.tif")
  ),
@@ -152,6 +157,17 @@ list(
  ), #mfing slow but setting of seed stops it rerunning # upped number and not that mfing slow???
 
 
+ tar_target(
+   bg_points_mech,
+   terra::spatSample(
+     x = rast("data/raster/mechmask.tif"),
+     size = 30000,
+     na.rm = TRUE,
+     as.points = TRUE
+   ) %>%
+     crds()
+ ),
+
  # model data collation and fitting
  tar_target(
    mpp_data,
@@ -159,6 +175,15 @@ list(
      records = data_records,
      background = bg_points,
      modlyr = model_layers
+   )
+ ),
+
+ tar_target(
+   mpp_data_mech,
+   format_mpp_data(
+     records = data_records,
+     background = bg_points_mech,
+     modlyr = model_layers_mech
    )
  ),
 
