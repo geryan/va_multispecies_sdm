@@ -19,6 +19,7 @@ library("dplyr")
 library("tidyr")
 library("targets")
 library("greta")
+library(terra)
 tar_load(model_layers)
 
 # using mpp_rcrds_2
@@ -149,7 +150,7 @@ pa.samp <- 1:npa
 bg.samp <- (npa + 1):(npa + nbg)
 po.samp <- (npa + nbg +1):(npa + npo + nbg)
 
-area_bg <- sum(!is.na(mechvals))/nbg
+area_bg <- sum(!is.na(values(model_layers[[1]])))/nbg
 npospp <- sapply(mppdat$po, nrow)
 
 x <- all_locations |>
@@ -296,10 +297,10 @@ inits <- function(){
   n_b <- nsp * ncv
   n_g <- nsp
 
-  ina <- -1e-2
-  inb <- -1e-1
-  ing <- 0 #1e-4
-  ind <- 1e-4
+  ina <- #-1e-2
+  inb <- #-1e-1
+  ing <- #0
+  ind <- #1e-4
 
   initials(
     alpha = rep(ina, n_a),
@@ -356,11 +357,7 @@ ggplot(initplotdatt) +
   facet_wrap(~sp)
 
 
-draws <- mcmc(m, warmup = 1000, n_samples = 3000, initial_values = inits())
-
-# I have NFI what this is doing
-map <- opt(m, optimiser = adam(), max_iterations = 500)
-
+draws <- mcmc(m, warmup = 5000, n_samples = 5000, initial_values = inits())
 
 #draws <- mcmc(m, warmup = 1000, n_samples = 3000)
 
@@ -371,14 +368,74 @@ r_hats
 mcmc_trace(draws)
 
 mcmc_intervals(draws)
-# greta estimates and uncertainty
-greta_map_estimates <- with(map$par, c(rbind(t(alpha), beta)))
-greta_sims <- calculate(rbind(t(alpha), beta),
-                        values = draws,
-                        nsim = 1000)[[1]]
-greta_mcmc_estimates <- c(apply(greta_sims, 2:3, mean))
-greta_mcmc_upper <- c(apply(greta_sims, 2:3, quantile, 0.975))
-greta_mcmc_lower <- c(apply(greta_sims, 2:3, quantile, 0.025))
+
+
+# update with better inits and run again
+
+posterior <- calculate(alpha, beta, gamma, delta, values = draws, nsim = 1000)
+
+inits_alpha <- apply(posterior$alpha, MARGIN = 2, FUN = mean)
+inits_beta <- apply(posterior$beta, MARGIN = c(2,3), FUN = mean)
+inits_gamma <- apply(posterior$gamma, MARGIN = 2, FUN = mean)
+inits_delta <- mean(posterior$delta)
+
+
+
+inits_2 <- initials(
+  alpha = inits_alpha,
+  beta = inits_beta,
+  gamma = inits_gamma,
+  delta = inits_delta
+)
+
+
+p_inits <- calculate(p, values = inits_2)
+
+#library(tidyr)
+initplotdatt <- pa |>
+  as_tibble() |>
+  mutate(
+    id = row_number()
+  ) |>
+  pivot_longer(
+    cols = -id,
+    names_to = "sp",
+    values_to = "p"
+  ) |>
+  left_join(
+    y = tibble(
+      arabiensis = p_inits$p[,1],
+      funestus = p_inits$p[,2],
+      coluzzii = p_inits$p[,3],
+      gambiae = p_inits$p[,4]
+    )  |>
+      mutate(
+        id = row_number()
+      ) |>
+      pivot_longer(
+        cols = -id,
+        names_to = "sp",
+        values_to = "p_init"
+      ),
+    by = c("id", "sp")
+  )
+
+library(ggplot2)
+ggplot(initplotdatt) +
+  geom_violin(
+    aes(x = as.factor(p), y = p_init)
+  ) +
+  facet_wrap(~sp)
+
+
+
+draws <- mcmc(m, warmup = 5000, n_samples = 5000, initial_values = inits_2)
+
+#draws <- mcmc(m, warmup = 1000, n_samples = 3000)
+
+r_hats <- coda::gelman.diag(draws, autoburnin = FALSE, multivariate = FALSE)
+max(r_hats$psrf[, 2])
+r_hats
 
 
 ## predict
