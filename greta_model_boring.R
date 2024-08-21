@@ -297,10 +297,10 @@ inits <- function(){
   n_b <- nsp * ncv
   n_g <- nsp
 
-  ina <- #-1e-2
-  inb <- #-1e-1
-  ing <- #0
-  ind <- #1e-4
+  ina <- -1e-2
+  inb <- -1e-1
+  ing <- 0
+  ind <- 1e-4
 
   initials(
     alpha = rep(ina, n_a),
@@ -429,9 +429,8 @@ ggplot(initplotdatt) +
 
 
 
-draws <- mcmc(m, warmup = 5000, n_samples = 5000, initial_values = inits_2)
+draws <- mcmc(m, warmup = 10000, n_samples = 5000, initial_values = inits_2)
 
-#draws <- mcmc(m, warmup = 1000, n_samples = 3000)
 
 r_hats <- coda::gelman.diag(draws, autoburnin = FALSE, multivariate = FALSE)
 max(r_hats$psrf[, 2])
@@ -478,16 +477,82 @@ p_predict <- icloglog(log_lambda_predict + log(area_pa))
 
 preds <- calculate(p_predict, values = draws, nsim = 1)
 
+saveRDS(preds, "preds.Rds")
 
-# add in rel abund data where available as an additional likelihood
-# use a multinomial obs model where p is from predicted abundances
-#
+
+rm(list = ls())
+
+.libPaths("~/home/user/R/gr_lib/")
+.libPaths()
+
+library(targets)
+library(terra)
+library(sdmtools)
+tar_load(model_layers)
+preds <- readRDS("preds.Rds")
+
+naidx <- is.na(values(model_layers[[1]]))
 
 mod_pred_aa <- mod_pred_af <- mod_pred_ac <- mod_pred_ag <- model_layers[[1]]
 
 mod_pred_aa[!naidx] <- preds$p_predict[,,1]
+
+writeRaster(
+  mod_pred_aa,
+  filename = "outputs/pred_aa.tif"
+)
+
+mod_pred_aa <- rast("outputs/pred_aa.tif")
+
 mod_pred_af[!naidx] <- preds$p_predict[,,2]
+
+writeRaster(
+  mod_pred_af,
+  filename = "outputs/pred_af.tif"
+)
+
+mod_pred_af <- rast("outputs/pred_af.tif")
+
 mod_pred_ac[!naidx] <- preds$p_predict[,,3]
+
+writeRaster(
+  mod_pred_ac,
+  filename = "outputs/pred_ac.tif"
+)
+
+mod_pred_ac <- rast("outputs/pred_ac.tif")
+
 mod_pred_ag[!naidx] <- preds$p_predict[,,4]
+
+writeRaster(
+  mod_pred_ag,
+  filename = "outputs/pred_ag.tif"
+)
+
+mod_pred_ag <- rast("outputs/pred_ag.tif")
+
+rm(preds)
+
+
+######### plots of predictions
+
+mod_pred_aa <- rast("outputs/pred_aa.tif")
+mod_pred_af <- rast("outputs/pred_af.tif")
+mod_pred_ac <- rast("outputs/pred_ac.tif")
+mod_pred_ag <- rast("outputs/pred_ag.tif")
+
+pred_lyrs <- c(mod_pred_aa, mod_pred_ac, mod_pred_af, mod_pred_ag)
+names(pred_lyrs) <- c("arabiensis", "coluzzii", "funestus", "gambiae")
+
+plot(pred_lyrs)
+
+plot(pred_lyrs[[c(1,3)]])
+
+plot(log10(pred_lyrs[[c(2,4)]]))
+
+
+# add in rel abund data where available as an additional likelihood
+# use a multinomial obs model where p is from predicted abundances
+#
 
 

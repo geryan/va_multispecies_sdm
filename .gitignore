@@ -8,3 +8,5 @@ extras/*.csv
 figures
 data
 outputs
+*.Rds
+*.tif

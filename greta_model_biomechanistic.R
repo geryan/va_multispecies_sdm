@@ -375,9 +375,6 @@ ggplot(initplotdatt) +
 
 draws <- mcmc(m, warmup = 1000, n_samples = 3000, initial_values = inits())
 
-# I have NFI what this is doing
-map <- opt(m, optimiser = adam(), max_iterations = 500)
-
 
 #draws <- mcmc(m, warmup = 1000, n_samples = 3000)
 
