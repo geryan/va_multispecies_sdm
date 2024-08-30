@@ -3,6 +3,7 @@ clean_species <- function(x){
     # correct   from ~ to
     case_when(
       x == "carnevalai" ~ "carnevalei",
+      x == "coluzzi" ~ "coluzzii",
       x == "d'thali" ~ "dthali",
       x == "gambiae _ coluzzii"~ "coluzzii",
       x == "gambiae (S_M)" ~ "gambiae_complex",
@@ -37,6 +38,7 @@ clean_species <- function(x){
   # "chrysti"
   # "cinereus"
   # "claviger"
+  # "coluzzi"
   # "coluzzii"
   # "coustani"
   # "cydippis"

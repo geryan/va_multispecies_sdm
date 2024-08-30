@@ -20,8 +20,12 @@ library(tidyterra)
 # po
 
 
-mppdat <- readRDS("mpp_data_mech.Rds")
-model_layers_mech <- rast("outputs/model_layers_mech.tif")
+#mppdat <- readRDS("mpp_data_mech.Rds")
+#model_layers_mech <- rast("outputs/model_layers_mech.tif")
+
+# run data_pipeline.R
+
+model_layers_mech <- modlyr
 
 # all_locations <- bind_rows(
 #   mppdat$pa |>
@@ -35,7 +39,7 @@ model_layers_mech <- rast("outputs/model_layers_mech.tif")
 # )
 
 all_locations <- bind_rows(
-  mppdat$pa |>
+  pa_covs |>
     select(
       ag_microclim,
       research_tt_by_country,
@@ -59,7 +63,7 @@ all_locations <- bind_rows(
       easting,
       northing
     ),
-  mppdat$bg |>
+  bg |>
     select(
       ag_microclim,
       research_tt_by_country,
@@ -83,7 +87,7 @@ all_locations <- bind_rows(
       easting,
       northing
     ),
-  tibble(po = mppdat$po) |>
+  tibble(po = po_covs) |>
     unnest(po) |>
     as.data.frame() |>
     select(
@@ -121,41 +125,44 @@ log_mech_dat <- log(mech_dat) |>
   matrix(data = _, ncol = 1)
 
 
-npa <- nrow(mppdat$pa)
-nbg <- nrow(mppdat$bg)
+npa <- nrow(pa_covs)
+nbg <- nrow(bg)
 npo <- tibble(po = mppdat$po) |>
   unnest(po) |>
   nrow()
 
-pa.samp <- 1:npa
+#pa.samp <- 1:npa
 bg.samp <- (npa + 1):(npa + nbg)
 po.samp <- (npa + nbg +1):(npa + npo + nbg)
 
-#area_bg <- sum(!is.na(mechvals))/nbg
-area_bg <- 825.1676 # this is the above with 30k bg points
-npospp <- sapply(mppdat$po, nrow)
+#area_bg <- sum(!is.na(values(model_layers_mech[[1]])))/nbg
+#area_bg <- 825.1676 # this is the above with 30k bg points
+area_bg <- 3713.069 # with 6kish points
+
+npospp <- sapply(po_covs, nrow)
 
 x <- all_locations |>
-  #select(tcw, tcb, built_volume, lst_day, evi, rainfall) |>
-  select(arid,
-         built_volume,
-         cropland,
-         elevation,
-         evi_mean,
-         footprint,
-         lst_day_mean,
-         lst_night_mean,
-         pop,
-         pressure_mean,
-         rainfall_mean,
-         soil_clay,
-         solrad_mean,
-         surface_water,
-         tcb_mean,
-         tcw_mean,
-         windspeed_mean,
-         easting,
-         northing) |>
+  select(
+    arid,
+    built_volume,
+    cropland,
+    elevation,
+    evi_mean,
+    footprint,
+    lst_day_mean,
+    lst_night_mean,
+    pop,
+    pressure_mean,
+    rainfall_mean,
+    soil_clay,
+    solrad_mean,
+    surface_water,
+    tcb_mean,
+    tcw_mean,
+    windspeed_mean,
+    easting,
+    northing
+  ) |>
   as.matrix()
 
 z <- all_locations |>
@@ -172,8 +179,9 @@ n_cov_bias <- ncol(z)
 n_species <- 4
 
 # tidy up PA data
-pa <- mppdat$pa |>
-  select(arabiensis, funestus, coluzzii, gambiae)
+pa <-pa_filled |>
+  select(arabiensis, funestus, coluzzii, gambiae) |>
+  as.matrix()
 
 # generate po count matrix from all locations by assigning 1 to po per spp.
 po.count <- matrix(
@@ -256,8 +264,12 @@ area_pa <- 1
 # mod to per relative abundance paper also for output
 # i.e. lambda / rowsums(lambda)
 
-p <- icloglog(log_lambda[pa.samp, ] + log(area_pa))
-distribution(pa) <- bernoulli(p)
+# p <- icloglog(log_lambda[pa.samp, ] + log(area_pa))
+# distribution(pa) <- bernoulli(p)
+
+p <- icloglog(log_lambda[pa_not_na_idx] + log(area_pa))
+distribution(pa[pa_not_na_idx]) <- bernoulli(p)
+
 
 ## compute (biased) expected numbers of presence-only observations across all
 ## presence and background sites, assuming presence-only count aggregation area
@@ -267,7 +279,7 @@ distribution(pa) <- bernoulli(p)
 
 
 area_po <- 1/nbg # 1/10000 # very small
-po_idx <- which(po.count ==1, arr.ind = TRUE)
+po_idx <- which(po.count == 1, arr.ind = TRUE)
 po_rate_po <- exp(log_lambda[po_idx] + log_bias[po_idx] + log(area_po))
 distribution(po.count[po_idx]) <- poisson(po_rate_po)
 
@@ -311,7 +323,7 @@ inits <- function(){
 
 # calculate estimates based on initials and compare with data
 p_inits <- calculate(p, values = inits())
-ll_inits <- calculate(log_lambda[pa.samp,], values = inits())
+#ll_inits <- calculate(log_lambda[pa.samp,], values = inits())
 
 #library(tidyr)
 initplotdatt <- pa |>
@@ -326,10 +338,10 @@ initplotdatt <- pa |>
   ) |>
   left_join(
     y = tibble(
-      arabiensis = p_inits$p[,1],
-      funestus = p_inits$p[,2],
-      coluzzii = p_inits$p[,3],
-      gambiae = p_inits$p[,4]
+      arabiensis = p_inits$p[pa_not_na_idx[which(pa_not_na_idx[,2] == 1),]],
+      funestus = p_inits$p[pa_not_na_idx[which(pa_not_na_idx[,2] == 2),]],
+      coluzzii = p_inits$p[pa_not_na_idx[which(pa_not_na_idx[,2] == 3),]],
+      gambiae = p_inits$p[pa_not_na_idx[which(pa_not_na_idx[,2] == 4),]]
     )  |>
       mutate(
         id = row_number()
