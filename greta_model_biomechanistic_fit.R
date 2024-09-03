@@ -5,6 +5,7 @@ library(bayesplot)
 library(terra)
 library(tidyterra)
 
+load("outputs/dataect.RData")
 
 ## poiss approx
 # use set of bg points, e.g. 10k
@@ -25,7 +26,7 @@ library(tidyterra)
 
 # run data_pipeline.R
 
-model_layers_mech <- modlyr
+model_layers_mech <- rast("outputs/model_layers_mech.tif")
 
 # all_locations <- bind_rows(
 #   mppdat$pa |>
@@ -43,49 +44,19 @@ all_locations <- bind_rows(
     select(
       ag_microclim,
       research_tt_by_country,
-      arid,
-      built_volume,
       cropland,
-      elevation,
-      evi_mean,
       footprint,
       lst_day_mean,
-      lst_night_mean,
-      pop,
-      pressure_mean,
-      rainfall_mean,
-      soil_clay,
-      solrad_mean,
-      surface_water,
-      tcb_mean,
-      tcw_mean,
-      windspeed_mean,
-      easting,
-      northing
+      rainfall_mean
     ),
   bg |>
     select(
       ag_microclim,
       research_tt_by_country,
-      arid,
-      built_volume,
       cropland,
-      elevation,
-      evi_mean,
       footprint,
       lst_day_mean,
-      lst_night_mean,
-      pop,
-      pressure_mean,
-      rainfall_mean,
-      soil_clay,
-      solrad_mean,
-      surface_water,
-      tcb_mean,
-      tcw_mean,
-      windspeed_mean,
-      easting,
-      northing
+      rainfall_mean
     ),
   tibble(po = po_covs) |>
     unnest(po) |>
@@ -93,25 +64,10 @@ all_locations <- bind_rows(
     select(
       ag_microclim,
       research_tt_by_country,
-      arid,
-      built_volume,
       cropland,
-      elevation,
-      evi_mean,
       footprint,
       lst_day_mean,
-      lst_night_mean,
-      pop,
-      pressure_mean,
-      rainfall_mean,
-      soil_clay,
-      solrad_mean,
-      surface_water,
-      tcb_mean,
-      tcw_mean,
-      windspeed_mean,
-      easting,
-      northing
+      rainfall_mean
     )
 )
 
@@ -127,7 +83,7 @@ log_mech_dat <- log(mech_dat) |>
 
 npa <- nrow(pa_covs)
 nbg <- nrow(bg)
-npo <- tibble(po = mppdat$po) |>
+npo <- tibble(po = po_covs) |>
   unnest(po) |>
   nrow()
 
@@ -143,25 +99,10 @@ npospp <- sapply(po_covs, nrow)
 
 x <- all_locations |>
   select(
-    arid,
-    built_volume,
     cropland,
-    elevation,
-    evi_mean,
     footprint,
     lst_day_mean,
-    lst_night_mean,
-    pop,
-    pressure_mean,
-    rainfall_mean,
-    soil_clay,
-    solrad_mean,
-    surface_water,
-    tcb_mean,
-    tcw_mean,
-    windspeed_mean,
-    easting,
-    northing
+    rainfall_mean
   ) |>
   as.matrix()
 
@@ -291,12 +232,19 @@ distribution(po.count[bg.samp, ]) <- poisson(po_rate_bg)
 # define and fit the model by MAP and MCMC
 m <- model(alpha, beta, gamma, delta)
 
+
+
+###########
+# fit
+###########
+
+
 # plot(m)
 
 inits <- function(){
 
   nsp <- 4
-  ncv <- 19
+  ncv <- 4
   n_a <- nsp
   n_b <- nsp * ncv
   n_g <- nsp
@@ -322,47 +270,47 @@ inits <- function(){
 
 
 # calculate estimates based on initials and compare with data
-p_inits <- calculate(p, values = inits())
+# p_inits <- calculate(p, values = inits())
 #ll_inits <- calculate(log_lambda[pa.samp,], values = inits())
 
 #library(tidyr)
-initplotdatt <- pa |>
-  as_tibble() |>
-  mutate(
-    id = row_number()
-  ) |>
-  pivot_longer(
-    cols = -id,
-    names_to = "sp",
-    values_to = "p"
-  ) |>
-  left_join(
-    y = tibble(
-      arabiensis = p_inits$p[pa_not_na_idx[which(pa_not_na_idx[,2] == 1),]],
-      funestus = p_inits$p[pa_not_na_idx[which(pa_not_na_idx[,2] == 2),]],
-      coluzzii = p_inits$p[pa_not_na_idx[which(pa_not_na_idx[,2] == 3),]],
-      gambiae = p_inits$p[pa_not_na_idx[which(pa_not_na_idx[,2] == 4),]]
-    )  |>
-      mutate(
-        id = row_number()
-      ) |>
-      pivot_longer(
-        cols = -id,
-        names_to = "sp",
-        values_to = "p_init"
-      ),
-    by = c("id", "sp")
-  )
+# initplotdatt <- pa |>
+#   as_tibble() |>
+#   mutate(
+#     id = row_number()
+#   ) |>
+#   pivot_longer(
+#     cols = -id,
+#     names_to = "sp",
+#     values_to = "p"
+#   ) |>
+#   left_join(
+#     y = tibble(
+#       arabiensis = p_inits$p[pa_not_na_idx[which(pa_not_na_idx[,2] == 1),]],
+#       funestus = p_inits$p[pa_not_na_idx[which(pa_not_na_idx[,2] == 2),]],
+#       coluzzii = p_inits$p[pa_not_na_idx[which(pa_not_na_idx[,2] == 3),]],
+#       gambiae = p_inits$p[pa_not_na_idx[which(pa_not_na_idx[,2] == 4),]]
+#     )  |>
+#       mutate(
+#         id = row_number()
+#       ) |>
+#       pivot_longer(
+#         cols = -id,
+#         names_to = "sp",
+#         values_to = "p_init"
+#       ),
+#     by = c("id", "sp")
+#   )
+#
+# ggplot(initplotdatt) +
+#   geom_violin(
+#     aes(x = as.factor(p), y = p_init)
+#   ) +
+#   facet_wrap(~sp)
 
-ggplot(initplotdatt) +
-  geom_violin(
-    aes(x = as.factor(p), y = p_init)
-  ) +
-  facet_wrap(~sp)
 
 
-
-draws <- mcmc(m, warmup = 1000, n_samples = 1000, initial_values = inits())
+draws <- mcmc(m, warmup = 500, n_samples = 500, initial_values = inits())
 
 #draws <- mcmc(m, warmup = 1000, n_samples = 3000)
 
@@ -389,47 +337,47 @@ inits_2 <- initials(
 )
 
 
-p_inits <- calculate(p, values = inits_2)
+# p_inits <- calculate(p, values = inits_2)
+#
+# #library(tidyr)
+# initplotdatt <- pa |>
+#   as_tibble() |>
+#   mutate(
+#     id = row_number()
+#   ) |>
+#   pivot_longer(
+#     cols = -id,
+#     names_to = "sp",
+#     values_to = "p"
+#   ) |>
+#   left_join(
+#     y = tibble(
+#       arabiensis = p_inits$p[,1],
+#       funestus = p_inits$p[,2],
+#       coluzzii = p_inits$p[,3],
+#       gambiae = p_inits$p[,4]
+#     )  |>
+#       mutate(
+#         id = row_number()
+#       ) |>
+#       pivot_longer(
+#         cols = -id,
+#         names_to = "sp",
+#         values_to = "p_init"
+#       ),
+#     by = c("id", "sp")
+#   )
+#
+# library(ggplot2)
+# ggplot(initplotdatt) +
+#   geom_violin(
+#     aes(x = as.factor(p), y = p_init)
+#   ) +
+#   facet_wrap(~sp)
 
-#library(tidyr)
-initplotdatt <- pa |>
-  as_tibble() |>
-  mutate(
-    id = row_number()
-  ) |>
-  pivot_longer(
-    cols = -id,
-    names_to = "sp",
-    values_to = "p"
-  ) |>
-  left_join(
-    y = tibble(
-      arabiensis = p_inits$p[,1],
-      funestus = p_inits$p[,2],
-      coluzzii = p_inits$p[,3],
-      gambiae = p_inits$p[,4]
-    )  |>
-      mutate(
-        id = row_number()
-      ) |>
-      pivot_longer(
-        cols = -id,
-        names_to = "sp",
-        values_to = "p_init"
-      ),
-    by = c("id", "sp")
-  )
-
-library(ggplot2)
-ggplot(initplotdatt) +
-  geom_violin(
-    aes(x = as.factor(p), y = p_init)
-  ) +
-  facet_wrap(~sp)
 
 
-
-draws <- mcmc(m, warmup = 5000, n_samples = 5000, initial_values = inits_2)
+draws <- mcmc(m, warmup = 2000, n_samples = 2000, initial_values = inits_2)
 
 r_hats <- coda::gelman.diag(draws, autoburnin = FALSE, multivariate = FALSE)
 max(r_hats$psrf[, 2])
@@ -437,226 +385,9 @@ r_hats
 
 ## predict
 
+save.image("outputs/drawsetc.RData")
 
 
 
-## Predictinos
 
-library(sdmtools)
-mlm_split <- split_rast(
-  model_layers_mech,
-  grain = 10,
-  write_temp = TRUE
-)
-
-
-
-predict_greta_sdm <- function(
-    r,
-    n,
-    spp = c("arabiensis", "funestus",  "coluzzii", "gambiae"),
-    alpha,
-    beta,
-    draws
-){
-
-  nspp <- length(spp)
-  layer_values <- values(r)
-  naidx <- is.na(layer_values[,1])
-
-  ncells <- length(naidx)
-
-  if(ncells == sum(naidx)){
-
-    preds <- rep(r[[1]], times = nspp)
-    preds[] <- NA
-    names(preds) <- spp
-
-    writeRaster(
-      preds,
-      filename = sprintf(
-        "outputs/predstemp/pred_%s.tif",
-        n
-      ),
-      overwrite = TRUE
-    )
-    return(print(n))
-  }
-
-  x_predict <- layer_values[
-    !naidx,
-    c(
-      "arid",
-      "built_volume",
-      "cropland",
-      "elevation",
-      "evi_mean",
-      "footprint",
-      "lst_day_mean",
-      "lst_night_mean",
-      "pop",
-      "pressure_mean",
-      "rainfall_mean",
-      "soil_clay",
-      "solrad_mean",
-      "surface_water",
-      "tcb_mean",
-      "tcw_mean",
-      "windspeed_mean",
-      "easting",
-      "northing"
-    )
-  ]
-
-  mech_pred <- layer_values[!naidx, "ag_microclim"]
-
-  lowidx <- which(mech_pred <= exp(-30))
-
-  mech_pred[lowidx] <- exp(-30)
-
-  log_mech_pred <- log(mech_pred) |>
-    matrix(data = _, ncol = 1)
-
-  log_lambda_adults_predict <- log_mech_pred
-
-  log_lambda_larval_habitat_predict <- sweep(x_predict %*% beta, 2, alpha, FUN = "+")
-
-  log_lambda_predict <- sweep(log_lambda_larval_habitat_predict, 1, log_lambda_adults_predict, "+")
-
-  p_predict <- icloglog(log_lambda_predict + log(area_pa))
-
-  preds <- calculate(p_predict, values = draws, nsim = 100)
-
-  preds_mean <- apply(preds$p_predict, MARGIN = c(2,3), median, na.rm = TRUE)
-
-  preds_rast <- rep(r[[1]], times = nspp)
-
-  for(i in 1:nspp) {
-    preds_rast[[i]][!naidx] <- preds_mean[,i]
-  }
-
-  names(preds_rast) <- spp
-
-  writeRaster(
-    preds_rast,
-    filename = sprintf(
-      "outputs/predstemp/pred_%s.tif",
-      n
-    ),
-    overwrite = TRUE
-  )
-  gc()
-
-  print(n)
-
-}
-
-for(i in 26:28){
-
-  predict_greta_sdm(
-    mlm_split[[i]],
-    n = i,
-    spp = c("arabiensis", "funestus",  "coluzzii", "gambiae"),
-    alpha = alpha,
-    beta = beta,
-    draws = draws
-  )
-}
-
-
-predlist <- mapply(
-  FUN = predict_greta_sdm,
-  r = mlm_split,
-  n = 1:length(mlm_split),
-  MoreArgs = list(
-    spp = c("arabiensis", "funestus",  "coluzzii", "gambiae"),
-    alpha = alpha,
-    beta = beta,
-    draws = draws
-  )
-)
-
-
-# pred#all_layer_values <- values(model_layers_mech)
-# all_layer_values <- values(mlm_split[[51]])
-# naidx <- is.na(all_layer_values[,1])
-#
-#
-# x_predict <- all_layer_values[
-#   !naidx,
-#   c(
-#     "arid",
-#     "built_volume",
-#     "cropland",
-#     "elevation",
-#     "evi_mean",
-#     "footprint",
-#     "lst_day_mean",
-#     "lst_night_mean",
-#     "pop",
-#     "pressure_mean",
-#     "rainfall_mean",
-#     "soil_clay",
-#     "solrad_mean",
-#     "surface_water",
-#     "tcb_mean",
-#     "tcw_mean",
-#     "windspeed_mean",
-#     "easting",
-#     "northing"
-#   )
-# ]
-#
-# mech_pred <- all_layer_values[!naidx, "ag_microclim"]
-#
-# lowidx <- which(mech_pred <= exp(-30))
-#
-# mech_pred[lowidx] <- exp(-30)
-#
-# log_mech_pred <- log(mech_pred) |>
-#   matrix(data = _, ncol = 1)
-#
-# log_lambda_adults_predict <- log_mech_pred
-#
-# log_lambda_larval_habitat_predict <- sweep(x_predict %*% beta, 2, alpha, FUN = "+")
-#
-# log_lambda_predict <- sweep(log_lambda_larval_habitat_predict, 1, log_lambda_adults_predict, "+")
-#
-# p_predict <- icloglog(log_lambda_predict + log(area_pa))
-#
-# #rm(all_layer_values)
-#
-# preds <- calculate(p_predict, values = draws, nsim = 100)
-#
-# preds_mean <- apply(preds$p_predict, MARGIN = c(2,3), median, na.rm = TRUE)
-#
-# preds_rast <- rep(mlm_split[[51]][[1]], times = 4)
-#
-#
-#
-# preds_rast[[1]][!naidx] <- preds_mean[,1]
-# preds_rast[[2]][!naidx] <- preds_mean[,2]
-# preds_rast[[3]][!naidx] <- preds_mean[,3]
-# preds_rast[[4]][!naidx] <- preds_mean[,4]
-#
-# preds_rast
-
-library(lubridate)
-predictions <- predlist() |>
-  sprc() |>
-  merge(
-    filename = sprintf(
-      "outputs/preds_all_%s.tif",
-      today() |>
-        gsub(
-          pattern = "_",
-          replacement = "",
-          x = _
-        )
-    )
-  )
-
- # add in rel abund data where available as an additional likelihood
-# use a multinomial obs model where p is from predicted abundances
-#
 

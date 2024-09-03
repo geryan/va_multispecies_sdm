@@ -43,49 +43,19 @@ all_locations <- bind_rows(
     select(
       ag_microclim,
       research_tt_by_country,
-      arid,
-      built_volume,
       cropland,
-      elevation,
-      evi_mean,
       footprint,
       lst_day_mean,
-      lst_night_mean,
-      pop,
-      pressure_mean,
-      rainfall_mean,
-      soil_clay,
-      solrad_mean,
-      surface_water,
-      tcb_mean,
-      tcw_mean,
-      windspeed_mean,
-      easting,
-      northing
+      rainfall_mean
     ),
   bg |>
     select(
       ag_microclim,
       research_tt_by_country,
-      arid,
-      built_volume,
       cropland,
-      elevation,
-      evi_mean,
       footprint,
       lst_day_mean,
-      lst_night_mean,
-      pop,
-      pressure_mean,
-      rainfall_mean,
-      soil_clay,
-      solrad_mean,
-      surface_water,
-      tcb_mean,
-      tcw_mean,
-      windspeed_mean,
-      easting,
-      northing
+      rainfall_mean
     ),
   tibble(po = po_covs) |>
     unnest(po) |>
@@ -93,25 +63,10 @@ all_locations <- bind_rows(
     select(
       ag_microclim,
       research_tt_by_country,
-      arid,
-      built_volume,
       cropland,
-      elevation,
-      evi_mean,
       footprint,
       lst_day_mean,
-      lst_night_mean,
-      pop,
-      pressure_mean,
-      rainfall_mean,
-      soil_clay,
-      solrad_mean,
-      surface_water,
-      tcb_mean,
-      tcw_mean,
-      windspeed_mean,
-      easting,
-      northing
+      rainfall_mean
     )
 )
 
@@ -143,25 +98,10 @@ npospp <- sapply(po_covs, nrow)
 
 x <- all_locations |>
   select(
-    arid,
-    built_volume,
     cropland,
-    elevation,
-    evi_mean,
     footprint,
     lst_day_mean,
-    lst_night_mean,
-    pop,
-    pressure_mean,
-    rainfall_mean,
-    soil_clay,
-    solrad_mean,
-    surface_water,
-    tcb_mean,
-    tcw_mean,
-    windspeed_mean,
-    easting,
-    northing
+    rainfall_mean
   ) |>
   as.matrix()
 
@@ -296,7 +236,7 @@ m <- model(alpha, beta, gamma, delta)
 inits <- function(){
 
   nsp <- 4
-  ncv <- 19
+  ncv <- 4
   n_a <- nsp
   n_b <- nsp * ncv
   n_g <- nsp
@@ -322,47 +262,47 @@ inits <- function(){
 
 
 # calculate estimates based on initials and compare with data
-p_inits <- calculate(p, values = inits())
+# p_inits <- calculate(p, values = inits())
 #ll_inits <- calculate(log_lambda[pa.samp,], values = inits())
 
 #library(tidyr)
-initplotdatt <- pa |>
-  as_tibble() |>
-  mutate(
-    id = row_number()
-  ) |>
-  pivot_longer(
-    cols = -id,
-    names_to = "sp",
-    values_to = "p"
-  ) |>
-  left_join(
-    y = tibble(
-      arabiensis = p_inits$p[pa_not_na_idx[which(pa_not_na_idx[,2] == 1),]],
-      funestus = p_inits$p[pa_not_na_idx[which(pa_not_na_idx[,2] == 2),]],
-      coluzzii = p_inits$p[pa_not_na_idx[which(pa_not_na_idx[,2] == 3),]],
-      gambiae = p_inits$p[pa_not_na_idx[which(pa_not_na_idx[,2] == 4),]]
-    )  |>
-      mutate(
-        id = row_number()
-      ) |>
-      pivot_longer(
-        cols = -id,
-        names_to = "sp",
-        values_to = "p_init"
-      ),
-    by = c("id", "sp")
-  )
+# initplotdatt <- pa |>
+#   as_tibble() |>
+#   mutate(
+#     id = row_number()
+#   ) |>
+#   pivot_longer(
+#     cols = -id,
+#     names_to = "sp",
+#     values_to = "p"
+#   ) |>
+#   left_join(
+#     y = tibble(
+#       arabiensis = p_inits$p[pa_not_na_idx[which(pa_not_na_idx[,2] == 1),]],
+#       funestus = p_inits$p[pa_not_na_idx[which(pa_not_na_idx[,2] == 2),]],
+#       coluzzii = p_inits$p[pa_not_na_idx[which(pa_not_na_idx[,2] == 3),]],
+#       gambiae = p_inits$p[pa_not_na_idx[which(pa_not_na_idx[,2] == 4),]]
+#     )  |>
+#       mutate(
+#         id = row_number()
+#       ) |>
+#       pivot_longer(
+#         cols = -id,
+#         names_to = "sp",
+#         values_to = "p_init"
+#       ),
+#     by = c("id", "sp")
+#   )
+#
+# ggplot(initplotdatt) +
+#   geom_violin(
+#     aes(x = as.factor(p), y = p_init)
+#   ) +
+#   facet_wrap(~sp)
 
-ggplot(initplotdatt) +
-  geom_violin(
-    aes(x = as.factor(p), y = p_init)
-  ) +
-  facet_wrap(~sp)
 
 
-
-draws <- mcmc(m, warmup = 1000, n_samples = 1000, initial_values = inits())
+draws <- mcmc(m, warmup = 500, n_samples = 500, initial_values = inits())
 
 #draws <- mcmc(m, warmup = 1000, n_samples = 3000)
 
@@ -389,43 +329,43 @@ inits_2 <- initials(
 )
 
 
-p_inits <- calculate(p, values = inits_2)
-
-#library(tidyr)
-initplotdatt <- pa |>
-  as_tibble() |>
-  mutate(
-    id = row_number()
-  ) |>
-  pivot_longer(
-    cols = -id,
-    names_to = "sp",
-    values_to = "p"
-  ) |>
-  left_join(
-    y = tibble(
-      arabiensis = p_inits$p[,1],
-      funestus = p_inits$p[,2],
-      coluzzii = p_inits$p[,3],
-      gambiae = p_inits$p[,4]
-    )  |>
-      mutate(
-        id = row_number()
-      ) |>
-      pivot_longer(
-        cols = -id,
-        names_to = "sp",
-        values_to = "p_init"
-      ),
-    by = c("id", "sp")
-  )
-
-library(ggplot2)
-ggplot(initplotdatt) +
-  geom_violin(
-    aes(x = as.factor(p), y = p_init)
-  ) +
-  facet_wrap(~sp)
+# p_inits <- calculate(p, values = inits_2)
+#
+# #library(tidyr)
+# initplotdatt <- pa |>
+#   as_tibble() |>
+#   mutate(
+#     id = row_number()
+#   ) |>
+#   pivot_longer(
+#     cols = -id,
+#     names_to = "sp",
+#     values_to = "p"
+#   ) |>
+#   left_join(
+#     y = tibble(
+#       arabiensis = p_inits$p[,1],
+#       funestus = p_inits$p[,2],
+#       coluzzii = p_inits$p[,3],
+#       gambiae = p_inits$p[,4]
+#     )  |>
+#       mutate(
+#         id = row_number()
+#       ) |>
+#       pivot_longer(
+#         cols = -id,
+#         names_to = "sp",
+#         values_to = "p_init"
+#       ),
+#     by = c("id", "sp")
+#   )
+#
+# library(ggplot2)
+# ggplot(initplotdatt) +
+#   geom_violin(
+#     aes(x = as.factor(p), y = p_init)
+#   ) +
+#   facet_wrap(~sp)
 
 
 
@@ -486,25 +426,10 @@ predict_greta_sdm <- function(
   x_predict <- layer_values[
     !naidx,
     c(
-      "arid",
-      "built_volume",
       "cropland",
-      "elevation",
-      "evi_mean",
       "footprint",
       "lst_day_mean",
-      "lst_night_mean",
-      "pop",
-      "pressure_mean",
-      "rainfall_mean",
-      "soil_clay",
-      "solrad_mean",
-      "surface_water",
-      "tcb_mean",
-      "tcw_mean",
-      "windspeed_mean",
-      "easting",
-      "northing"
+      "rainfall_mean"
     )
   ]
 

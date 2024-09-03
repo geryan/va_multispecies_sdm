@@ -1,42 +1,215 @@
-library(greta)
-library(tidyverse)
-library(targets)
-library(bayesplot)
+.libPaths("~/home/user/R/gr_lib/")
+
+
+rm(list = ls())
+
+warmup1 <- 1000
+nsamples1 <- 1000
+warmup2 <- 5000
+nsamples2 <- 5000
+
+
+library(dplyr)
+library(tidyr)
 library(terra)
-library(tidyterra)
+library(readr)
+library(greta)
+
+###########
+### data
+##########
 
 
-## poiss approx
-# use set of bg points, e.g. 10k
-# calculate area of whole thing area of interest
-# area of each background point = area of interest / n bg points
-# for PO area is strongly negative offset, so tiny area
-# (becomes -ve once logged)
-# PA area assume 1?
+raw_data <- read_csv("data/raw_data.csv")
+
+modlyr <- rast("outputs/model_layers_mech.tif")
 
 
-# pred abundances for all three then sum for gambiae complex]
-# likelihood has extra level for complex
-# po
+data_records <- raw_data |>
+  dplyr::select(
+    source_ID,
+    occ_data,
+    bio_data,
+    binary.presence,
+    binary.absence,
+    adult.data,
+    larval.site.data,
+    lon = longitude_1,
+    lat = latitude_1,
+    area.type,
+    insecticide.control,
+    ITN.use,
+    starts_with("sampling.method"),
+    starts_with("n_"),
+    binary.presence,
+    binary.absence,
+    month_st,
+    month_end,
+    year_st,
+    year_end,
+    species
+  )  |>
+  # remove missing lat longs
+  dplyr::filter(
+    !is.na(lon) &
+      !is.na(lat)
+  )|>
+  # remove points where insecticide is used
+  dplyr::mutate(
+    no_ic = case_when(
+      is.na(insecticide.control) ~ TRUE,
+      insecticide.control == "yes" ~ FALSE,
+      TRUE ~ TRUE
+    ),
+    no_itn = case_when(
+      is.na(ITN.use) ~ TRUE,
+      ITN.use == "yes" ~ FALSE,
+      TRUE ~ TRUE
+    )
+  ) |>
+  dplyr::filter(
+    no_ic & no_itn
+  ) |>
+  filter(occ_data == 1) |> # consider whether occ_data == 0 could be PO data
+  rowwise() |> # NB this rowwise is necessary for the below `any` to work by row, but may be slow on a very large dataset
+  mutate(
+    any_sm_na_count = any(
+      !is.na(sampling.method_1) & is.na(n_1),
+      !is.na(sampling.method_2) & is.na(n_2),
+      !is.na(sampling.method_3) & is.na(n_3),
+      !is.na(sampling.method_4) & is.na(n_4)
+    ), # this checks if there are any non-empty sampling methods with a NA count
+    all_sm_na = all(is.na(c_across(starts_with("sampling.method")))) # check if all survey methods are NA so no zero count
+  ) |>
+  rename(entered_n_tot = n_tot) |> # renaming because want to keep for checking but will get double-counted by the sum(c_across(...)) below if left with a name beginning "n_"
+  mutate(
+    count = case_when(
+      any_sm_na_count ~ NA, # assign NA n_tot if there is a non-empty sampling method that is NA
+      all_sm_na ~ NA,
+      TRUE ~ sum(c_across(starts_with("n_")), na.rm = TRUE) # otherwise sum up the values ignoring NAs
+    )
+  ) |>
+  #select(-entered_n_tot) |>
+  mutate(
+    presence = case_when(
+      #binary.absence == "yes" ~ 0, ignore this and only use
+      count == 0 ~ 0,
+      TRUE ~ 1
+    )
+  ) |>
+  group_by(source_ID) |>
+  mutate(
+    pa = ifelse(any(presence == 0), "pa", "po")
+  )|>
+  ungroup() |>
+  select(
+    source_ID,
+    species,
+    lon,
+    lat,
+    #binary.presence,
+    #binary.absence,
+    #starts_with("n_"),
+    count,
+    presence,
+    pa,
+    starts_with("sampling.method_")
+  ) |>
+  mutate(
+    species = clean_species(species)
+  ) |>
+  arrange(species, pa, presence) |>
+  distinct()
 
 
-#mppdat <- readRDS("mpp_data_mech.Rds")
-#model_layers_mech <- rast("outputs/model_layers_mech.tif")
 
-# run data_pipeline.R
+model_records <- data_records  |>
+  filter(
+    species %in% c(
+      #"gambiae_complex",
+      "arabiensis",
+      "funestus",
+      "gambiae",
+      #"pharoensis",
+      "coluzzii"#,
+      # "melas",
+      # "nili",
+      # "merus",
+      # "moucheti"
+    )
+  )
 
-model_layers_mech <- modlyr
+pa_unfilled <- model_records |>
+  filter(pa == "pa") |>
+  dplyr::select(lon, lat, species, presence) |>
+  group_by(lon, lat, species) |>
+  summarise(presence = max(presence), .groups = "drop") |>
+  tidyr::pivot_wider(
+    names_from = species,
+    values_from = presence
+  )
 
-# all_locations <- bind_rows(
-#   mppdat$pa |>
-#     select(tcw, tcb, built_volume, lst_day, evi, rainfall, mech, bias),
-#   mppdat$bg |>
-#     select(tcw, tcb, built_volume, lst_day, evi, rainfall, mech, bias),
-#   tibble(po = mppdat$po) |>
-#     unnest(po) |>
-#     as.data.frame() |>
-#     select(tcw, tcb, built_volume, lst_day, evi, rainfall, mech, bias)
-# )
+pa_not_na_idx <- which(
+  !is.na(pa_unfilled |>
+           select(-lon, -lat) |>
+           as.matrix()),
+  arr.ind = TRUE
+)
+
+
+pa_filled <- pa_unfilled |>
+  mutate(
+    across(
+      c(-lat, -lon),
+      ~ ifelse(is.na(.x), 0, .x)
+    )
+  )
+
+po <- model_records |>
+  filter(pa == "po") |>
+  select(lon, lat, species)
+
+
+pa_covs <- extract_covariates(
+  covariates = modlyr,
+  presences_and_absences = pa_filled |>
+    rename(x = lon, y = lat)
+) |>
+  # select(
+  #   tcw,
+  #   tcb,
+  #   built_volume,
+  #   everything()
+  # ) |>
+  drop_na() |>
+  as.data.frame()
+
+po_covs <- extract_covariates(
+  covariates = modlyr,
+  presences = po |>
+    rename(x = lon, y = lat)
+) |>
+  bind_cols(po) |>
+  select(-presence, -lat, -lon) |>
+  drop_na() |>
+  make_mpp_list(species)
+
+
+bg <- extract_covariates(
+  covariates = modlyr,
+  presences = background |>
+    as_tibble()
+) |>
+  select(-presence) |>
+  drop_na() |>
+  as.data.frame()
+
+
+##############
+# fit
+############
+
+
 
 all_locations <- bind_rows(
   pa_covs |>
@@ -291,7 +464,7 @@ distribution(po.count[bg.samp, ]) <- poisson(po_rate_bg)
 # define and fit the model by MAP and MCMC
 m <- model(alpha, beta, gamma, delta)
 
-# plot(m)
+
 
 inits <- function(){
 
@@ -321,58 +494,11 @@ inits <- function(){
 
 
 
-# calculate estimates based on initials and compare with data
-p_inits <- calculate(p, values = inits())
-#ll_inits <- calculate(log_lambda[pa.samp,], values = inits())
 
-#library(tidyr)
-initplotdatt <- pa |>
-  as_tibble() |>
-  mutate(
-    id = row_number()
-  ) |>
-  pivot_longer(
-    cols = -id,
-    names_to = "sp",
-    values_to = "p"
-  ) |>
-  left_join(
-    y = tibble(
-      arabiensis = p_inits$p[pa_not_na_idx[which(pa_not_na_idx[,2] == 1),]],
-      funestus = p_inits$p[pa_not_na_idx[which(pa_not_na_idx[,2] == 2),]],
-      coluzzii = p_inits$p[pa_not_na_idx[which(pa_not_na_idx[,2] == 3),]],
-      gambiae = p_inits$p[pa_not_na_idx[which(pa_not_na_idx[,2] == 4),]]
-    )  |>
-      mutate(
-        id = row_number()
-      ) |>
-      pivot_longer(
-        cols = -id,
-        names_to = "sp",
-        values_to = "p_init"
-      ),
-    by = c("id", "sp")
-  )
-
-ggplot(initplotdatt) +
-  geom_violin(
-    aes(x = as.factor(p), y = p_init)
-  ) +
-  facet_wrap(~sp)
+draws <- mcmc(m, warmup = warmup1, n_samples = nsamples1, initial_values = inits())
 
 
-
-draws <- mcmc(m, warmup = 1000, n_samples = 1000, initial_values = inits())
-
-#draws <- mcmc(m, warmup = 1000, n_samples = 3000)
-
-r_hats <- coda::gelman.diag(draws, autoburnin = FALSE, multivariate = FALSE)
-max(r_hats$psrf[, 2])
-r_hats
-
-# sux try harder
-
-posterior <- calculate(alpha, beta, gamma, delta, values = draws, nsim = 1000)
+posterior <- calculate(alpha, beta, gamma, delta, values = draws, nsim = 100)
 
 inits_alpha <- apply(posterior$alpha, MARGIN = 2, FUN = mean)
 inits_beta <- apply(posterior$beta, MARGIN = c(2,3), FUN = mean)
@@ -389,60 +515,106 @@ inits_2 <- initials(
 )
 
 
-p_inits <- calculate(p, values = inits_2)
 
-#library(tidyr)
-initplotdatt <- pa |>
-  as_tibble() |>
-  mutate(
-    id = row_number()
-  ) |>
-  pivot_longer(
-    cols = -id,
-    names_to = "sp",
-    values_to = "p"
-  ) |>
-  left_join(
-    y = tibble(
-      arabiensis = p_inits$p[,1],
-      funestus = p_inits$p[,2],
-      coluzzii = p_inits$p[,3],
-      gambiae = p_inits$p[,4]
-    )  |>
-      mutate(
-        id = row_number()
-      ) |>
-      pivot_longer(
-        cols = -id,
-        names_to = "sp",
-        values_to = "p_init"
-      ),
-    by = c("id", "sp")
-  )
-
-library(ggplot2)
-ggplot(initplotdatt) +
-  geom_violin(
-    aes(x = as.factor(p), y = p_init)
-  ) +
-  facet_wrap(~sp)
-
-
-
-draws <- mcmc(m, warmup = 5000, n_samples = 5000, initial_values = inits_2)
+draws <- mcmc(m, warmup = warmup2, n_samples = nsamples2, initial_values = inits_2)
 
 r_hats <- coda::gelman.diag(draws, autoburnin = FALSE, multivariate = FALSE)
 max(r_hats$psrf[, 2])
 r_hats
 
+
+
+##############
+
 ## predict
 
-
+##############
 
 
 ## Predictinos
 
-library(sdmtools)
+split_rast <- function(
+    x,
+    grain = 4,
+    write_temp = FALSE
+){
+
+  dimx <- dim(x)[1]
+  dimy <- dim(x)[2]
+
+  if(grain > dimx | grain > dimy){
+    stop("grain is > x or y dimension.\nCannot split into rasters smaller than cells.")
+  }
+
+  resx <- terra::res(x)[1]
+  resy <- terra::res(x)[2]
+
+  xminx <- terra::xmin(x)
+  yminx <- terra::ymin(x)
+
+  xseq <- seq(
+    from = 1,
+    to = dimx + 1,
+    length.out = grain + 1
+  ) |>
+    round()
+
+  yseq <- seq(
+    from = 1,
+    to = dimy + 1,
+    length.out = grain + 1
+  ) |>
+    round()
+
+  xminseq <- xseq[1:grain]
+  xmaxseq <- xseq[2:(grain + 1)]
+
+  yminseq <- yseq[1:grain]
+  ymaxseq <- yseq[2:(grain + 1)]
+
+  tidyr::expand_grid(
+    tibble::tibble(
+      xmin = xminseq,
+      xmax = xmaxseq
+    ),
+    tibble::tibble(
+      ymin = yminseq,
+      ymax = ymaxseq
+    )
+  ) |>
+    dplyr::mutate(
+      dplyr::across(tidyselect::starts_with("x"), ~ (.x - 1)*resx + xminx),
+      dplyr::across(tidyselect::starts_with("y"), ~ (.x - 1)*resy + yminx)
+    ) |>
+    dplyr::mutate(
+      r = purrr::pmap(
+        .l = list(xmin, xmax, ymin, ymax),
+        .f = function(xmin, xmax, ymin, ymax, x, write_temp){
+
+          xt <- terra::ext(c(xmin, xmax, ymin, ymax))
+
+          z <- terra::crop(x, xt)
+
+          if(write_temp){
+
+            tempname <- tempfile(fileext = ".tif")
+            writeRaster(z, filename = tempname)
+            z <- rast(tempname)
+
+          }
+
+          z
+
+        },
+        x,
+        write_temp
+      )
+    ) |>
+    dplyr::pull(r)
+
+}
+
+
 mlm_split <- split_rast(
   model_layers_mech,
   grain = 10,
@@ -551,7 +723,7 @@ predict_greta_sdm <- function(
 
 }
 
-for(i in 26:28){
+for(i in 1:100){
 
   predict_greta_sdm(
     mlm_split[[i]],
@@ -564,17 +736,22 @@ for(i in 26:28){
 }
 
 
-predlist <- mapply(
-  FUN = predict_greta_sdm,
-  r = mlm_split,
-  n = 1:length(mlm_split),
-  MoreArgs = list(
-    spp = c("arabiensis", "funestus",  "coluzzii", "gambiae"),
-    alpha = alpha,
-    beta = beta,
-    draws = draws
-  )
-)
+# library(future)
+# library(future.apply)
+#
+# plan("multicore", workers = 4)
+# predlist <- mapply(
+#   FUN = predict_greta_sdm,
+#   r = mlm_split,
+#   n = 1:length(mlm_split),
+#   MoreArgs = list(
+#     spp = c("arabiensis", "funestus",  "coluzzii", "gambiae"),
+#     alpha = alpha,
+#     beta = beta,
+#     draws = draws
+#   )
+# )
+
 
 
 # pred#all_layer_values <- values(model_layers_mech)
@@ -641,22 +818,24 @@ predlist <- mapply(
 #
 # preds_rast
 
-library(lubridate)
-predictions <- predlist() |>
-  sprc() |>
-  merge(
-    filename = sprintf(
-      "outputs/preds_all_%s.tif",
-      today() |>
-        gsub(
-          pattern = "_",
-          replacement = "",
-          x = _
-        )
-    )
-  )
+# library(lubridate)
+# predictions <- predlist() |>
+#   sprc() |>
+#   merge(
+#     filename = sprintf(
+#       "outputs/preds_all_%s.tif",
+#       today() |>
+#         gsub(
+#           pattern = "_",
+#           replacement = "",
+#           x = _
+#         )
+#     )
+#   )
 
- # add in rel abund data where available as an additional likelihood
+
+
+# add in rel abund data where available as an additional likelihood
 # use a multinomial obs model where p is from predicted abundances
 #
 

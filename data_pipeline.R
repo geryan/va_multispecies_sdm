@@ -6,8 +6,21 @@ library(terra)
 library(tidyterra)
 library(sdmtools)
 library(ggplot2)
+library(readr)
+
+# library(readr)
+# tar_load(raw_data)
+# write_csv(
+#   raw_data,
+#   "data/raw_data.csv"
+# )
+
+source("R/clean_species.R")
+
+raw_data <- read_csv("data/raw_data.csv")
 
 modlyr <- rast("outputs/model_layers_mech.tif")
+
 
 data_records <- raw_data |>
   dplyr::select(
@@ -106,121 +119,121 @@ mutate(
   distinct()
 
 
-z <- data_records
-table(z$species, z$pa) |>
-  as.data.frame() |>
-  as_tibble() |>
-  rename(
-    sp = Var1,
-    p = Var2,
-    n = Freq
-  ) |>
-  pivot_wider(
-    names_from = p,
-    values_from = n
-  ) |>
-  mutate(n = pa+po) |>
-  arrange(desc(n))
-
-library(terra)
-library(tidyterra)
-library(ggplot2)
-
-new_mask <- rast("data/new_mask.tif")
-
-z |>
-  filter(
-    species %in% c(
-      "gambiae_complex",
-      "arabiensis",
-      "funestus",
-      "gambiae",
-      "pharoensis",
-      "coluzzii",
-      "melas",
-      "nili",
-      "merus",
-      "moucheti"
-    )
-  ) |>
-  mutate(
-    presence = as.factor(presence)
-  ) |>
-  filter(lon > -10) |>
-  ggplot() +
-  geom_spatraster(
-    data = new_mask,
-  ) +
-  scale_fill_viridis_c(
-    option = "G",
-    begin = 1,
-    end = 0.9,
-    na.value = "transparent"
-  ) +
-  geom_point(
-    aes(
-      x = lon,
-      y = lat,
-      col = presence,
-      shape = pa
-    ),
-    size = 0.5
-  ) +
-  facet_wrap(~species)
-
-
-z |>
-  filter(pa == "pa") |>
-  filter(
-    species %in% c(
-      "gambiae_complex",
-      "arabiensis",
-      "funestus",
-      "gambiae",
-      "pharoensis",
-      "coluzzii",
-      "melas",
-      "nili",
-      "merus",
-      "moucheti"
-    )
-  ) |>
-  dplyr::select(lon, lat, species, presence) |>
-  group_by(lon, lat, species) |>
-  summarise(presence = max(presence), .groups = "drop") |>
-  tidyr::pivot_wider(
-    names_from = species,
-    values_from = presence
-  ) |>
-  # mutate(
-  #   across(
-  #     c(-lat, -lon),
-  #     ~ ifelse(is.na(.x), 0, .x)
-  #   )
-  # ) |>
-  # mutate(
-  #   n = arabiensis +
-  #     pharoensis +
-  #     funestus +
-  #     gambiae_complex +
-  #     melas +
-  #     nili +
-  #     coluzzii +
-  #     gambiae +
-  #     merus
-  # ) |>
-  mutate(
-    n = as.numeric(!is.na(arabiensis)) +
-      as.numeric(!is.na(pharoensis)) +
-      as.numeric(!is.na(funestus)) +
-      as.numeric(!is.na(gambiae_complex)) +
-      as.numeric(!is.na(melas)) +
-      as.numeric(!is.na(nili)) +
-      as.numeric(!is.na(coluzzii)) +
-      as.numeric(!is.na(gambiae)) +
-      as.numeric(!is.na(merus))
-  ) |>
-  arrange(desc(n))
+# z <- data_records
+# table(z$species, z$pa) |>
+#   as.data.frame() |>
+#   as_tibble() |>
+#   rename(
+#     sp = Var1,
+#     p = Var2,
+#     n = Freq
+#   ) |>
+#   pivot_wider(
+#     names_from = p,
+#     values_from = n
+#   ) |>
+#   mutate(n = pa+po) |>
+#   arrange(desc(n))
+#
+# library(terra)
+# library(tidyterra)
+# library(ggplot2)
+#
+# new_mask <- rast("data/new_mask.tif")
+#
+# z |>
+#   filter(
+#     species %in% c(
+#       "gambiae_complex",
+#       "arabiensis",
+#       "funestus",
+#       "gambiae",
+#       "pharoensis",
+#       "coluzzii",
+#       "melas",
+#       "nili",
+#       "merus",
+#       "moucheti"
+#     )
+#   ) |>
+#   mutate(
+#     presence = as.factor(presence)
+#   ) |>
+#   filter(lon > -10) |>
+#   ggplot() +
+#   geom_spatraster(
+#     data = new_mask,
+#   ) +
+#   scale_fill_viridis_c(
+#     option = "G",
+#     begin = 1,
+#     end = 0.9,
+#     na.value = "transparent"
+#   ) +
+#   geom_point(
+#     aes(
+#       x = lon,
+#       y = lat,
+#       col = presence,
+#       shape = pa
+#     ),
+#     size = 0.5
+#   ) +
+#   facet_wrap(~species)
+#
+#
+# z |>
+#   filter(pa == "pa") |>
+#   filter(
+#     species %in% c(
+#       "gambiae_complex",
+#       "arabiensis",
+#       "funestus",
+#       "gambiae",
+#       "pharoensis",
+#       "coluzzii",
+#       "melas",
+#       "nili",
+#       "merus",
+#       "moucheti"
+#     )
+#   ) |>
+#   dplyr::select(lon, lat, species, presence) |>
+#   group_by(lon, lat, species) |>
+#   summarise(presence = max(presence), .groups = "drop") |>
+#   tidyr::pivot_wider(
+#     names_from = species,
+#     values_from = presence
+#   ) |>
+#   # mutate(
+#   #   across(
+#   #     c(-lat, -lon),
+#   #     ~ ifelse(is.na(.x), 0, .x)
+#   #   )
+#   # ) |>
+#   # mutate(
+#   #   n = arabiensis +
+#   #     pharoensis +
+#   #     funestus +
+#   #     gambiae_complex +
+#   #     melas +
+#   #     nili +
+#   #     coluzzii +
+#   #     gambiae +
+#   #     merus
+#   # ) |>
+#   mutate(
+#     n = as.numeric(!is.na(arabiensis)) +
+#       as.numeric(!is.na(pharoensis)) +
+#       as.numeric(!is.na(funestus)) +
+#       as.numeric(!is.na(gambiae_complex)) +
+#       as.numeric(!is.na(melas)) +
+#       as.numeric(!is.na(nili)) +
+#       as.numeric(!is.na(coluzzii)) +
+#       as.numeric(!is.na(gambiae)) +
+#       as.numeric(!is.na(merus))
+#   ) |>
+#   arrange(desc(n))
 
 
 model_records <- data_records  |>
@@ -295,9 +308,17 @@ po_covs <- extract_covariates(
   make_mpp_list(species)
 
 
+# library(targets)
+# tar_load(bg_points)
+# bg_points |>
+#   as.data.frame() |>
+#   write_csv("data/bg_points.csv")
+bg_points <- read_csv("data/bg_points.csv") |>
+  as.matrix()
+
 bg <- extract_covariates(
   covariates = modlyr,
-  presences = background |>
+  presences = bg_points |>
     as_tibble()
 ) |>
   select(-presence) |>
@@ -311,3 +332,4 @@ bg <- extract_covariates(
 # otherwise convert counts to PA
 # retain sampling method
 #
+save.image("outputs/dataect.RData")
