@@ -10,8 +10,9 @@ library(sdmtools)
 # based on code from sdmtools::split_rast
 
 # raster of predictor variables
-model_layers_mech <- rast("outputs/model_layers_mech.tif")
-x <- model_layers_mech
+# model_layers_mech <- rast("outputs/model_layers_mech.tif")
+
+x <- rast("data/raster/static_vars_agg_mech_nonzero.tif")
 
 
 # grain is the number of vertical and horizontal mosaic slices to create
@@ -239,9 +240,16 @@ predlist <- future_mapply(
 )
 
 
-list.files(
+preds <- list.files(
   path = "outputs/predstemp/",
   pattern = "*.tif",
   full.names = TRUE
-)
+) |>
+  lapply(
+    FUN = rast
+  ) |>
+  sprc() |>
+  merge(
+    filename = "outputs/preds_biomech_20240904.tif"
+  )
 

@@ -19,8 +19,40 @@ source("R/clean_species.R")
 
 raw_data <- read_csv("data/raw_data.csv")
 
-modlyr <- rast("outputs/model_layers_mech.tif")
+# layer with empty zero values for gambiae mechanistic
+#modlyr <- rast("outputs/model_layers_mech.tif")
 
+
+# alt layer with low values for mechanistic replaced with exp(-30)
+# this also is aggregated by a factor of 10 for speed
+# static_vars <- rast("~/Documents/tki_work/vector_atlas/africa_spatial_data/outputs/raster/africa_static_vars_std.tif")
+#
+# mmv <- aggregate(
+#   static_vars,
+#   fact = 10,
+#   filename = "data/raster/static_vars_agg.tif",
+#   overwrite = TRUE,
+#   cores = 4
+# )
+#
+# mechvals <- values(mmv[["ag_microclim"]])
+#
+# lowidx <- which(mechvals <= exp(-30))
+#
+# mechvals[lowidx] <- exp(-30)
+#
+# mmv[["ag_microclim"]] <- mechvals
+#
+# aridvals <- values(mmv[["arid"]])
+#
+# mmv[["arid"]] <- round(aridvals, digits = 0)
+#
+# modlyr <- writereadrast(
+#   mmv,
+#   "data/raster/static_vars_agg_mech_nonzero.tif"
+# )
+
+modlyr <- rast("data/raster/static_vars_agg_mech_nonzero.tif")
 
 data_records <- raw_data |>
   dplyr::select(
