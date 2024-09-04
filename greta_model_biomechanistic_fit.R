@@ -309,6 +309,9 @@ inits <- function(){
 #   facet_wrap(~sp)
 
 
+library(future)
+library(future.apply)
+plan("multisession", workers = 4)
 
 draws <- mcmc(m, warmup = 500, n_samples = 500, initial_values = inits())
 
@@ -377,7 +380,7 @@ inits_2 <- initials(
 
 
 
-draws <- mcmc(m, warmup = 2000, n_samples = 2000, initial_values = inits_2)
+draws <- mcmc(m, warmup = 5000, n_samples = 5000, initial_values = inits_2)
 
 r_hats <- coda::gelman.diag(draws, autoburnin = FALSE, multivariate = FALSE)
 max(r_hats$psrf[, 2])

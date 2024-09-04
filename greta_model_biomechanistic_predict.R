@@ -259,10 +259,6 @@ grain <- 10
 dimx <- dim(x)[1]
 dimy <- dim(x)[2]
 
-if(grain > dimx | grain > dimy){
-  stop("grain is > x or y dimension.\nCannot split into rasters smaller than cells.")
-}
-
 resx <- terra::res(x)[1]
 resy <- terra::res(x)[2]
 
@@ -324,8 +320,7 @@ predict_greta_sdm_fmapply <- function(
     image = "outputs/drawsetc.RData"
 ){
 
-  load(file = image)
-  nspp <- length(spp)
+
 
   r <- rast(r)
   r <- r[[
@@ -364,6 +359,9 @@ predict_greta_sdm_fmapply <- function(
     )
     return(print(n))
   }
+
+  load(file = image)
+  nspp <- length(spp)
 
   x_predict <- layer_values[
     !naidx,
@@ -422,12 +420,12 @@ predict_greta_sdm_fmapply <- function(
 library(future)
 library(future.apply)
 
-plan("multisession", workers = 1)
+plan("multisession", workers = 4)
 
 
 predlist <- future_mapply(
   FUN = predict_greta_sdm_fmapply,
-  xts = extlist[1:100],
+  xts = extlist,
   n = 1:100,
   MoreArgs = list(
     r = "outputs/model_layers_mech.tif",
