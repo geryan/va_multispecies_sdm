@@ -10,8 +10,9 @@ library(sdmtools)
 # based on code from sdmtools::split_rast
 
 # raster of predictor variables
-model_layers_mech <- rast("outputs/model_layers_mech.tif")
-x <- model_layers_mech
+# model_layers_mech <- rast("outputs/model_layers_mech.tif")
+
+x <- rast("data/raster/static_vars_agg_mech_nonzero.tif")
 
 
 # grain is the number of vertical and horizontal mosaic slices to create
@@ -136,7 +137,7 @@ predict_greta_sdm_fmapply <- function(
     writeRaster(
       preds,
       filename = sprintf(
-        "outputs/predstemp_alt/pred_%s.tif",
+        "outputs/predstemp/pred_%s.tif",
         n
       ),
       overwrite = TRUE
@@ -227,21 +228,28 @@ plan("multisession", workers = 1)
 
 predlist <- future_mapply(
   FUN = predict_greta_sdm_fmapply,
-  xts = extlist,
-  n = 1:100,
+  xts = extlist[64:100],
+  n = 64:100,
   MoreArgs = list(
     r = "outputs/model_layers_mech.tif",
     spp = c("arabiensis", "funestus",  "coluzzii", "gambiae"),
-    image = "outputs/drawsetc_large_mod_nonzero_mech_alt_penalties.RData"
+    image = "outputs/drawsetc.RData"
   ),
   # this gets rid of some annoying messages from future but probably does nothing
   future.seed = 20240903
 )
 
 
-list.files(
+preds <- list.files(
   path = "outputs/predstemp/",
   pattern = "*.tif",
   full.names = TRUE
-)
+) |>
+  lapply(
+    FUN = rast
+  ) |>
+  sprc() |>
+  merge(
+    filename = "outputs/preds_biomech_20240904.tif"
+  )
 

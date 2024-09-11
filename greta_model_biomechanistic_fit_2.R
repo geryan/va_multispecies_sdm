@@ -162,12 +162,12 @@ po.count[(npa+nbg+npospp[1]+npospp[2]+npospp[3]+1):(npa+nbg+npospp[1]+npospp[2]+
 
 # define parameters with normal priors, matching the ridge regression setup in
 # multispeciesPP defaults
-penalty.l2.sdm <- penalty.l2.bias <- 0.1
-penalty.l2.intercept <- 1e-4
+#penalty.l2.sdm <- penalty.l2.bias <- 0.1
+#penalty.l2.intercept <- 1e-4
 
 # trying others
-# penalty.l2.sdm <- penalty.l2.bias <- 0.2
-# penalty.l2.intercept <- 1e-2
+penalty.l2.sdm <- penalty.l2.bias <- 0.2
+penalty.l2.intercept <- 1e-2
 
 
 intercept_sd <- sqrt(1 / penalty.l2.intercept)
@@ -332,20 +332,12 @@ inits <- function(
 #   facet_wrap(~sp)
 
 
-library(future)
-library(future.apply)
-plan(multisession, workers = 4)
-system.time(
-  draws <- mcmc(
-    m,
-    warmup = 200,
-    n_samples = 200,
-    initial_values = inits()
-  )
+draws <- mcmc(
+  m,
+  warmup = 1000,
+  n_samples = 3000,
+  initial_values = inits()
 )
-
-
-#draws <- mcmc(m, warmup = 1000, n_samples = 3000)
 
 r_hats <- coda::gelman.diag(draws, autoburnin = FALSE, multivariate = FALSE)
 max(r_hats$psrf[, 2])
@@ -410,14 +402,11 @@ inits_2 <- initials(
 
 
 
-plan(multisession, workers = 4)
-system.time(
-  draws <- mcmc(
+draws <- mcmc(
     m,
     warmup = 5000,
     n_samples = 5000,
     initial_values = inits()
-  )
 )
 
 r_hats <- coda::gelman.diag(draws, autoburnin = FALSE, multivariate = FALSE)
@@ -425,7 +414,7 @@ max(r_hats$psrf[, 2])
 r_hats
 
 
-save.image("outputs/drawsetc.RData")
+save.image("outputs/drawsetc_large_mod_nonzero_mech_alt_penalties.RData")
 
 
 
