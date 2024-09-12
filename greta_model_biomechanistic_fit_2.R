@@ -56,43 +56,43 @@ all_locations <- bind_rows(
   select(
     ag_microclim,
     research_tt_by_country,
-    arid,
+    #arid,
     # built_volume,
     # cropland,
-    elevation,
-    evi_mean, # correlates with pressure_mean rainfall_mean and solrad_mean
-    footprint, # correlates with built_volume and cropland
-    lst_day_mean,
-    lst_night_mean,
-    # pressure_mean,
-    # rainfall_mean,
-    soil_clay,
-    # solrad_mean,
-    # surface_water, remove and replace with distance to surface water
-    tcb_mean, # strongly correlates with tcw
-    # tcw_mean,
-    windspeed_mean,
-    easting,
-    northing
+    #elevation,
+    evi_mean#, # correlates with pressure_mean rainfall_mean and solrad_mean
+    # footprint, # correlates with built_volume and cropland
+    # lst_day_mean,
+    # lst_night_mean,
+    # # pressure_mean,
+    # # rainfall_mean,
+    # soil_clay,
+    # # solrad_mean,
+    # # surface_water, remove and replace with distance to surface water
+    # tcb_mean, # strongly correlates with tcw
+    # # tcw_mean,
+    # windspeed_mean,
+    # easting,
+    # northing
   )
 
-# check the correlation
-pairs(
-  all_locations[
-    round(
-      seq(
-        from = 1,
-        to = nrow(all_locations),
-        length.out = 1000
-      )
-    ),
-    3:11
-  ],
-  cex = 0.5,
-  pch = 16,
-  upper.panel = NULL,
-  gap = 0
-)
+# # check the correlation
+# pairs(
+#   all_locations[
+#     round(
+#       seq(
+#         from = 1,
+#         to = nrow(all_locations),
+#         length.out = 1000
+#       )
+#     ),
+#     3:11
+#   ],
+#   cex = 0.5,
+#   pch = 16,
+#   upper.panel = NULL,
+#   gap = 0
+# )
 
 mech_dat <- all_locations$ag_microclim
 
@@ -172,11 +172,12 @@ penalty.l2.intercept <- 1e-2
 
 intercept_sd <- sqrt(1 / penalty.l2.intercept)
 beta_sd <- sqrt(1 / penalty.l2.sdm)
-delta_sd <- sqrt(1 / penalty.l2.bias)
+#delta_sd <- sqrt(1 / penalty.l2.bias)
+delta_sd <- 1 # will need to alter if >1 sources of bias
 
 # intercept and shared slope for selection bias
 gamma <- normal(0, intercept_sd, dim = n_species)
-delta <- normal(0, delta_sd, dim = c(n_cov_bias))
+delta <- normal(0, delta_sd, dim = c(n_cov_bias), truncation = c(0, Inf)) # constrain to be positive
 
 # intercept and slopes for abundance rate
 alpha <- normal(0, intercept_sd, dim = n_species)
@@ -334,8 +335,8 @@ inits <- function(
 
 draws <- mcmc(
   m,
-  warmup = 1000,
-  n_samples = 3000,
+  warmup = 500,
+  n_samples = 1000,
   initial_values = inits()
 )
 
