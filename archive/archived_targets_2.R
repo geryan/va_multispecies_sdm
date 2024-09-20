@@ -24,59 +24,8 @@ tar_source(files = "R")
 
 
 list(
-  #########################
-  # spatial data
-  ########################
 
-  # spatial data preprocessing in
-  # https://github.com/geryan/africa_spatial_data
-
-
-  # aggregated predictor variables, i.e., lower resolution images for quicker processting
-  # but use the high res ones for final product
-  # # mech layer is set to the minimum value above zero
-  tar_terra_rast(
-    static_vars_agg_mech_nonzero,
-    rast("data/raster/static_vars_agg_mech_nonzero.tif")
-  ),
-
-  tar_terra_rast(
-    new_mask,
-    rast("~/Documents/tki_work/vector_atlas/africa_spatial_data/outputs/raster/new_mask.tif")
-  ),
-
-
-  # tar_terra_rast(
-  #   static_vars_standardised,
-  #   rast("~/Documents/tki_work/vector_atlas/africa_spatial_data/outputs/raster/africa_static_vars_std.tif")
-  # ),
-  #
-  #
-  # tar_terra_rast(
-  #   unstandardised_layers,
-  #   rast("~/Documents/tki_work/vector_atlas/africa_spatial_data/outputs/raster/africa_static_vars.tif")
-  # ),
-
-  tar_seed_set(
-    tar_seed_create("bg_points")
-  ),
-
-  tar_target(
-    bg_points,
-    terra::spatSample(
-      x = new_mask,
-      size = 30000,
-      na.rm = TRUE,
-      as.points = TRUE
-    ) %>%
-      crds()
-  ), #mfing slow but setting of seed stops it rerunning # upped number and not that mfing slow???
-
-
-
-  ####################################
   # data wrangling and cleaning
-  ###################################
  tar_target(
    raw_data_file,
    "data/tabular/final_species_20240314.csv",
@@ -89,37 +38,21 @@ list(
     guess_max = 30000
    )
  ),
-
+ tar_target(
+   va_data,
+   tidy_va_data(raw_data)
+ ),
+ tar_target(
+   record_data_all,
+   records_from_va(va_data)
+ ),
  tar_target(
    data_records,
-   make_data_records(raw_data)
+   filter_few(record_data_all) |>
+     filter(species != "gambiae_complex")
+   # potentially remove later or put elsewhere
  ),
 
- tar_target(
-   target_species,
-   c(
-     #"gambiae_complex",
-     "arabiensis",
-     "funestus",
-     "gambiae",
-     #"pharoensis",
-     "coluzzii"#,
-     # "melas",
-     # "nili",
-     # "merus",
-     # "moucheti"
-   )
- ),
-
-
- tar_target(
-   model_data,
-   make_model_data(
-     data_records,
-     bg_points,
-     target_species
-   )
- ),
 
  # summary stats and figures
  tar_target(
@@ -145,6 +78,95 @@ list(
    )
  ),
 
+
+ # spatial data prep done in separate project africa_spatial_data.Rproj
+ # tar_target(
+ #   mask_name,
+ #   "data/raster/africa_mask.tif",
+ #   format = "file"
+ # ),
+ # geotargets::tar_terra_rast(
+ #   africa_mask,
+ #   prepare_mask(mask_name)
+ # ),
+ # geotargets::tar_terra_rast(
+ #   covariate_rasters,
+ #   prepare_covariates(africa_mask)
+ # ),
+ # tar_terra_rast(
+ #   new_mask,
+ #   make_new_mask(covariate_rasters)
+ # ),
+ # tar_target(
+ #   bias_name,
+ #   "/Users/gryan/Documents/tki_work/vector_atlas/africa_anopheles_sampling_bias/outputs/travel_time.tif", # travel time to research station
+ #   #"~/Documents/tki_work/vector_atlas/vector_sdm_course/data/downloads/travel_time_to_cities_2.tif", # travel time to city
+ #   format = "file"
+ # ),
+ # geotargets::tar_terra_rast(
+ #   bias,
+ #   prepare_bias(
+ #     new_mask,
+ #     bias_name
+ #   ) |>
+ #     standardise_rast()
+ # ),
+ # tar_terra_vect(
+ #   new_mask_v,
+ #   as.polygons(new_mask)
+ # ),
+ #
+ # geotargets::tar_terra_rast(
+ #   model_layers,
+ #   c(covariate_rasters, bias)
+ # ),
+
+ tar_terra_rast(
+   new_mask,
+   rast("~/Documents/tki_work/vector_atlas/africa_spatial_data/outputs/raster/new_mask.tif")
+ ),
+
+ tar_terra_rast(
+   model_layers,
+   rast("~/Documents/tki_work/vector_atlas/africa_spatial_data/outputs/raster/africa_static_vars_std.tif")
+ ),
+
+ tar_terra_rast(
+   model_layers_mech,
+   prepare_model_layers_mech(model_layers)
+ ),
+
+ tar_terra_rast(
+   unstandardised_layers,
+   rast("~/Documents/tki_work/vector_atlas/africa_spatial_data/outputs/raster/africa_static_vars.tif")
+ ),
+
+ tar_seed_set(
+   tar_seed_create("bg_points")
+ ),
+
+ tar_target(
+   bg_points,
+   terra::spatSample(
+     x = new_mask,
+     size = 30000,
+     na.rm = TRUE,
+     as.points = TRUE
+   ) %>%
+     crds()
+ ), #mfing slow but setting of seed stops it rerunning # upped number and not that mfing slow???
+
+
+ tar_target(
+   bg_points_mech,
+   terra::spatSample(
+     x = rast("data/raster/mechmask.tif"),
+     size = 30000,
+     na.rm = TRUE,
+     as.points = TRUE
+   ) %>%
+     crds()
+ ),
 
  # model data collation and fitting
  tar_target(
