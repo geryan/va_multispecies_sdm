@@ -113,11 +113,19 @@ list(
 
 
  tar_target(
-   model_data,
-   make_model_data(
+   model_data_ragged,
+   make_model_data_ragged(
      data_records,
      bg_points,
      target_species
+   )
+ ),
+
+ tar_target(
+   model_notna_idx_pa,
+   get_notna_idx(
+     model_data_ragged,
+     type = "pa"
    )
  ),
 
