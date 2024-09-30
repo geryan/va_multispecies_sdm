@@ -15,7 +15,8 @@ tar_option_set(
     "idpalette", # remotes::install_github("idem-lab/idpalette)
     "rasterVis",
     "tidyterra",
-    "geodata"
+    "geodata",
+    "greta"
   ),
   workspace_on_error = TRUE
 )
@@ -149,7 +150,7 @@ list(
    )
  ),
 
- ## plots
+ ## plots before modelling
 
  tar_target(
    covs_plots,
@@ -159,13 +160,31 @@ list(
      model_notna_idx_pa,
      model_notna_idx_po
    )
- )
+ ),
 
 
  ## models
 
+ tar_target(
+   model_fit_image_multisp_pp_with_offset,
+   fit_model_multisp_pp_with_offset(
+     model_data_ragged,
+     spatial_values,
+     model_notna_idx_pa,
+     model_notna_idx_po,
+     image_name = "outputs/images/multisp_pp_with_offset.RData",
+     warmup = 500,
+     draws = 1000
+   )
+ ),
 
 
+ #####################
+
+ tar_target(
+   so_i_dont_have_to_go_backward_and_add_commas,
+   print("Targets great in theory but kinda annoying to work with")
+ )
 
 )
 
