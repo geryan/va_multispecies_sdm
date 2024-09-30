@@ -1,5 +1,9 @@
-make_data_records <- function(raw_data){
-  raw_data |>
+make_data_records <- function(
+    raw_data,
+    target_area_raster
+  ){
+
+  tidy_records <- raw_data |>
     dplyr::select(
       source_ID,
       occ_data,
@@ -94,4 +98,21 @@ make_data_records <- function(raw_data){
     ) |>
     arrange(species, pa, presence) |>
     distinct()
+
+  idx <- which(
+    !is.na(
+      terra::extract(
+        x = target_area_raster,
+        y = tidy_records |>
+          select(
+            lon,
+            lat
+          ) |>
+          as.matrix()
+      )
+    )
+  )
+
+  tidy_records[idx,]
+
 }

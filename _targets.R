@@ -64,7 +64,7 @@ list(
   tar_target(
     bg_points,
     terra::spatSample(
-      x = new_mask,
+      x = static_vars_agg_mech_nonzero[[1]],
       size = 30000,
       na.rm = TRUE,
       as.points = TRUE
@@ -92,7 +92,10 @@ list(
 
  tar_target(
    data_records,
-   make_data_records(raw_data)
+   make_data_records(
+     raw_data,
+     static_vars_agg_mech_nonzero[[1]]
+   )
  ),
 
  tar_target(
@@ -129,115 +132,132 @@ list(
    )
  ),
 
- # summary stats and figures
  tar_target(
-   records_table,
-   make_records_table(data_records)
- ),
- tar_target(
-   record_plot_data,
-   make_record_plot_data(data_records)
- ),
- tar_target(
-   record_plot,
-   make_record_plot(record_plot_data)
- ),
- tar_target(
-   record_plot_file,
-   ggsave(
-     filename = "outputs/figures/record_count_plot.png",
-     plot = record_plot,
-     width = 2400,
-     height = 1500,
-     units = "px"
+   model_notna_idx_po,
+   get_notna_idx(
+     model_data_ragged,
+     type = "po"
    )
  ),
+
+ tar_target(
+   spatial_values,
+   get_spatial_values(
+     lyrs = static_vars_agg_mech_nonzero,
+     dat = model_data_ragged,
+     bgs = bg_points
+   )
+ )
+
+ # summary stats and figures
+ # tar_target(
+ #   records_table,
+ #   make_records_table(data_records)
+ # ),
+ # tar_target(
+ #   record_plot_data,
+ #   make_record_plot_data(data_records)
+ # ),
+ # tar_target(
+ #   record_plot,
+ #   make_record_plot(record_plot_data)
+ # ),
+ # tar_target(
+ #   record_plot_file,
+ #   ggsave(
+ #     filename = "outputs/figures/record_count_plot.png",
+ #     plot = record_plot,
+ #     width = 2400,
+ #     height = 1500,
+ #     units = "px"
+ #   )
+ # )#,
 
 
  # model data collation and fitting
- tar_target(
-   mpp_data,
-   format_mpp_data(
-     records = data_records,
-     background = bg_points,
-     modlyr = model_layers
-   )
- ),
+ # tar_target(
+ #   mpp_data,
+ #   format_mpp_data(
+ #     records = data_records,
+ #     background = bg_points,
+ #     modlyr = model_layers
+ #   )
+ # ),
+ #
+ # tar_target(
+ #   mpp_data_mech,
+ #   format_mpp_data(
+ #     records = data_records,
+ #     background = bg_points_mech,
+ #     modlyr = model_layers_mech
+ #   )
+ # ),
 
- tar_target(
-   mpp_data_mech,
-   format_mpp_data(
-     records = data_records,
-     background = bg_points_mech,
-     modlyr = model_layers_mech
-   )
- ),
-
- tar_target(
-   region_size,
-   sum(!is.na(values(model_layers[[1]])))
- ),
+ # tar_target(
+ #   region_size,
+ #   sum(!is.na(values(model_layers[[1]])))
+ # ),
 
 
   ### Model 1
-  tar_target(
-    mpp_fit_1,
-    multispeciesPP(
-      sdm.formula = ~ arid +
-        built_volume +
-        cropland +
-        elevation +
-        evi_mean +
-        footprint +
-        lst_day_mean +
-        lst_night_mean +
-        pop +
-        pressure_mean +
-        rainfall_mean +
-        soil_clay +
-        solrad_mean +
-        surface_water +
-        tcb_mean +
-        tcw_mean +
-        windspeed_mean +
-        easting +
-        northing,
-      bias.formula = ~ research_tt_by_country,
-      PA = mpp_data$pa,
-      PO = mpp_data$po,
-      BG = mpp_data$bg,
-      region.size = region_size,
-      quadrat.size = 1
-    )
-  ),
-  tar_terra_rast(
-    preds_1,
-    predict_mpp_rast_all(
-      model = mpp_fit_1,
-      data = model_layers,
-      filename = "outputs/preds_1.tif",
-      overwrite = TRUE
-    )
-  ),
-  tar_target(
-    pred_plot_1,
-    levelplot(
-      preds_1,
-      col.regions = idpalette("idem", 20),
-      layout = c(2,2)
-    )
-  ),
-  tar_target(
-    pred_plot_file_1,
-    sdmtools::save_plot(
-      p = pred_plot_1,
-      filename = "outputs/figures/pred_plot_1.png",
-      width = 2400,
-      #height = 1500,
-      units = "px",
-      res = 300
-    )
-  )
+  # tar_target(
+  #   mpp_fit_1,
+  #   multispeciesPP(
+  #     sdm.formula = ~ arid +
+  #       built_volume +
+  #       cropland +
+  #       elevation +
+  #       evi_mean +
+  #       footprint +
+  #       lst_day_mean +
+  #       lst_night_mean +
+  #       pop +
+  #       pressure_mean +
+  #       rainfall_mean +
+  #       soil_clay +
+  #       solrad_mean +
+  #       surface_water +
+  #       tcb_mean +
+  #       tcw_mean +
+  #       windspeed_mean +
+  #       easting +
+  #       northing,
+  #     bias.formula = ~ research_tt_by_country,
+  #     PA = mpp_data$pa,
+  #     PO = mpp_data$po,
+  #     BG = mpp_data$bg,
+  #     region.size = region_size,
+  #     quadrat.size = 1
+  #   )
+  # ),
+  # tar_terra_rast(
+  #   preds_1,
+  #   predict_mpp_rast_all(
+  #     model = mpp_fit_1,
+  #     data = model_layers,
+  #     filename = "outputs/preds_1.tif",
+  #     overwrite = TRUE
+  #   )
+  # ),
+  # tar_target(
+  #   pred_plot_1,
+  #   levelplot(
+  #     preds_1,
+  #     col.regions = idpalette("idem", 20),
+  #     layout = c(2,2)
+  #   )
+  # ),
+  # tar_target(
+  #   pred_plot_file_1,
+  #   sdmtools::save_plot(
+  #     p = pred_plot_1,
+  #     filename = "outputs/figures/pred_plot_1.png",
+  #     width = 2400,
+  #     #height = 1500,
+  #     units = "px",
+  #     res = 300
+  #   )
+  # )
 
 
 
