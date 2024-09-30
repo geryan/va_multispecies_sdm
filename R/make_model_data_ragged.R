@@ -19,7 +19,11 @@ make_model_data_ragged <- function(
       type = pa
     ) |>
     mutate(
-      count = ifelse(is.na(count), 0, count)
+      count = case_when(
+        type == "po" ~ 1, # this will need editing if want to use counts for PO data
+        !is.na(count) ~ count,
+        TRUE ~ 0
+      )
     ) |>
     group_by(lon, lat, species, type) |>
     summarise(count = max(count), .groups = "drop") |>
@@ -45,8 +49,6 @@ make_model_data_ragged <- function(
 
 
 }
-
-
 
 
 ## model
