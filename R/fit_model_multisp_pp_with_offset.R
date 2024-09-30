@@ -89,6 +89,13 @@ fit_model_multisp_pp_with_offset <- function(
   area_bg <- 825.1676 # this is with 30k bg points
 
 
+  # combine above infilled data as indexing should take care of it
+  # something off with the po zero count data
+  # compare:
+  # data_records |> filter(pa == "po") |> filter(count == 0)
+  # model_data_ragged |> filter(type == "po")
+
+
 
 
 
