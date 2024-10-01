@@ -177,6 +177,17 @@ list(
      n_samples = 1000,
      n_chains = 4
    )
+ ), # wtf is the fucking problem this image is not saving for some unknown
+ # bloody reason. is it too big with all the crap in the image?
+
+ tar_target(
+   pred_files_multisp_pp_with_offset,
+   predict_greta_mspp(
+     image_filename = model_fit_image_multisp_pp_with_offset,
+     prediction_layer = static_vars_agg_mech_nonzero,
+     target_species,
+     output_file = "outputs/rasters/multisp_pp_with_offset.tif"
+   )
  ),
 
 
