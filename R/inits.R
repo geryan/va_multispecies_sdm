@@ -108,7 +108,7 @@ inits <- function(
   }
 
   replicate(
-    n = n_times,
+    n = n_chains,
     expr = inits_internal(
       nsp,
       ncv,
