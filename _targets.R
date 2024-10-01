@@ -190,6 +190,14 @@ list(
    )
  ),
 
+ tar_target(
+   posterior_multis_pp_with_offset,
+   calculate_posterior(
+     image_filename = model_fit_image_multisp_pp_with_offset,
+
+   )
+ ),
+
 
  #####################
 
