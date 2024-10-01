@@ -4,8 +4,9 @@ fit_model_multisp_pp_with_offset <- function(
     model_notna_idx_pa,
     model_notna_idx_po,
     image_name = "outputs/images/multisp_pp_with_offset.RData",
-    warmup = 500,
-    draws = 1000
+    n_burnin = 50,
+    n_samples = 100,
+    n_chains = 4
 ){
 
 
@@ -46,21 +47,11 @@ fit_model_multisp_pp_with_offset <- function(
   # get bias values
   z <- spatial_values[,"research_tt_by_country"]
 
-  # index of background data in x
-  bg_idx <- (nrow(model_data_ragged) + 1):nrow(spatial_values)
-  # number of background data points
-  nbg <- length(bg_idx)
-  # create infilled bg matrix of zeroes for bg data
-  bg_infilled <- matrix(
-    data = 0,
-    nrow = nbg,
-    ncol = n_species
-  )
 
   # get pa data matrix and infill NAs with zeroes
   # these will be ignored in model because of indexing with
   # model_notna_idx_pa and model_notna_idx_po
-  data_infilled <- model_data_ragged |>
+  pa_infilled <- model_data_ragged |>
     #filter(type == "pa") |>
     select(
       -lon,
@@ -77,11 +68,7 @@ fit_model_multisp_pp_with_offset <- function(
         function(x){ifelse(is.na(x), 0, x)}
       )
     ) |>
-    as.matrix() |>
-    # then join to the bg data for one orthogonal data set
-    rbind(bg_infilled)
-
-
+    as.matrix()
 
   # number of cells in analysis data per Fithian model (not in raster)
   n.pixel <- nrow(x)
@@ -91,10 +78,29 @@ fit_model_multisp_pp_with_offset <- function(
   n_cov_bias <- ncol(z)
 
   # number of species
-  n_species <- ncol(data_infilled)
+  n_species <- ncol(pa_infilled)
+
+  # index of background data in x
+  bg_idx <- (nrow(model_data_ragged) + 1):nrow(spatial_values)
+  # number of background data points
+  nbg <- length(bg_idx)
+  # create infilled bg matrix of zeroes for bg data
+  bg_infilled <- matrix(
+    data = 0,
+    nrow = nbg,
+    ncol = n_species
+  )
 
   # area of background cells
   area_bg <- 825.1676 # this is with 30k bg points
+
+  # create orthogonal dataset of ones and zeroes
+  # again, unsampled sites will be ignored by indexing in model
+  data_infilled <- rbind(
+    pa_infilled,
+    bg_infilled
+  )
+
 
   # define parameters with normal priors, matching the ridge regression setup in
   # multispeciesPP defaults
@@ -197,14 +203,22 @@ fit_model_multisp_pp_with_offset <- function(
   # define and fit the model by MAP and MCMC
   m <- model(alpha, beta, gamma, delta)
 
+  draws <- mcmc(
+    m,
+    warmup = n_burnin,
+    n_samples = n_samples,
+    chains = n_chains,
+    initial_values = inits(
+      n_chains = n_chains,
+      nsp = n_species,
+      ncv = n_cov_abund
+    )
+  )
 
+  save.image(
+    file = image_name
+  )
 
-
-
-
-
-
-
-
+  image_name
 
 }

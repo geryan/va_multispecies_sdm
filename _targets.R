@@ -173,8 +173,9 @@ list(
      model_notna_idx_pa,
      model_notna_idx_po,
      image_name = "outputs/images/multisp_pp_with_offset.RData",
-     warmup = 500,
-     draws = 1000
+     n_burnin = 1000,
+     n_samples = 1000,
+     n_chains = 4
    )
  ),
 
