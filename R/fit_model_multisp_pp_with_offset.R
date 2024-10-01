@@ -126,10 +126,6 @@ fit_model_multisp_pp_with_offset <- function(
   beta <- normal(0, beta_sd, dim = c(n_cov_abund, n_species))
 
 
-  # intercept and slopes for abundance rate
-  alpha <- normal(0, intercept_sd, dim = n_species)
-  beta <- normal(0, beta_sd, dim = c(n_cov_abund, n_species))
-
   # log rates across all sites
   # larval habitat based on env covariates
   log_lambda_larval_habitat <- sweep(x %*% beta, 2, alpha, FUN = "+")
@@ -219,6 +215,8 @@ fit_model_multisp_pp_with_offset <- function(
     file = image_name
   )
 
-  image_name
+  print(image_name)
+
+  return(image_name)
 
 }
