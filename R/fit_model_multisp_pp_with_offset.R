@@ -211,7 +211,10 @@ fit_model_multisp_pp_with_offset <- function(
     )
   )
 
-  save.image(
+  # can't use save.image inside function inside targets because it only saves
+  # global environment not function env.
+  save(
+    list = ls(all.names = TRUE),
     file = image_name
   )
 
