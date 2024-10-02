@@ -108,6 +108,19 @@ list(
  ),
 
  tar_target(
+   record_tbl,
+   tibble(
+     species = rownames(record_table),
+     pa = record_table[,1],
+     po = record_table[,2]
+   ) |>
+     mutate(
+       n = pa + po
+     ) |>
+     arrange(desc(n))
+ ),
+
+ tar_target(
    target_species,
    c(
      #"abscurus",
@@ -223,8 +236,13 @@ list(
    )
  ),
 
-
+ ################
  ## models
+ ################
+
+ ##
+ ## multispecies pp with biophysical offset
+ ##
 
  tar_target(
    model_fit_image_multisp_pp_with_offset,
@@ -238,12 +256,11 @@ list(
      n_samples = 1000,
      n_chains = 4
    )
- ), # wtf is the fucking problem this image is not saving for some unknown
- # bloody reason. is it too big with all the crap in the image?
+ ),
 
  tar_target(
    pred_file_multisp_pp_with_offset,
-   predict_greta_mspp(
+   predict_greta_mspp_with_offset(
      image_filename = model_fit_image_multisp_pp_with_offset,
      prediction_layer = static_vars_agg_mech_nonzero,
      target_species,
@@ -256,11 +273,44 @@ list(
    rast(pred_file_multisp_pp_with_offset)
  ),
 
+ # tar_target(
+ #   posterior_multisp_pp_with_offset,
+ #   calculate_posterior_multisp_pp_with_offset(
+ #     image_filename = model_fit_image_multisp_pp_with_offset
+ #   )
+ # ),
+
+ ##
+ ## multispecies pp (no offset)
+ ##
+
  tar_target(
-   posterior_multisp_pp_with_offset,
-   calculate_posterior_multisp_pp_with_offset(
-     image_filename = model_fit_image_multisp_pp_with_offset
+   model_fit_image_multisp_pp,
+   fit_model_multisp_pp(
+     model_data_ragged,
+     spatial_values,
+     model_notna_idx_pa,
+     model_notna_idx_po,
+     image_name = "outputs/images/multisp_pp.RData",
+     n_burnin = 1000,
+     n_samples = 1000,
+     n_chains = 4
    )
+ ),
+
+ tar_target(
+   pred_file_multisp_pp,
+   predict_greta_mspp(
+     image_filename = model_fit_image_multisp_pp,
+     prediction_layer = static_vars_agg_mech_nonzero,
+     target_species,
+     output_file = "outputs/rasters/multisp_pp.tif"
+   )
+ ),
+
+ tar_terra_rast(
+   pred_multisp_pp,
+   rast(pred_file_multisp_pp)
  ),
 
 
