@@ -98,11 +98,13 @@ inits <- function(
           mean = ing,
           sd = sdg
         ),
-        delta = rnorm(
-          n = n_d,
-          mean = ind,
-          sd = sdd
-        )
+        delta = abs(
+          rnorm(
+            n = n_d,
+            mean = ind,
+            sd = sdd
+          )
+        ) # this taking of the absolute value is a hack to ensure it's >= zero, per the truncated normal in the model
       )
     )
   }
