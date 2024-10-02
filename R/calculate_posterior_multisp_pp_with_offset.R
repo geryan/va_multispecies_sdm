@@ -1,10 +1,10 @@
-calculate_posterior <- function(
+calculate_posterior_multisp_pp_with_offset <- function(
     image_filename
 ){
 
   load(image_filename)
 
-  posterior <- calculate(alpha, beta, gamma, delta, values = draws, nsim = 100)
+  posterior <- calculate(p, alpha, beta, gamma, delta, values = draws)
 
   post_alpha <- posterior$alpha[,,1]
   colnames(post_alpha) <- target_species
