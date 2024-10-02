@@ -100,18 +100,79 @@ list(
  ),
 
  tar_target(
+   record_table,
+   table(
+     data_records$species,
+     data_records$pa
+   )
+ ),
+
+ tar_target(
    target_species,
    c(
-     "gambiae_complex",
+     #"abscurus",
      "arabiensis",
+     #"ardensis",
+     #"barberellus",
+     #"brunnipes",
+     #"bwambae",
+     #"carnevalei",
+     #"christyi",
+     #"chrysti",
+     #"cinereus",
+     #"claviger",
+     "coluzzii",
+     #"coustani",
+     #"cydippis",
+     #"demeilloni",
+     #"domicola",
+     #"dthali",
+     #"flavicosta",
+     #"freetownensis",
      "funestus",
      "gambiae",
-     "pharoensis",
-     "coluzzii",
-      "melas",
-      "nili",
-      "merus",
-      "moucheti"
+     "gambiae_complex",
+     #"garnhami",
+     #"gibbinsi",
+     #"hancocki",
+     #"harperi",
+     #"implexus",
+     #"labranchiae",
+     #"leesoni",
+     #"longipalpis",
+     #"maculipalpis",
+     #"marshallii",
+     #"mascarensis",
+     "melas",
+     "merus",
+     "moucheti",
+     #"multicolor",
+     #"namibiensis",
+     "nili",
+     #"obscurus",
+     #"ovengensis",
+     #"paludis",
+     #"parensis",
+     "pharoensis"#,
+     #"pretoriensis",
+     #"pseudopunctipennis",
+     #"quadriannulatus",
+     #"quadrimaculatus",
+     #"rhodesiensis",
+     #"rivulorum",
+     #"rufipes",
+     #"rupicolus",
+     #"sergentii",
+     #"smithii",
+     #"squamosus",
+     #"stephensi",
+     #"swahilicus",
+     #"tenebrosus",
+     #"theileri",
+     #"vaneedeni",
+     #"wellcomei",
+     #"wilsoni",
+     #"ziemanni"
    )
  ),
 
@@ -181,7 +242,7 @@ list(
  # bloody reason. is it too big with all the crap in the image?
 
  tar_target(
-   pred_files_multisp_pp_with_offset,
+   pred_file_multisp_pp_with_offset,
    predict_greta_mspp(
      image_filename = model_fit_image_multisp_pp_with_offset,
      prediction_layer = static_vars_agg_mech_nonzero,
@@ -190,11 +251,15 @@ list(
    )
  ),
 
- tar_target(
-   posterior_multis_pp_with_offset,
-   calculate_posterior(
-     image_filename = model_fit_image_multisp_pp_with_offset,
+ tar_terra_rast(
+   pred_multisp_pp_with_offset,
+   rast(pred_file_multisp_pp_with_offset)
+ ),
 
+ tar_target(
+   posterior_multisp_pp_with_offset,
+   calculate_posterior_multisp_pp_with_offset(
+     image_filename = model_fit_image_multisp_pp_with_offset
    )
  ),
 

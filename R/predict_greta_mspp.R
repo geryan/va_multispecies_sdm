@@ -44,8 +44,10 @@ predict_greta_mspp <- function(
 
   writeRaster(
     x = preds_rast,
-    filename = output_file
+    filename = output_file,
+    overwrite = TRUE
   )
 
+  output_file
 
 }

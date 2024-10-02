@@ -31,7 +31,16 @@ make_model_data_ragged <- function(
       names_from = species,
       values_from = count
     ) |>
-    arrange(type)
+    arrange(type) |>
+    select(
+      lon,
+      lat,
+      type,
+      all_of(target_species)
+    ) # this arranged the columns in same order as target_species
+  # which means I can irresponsibly use target_species to name columns etc
+  # by more safely assuming the column order will be the consistent with
+  # target_species
 
    #  bind_rows(
    #    bg_points |>
