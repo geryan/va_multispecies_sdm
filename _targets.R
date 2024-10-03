@@ -189,6 +189,14 @@ list(
    )
  ),
 
+ tar_target(
+   plot_points,
+   make_plot_points(
+     data_records,
+     target_species
+   )
+ ),
+
 
  tar_target(
    model_data_ragged,
