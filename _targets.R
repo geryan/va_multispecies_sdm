@@ -46,6 +46,8 @@ list(
     rast("~/Documents/tki_work/vector_atlas/africa_spatial_data/outputs/raster/new_mask.tif")
   ),
 
+  ## specific regions/ countries of interest for close-up plots
+
   tar_target(
     west_africa_extent,
     ext(
@@ -310,6 +312,13 @@ list(
    )
  ),
 
+ tar_target(
+   simple_point_plots,
+   make_point_plots(
+
+   )
+ ),
+
  ################
  ## models
  ################
@@ -386,6 +395,13 @@ list(
    pred_multisp_pp,
    rast(pred_file_multisp_pp)
  ),
+
+ # tar_target(
+ #   plots_pred_multisp_pp,
+ #   multitude_of_plots(
+ #
+ #   )
+ # ),
 
 
  #####################
