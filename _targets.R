@@ -46,6 +46,44 @@ list(
     rast("~/Documents/tki_work/vector_atlas/africa_spatial_data/outputs/raster/new_mask.tif")
   ),
 
+  tar_target(
+    west_africa_extent,
+    ext(
+      -17.9218578749435,
+      14.1872874163643,
+      4.00610661292353,
+      25.6346066145936
+    )
+  ),
+
+  tar_terra_vect(
+    nga,
+    gadm(
+      country = "NGA",
+      level = 0,
+      path = "data/raster/geodata/"
+    )
+  ),
+
+  tar_terra_vect(
+    cod,
+    gadm(
+      country = "COD",
+      level = 0,
+      path = "data/raster/geodata/"
+    )
+  ),
+
+  tar_terra_vect(
+    kentzauga,
+    gadm(
+      country = c("KEN", "TZA", "UGA"),
+      level = 0,
+      path = "data/raster/geodata/"
+    ) |>
+      aggregate()
+  ),
+
 
   # tar_terra_rast(
   #   static_vars_standardised,
