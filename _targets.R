@@ -84,6 +84,34 @@ list(
       aggregate()
   ),
 
+  # expert maps from
+  # Sinka, M.E., Bangs, M.J., Manguin, S. et al.
+  # The dominant Anopheles vectors of human malaria in Africa, Europe and
+  # the Middle East: occurrence data, distribution maps and bionomic précis.
+  # Parasites Vectors 3, 117 (2010). https://doi.org/10.1186/1756-3305-3-117
+  # supp file: 13071_2010_245_MOESM1_ESM.ZIP
+
+  tar_terra_vect(
+    expert_maps,
+    get_expert_maps(
+      sp = c(
+        "arabiensis",
+        # "atroparvus",
+        "funestus",
+        "gambiae",
+        # "labranchiae",
+        "melas",
+        "merus",
+        # "messeae",
+        "moucheti",
+        "nili"#,
+        # "sacharovi",
+        # "sergentii",
+        # "superpictus",
+      )
+    )
+  ),
+
 
   # tar_terra_rast(
   #   static_vars_standardised,
