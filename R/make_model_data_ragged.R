@@ -22,7 +22,7 @@ make_model_data_ragged <- function(
       count = case_when(
         type == "po" ~ 1, # this will need editing if want to use counts for PO data
         !is.na(count) ~ count,
-        TRUE ~ 0
+        TRUE ~ presence
       )
     ) |>
     group_by(lon, lat, species, type) |>
