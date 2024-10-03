@@ -11,19 +11,19 @@ make_model_data_ragged <- function(
     filter(
       species %in% target_species
     ) |>
+    mutate(
+      count = case_when(
+        pa == "po" ~ 1, # this will need editing if want to use counts for PO data
+        !is.na(count) ~ count,
+        TRUE ~ presence
+      )
+    ) |>
     select(
       species,
       lon,
       lat,
       count,
       type = pa
-    ) |>
-    mutate(
-      count = case_when(
-        type == "po" ~ 1, # this will need editing if want to use counts for PO data
-        !is.na(count) ~ count,
-        TRUE ~ presence
-      )
     ) |>
     group_by(lon, lat, species, type) |>
     summarise(count = max(count), .groups = "drop") |>
