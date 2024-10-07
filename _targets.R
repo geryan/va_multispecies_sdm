@@ -315,7 +315,9 @@ list(
  tar_target(
    simple_point_plots,
    make_point_plots(
-
+     plot_points,
+     expert_maps,
+     new_mask
    )
  ),
 

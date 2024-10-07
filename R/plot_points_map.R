@@ -1,8 +1,7 @@
-plot_points_expert_map <- function(
-  sp,
-  new_mask,
-  plot_points,
-  expert_map
+plot_points_map <- function(
+    sp,
+    new_mask,
+    plot_points
 ){
 
   spname <- paste0("Anopheles ", sp)
@@ -12,12 +11,7 @@ plot_points_expert_map <- function(
     geom_spatraster(
       data = new_mask
     ) +
-    geom_spatvector(
-      data = expert_map,
-      aes(
-        alpha = 0.6
-      )
-    ) +
+
     geom_point(
       data = plot_points |> filter(species == sp),
       aes(
@@ -35,7 +29,7 @@ plot_points_expert_map <- function(
     theme_void() +
     labs(
       title = bquote(italic(.(spname))),
-      subtitle = "Occurrence data with black outline showing Sinka et al. 2010 expert map boundary.",
+      subtitle = "Occurrence data",
       col = "Data type"
     ) +
     guides(
