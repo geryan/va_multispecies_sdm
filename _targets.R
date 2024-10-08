@@ -16,7 +16,8 @@ tar_option_set(
     "rasterVis",
     "tidyterra",
     "geodata",
-    "greta"
+    "greta",
+    "DHARMa"
   ),
   workspace_on_error = TRUE
 )
@@ -358,12 +359,12 @@ list(
    rast(pred_file_multisp_pp_with_offset)
  ),
 
- # tar_target(
- #   posterior_multisp_pp_with_offset,
- #   calculate_posterior_multisp_pp_with_offset(
- #     image_filename = model_fit_image_multisp_pp_with_offset
- #   )
- # ),
+ tar_target(
+   posterior_multisp_pp_with_offset,
+   calculate_posterior_multisp_pp_with_offset(
+     image_filename = model_fit_image_multisp_pp_with_offset
+   )
+ ),
 
  ##
  ## multispecies pp (no offset)
@@ -398,12 +399,12 @@ list(
    rast(pred_file_multisp_pp)
  ),
 
- # tar_target(
- #   plots_pred_multisp_pp,
- #   multitude_of_plots(
- #
- #   )
- # ),
+ tar_target(
+   plots_pred_multisp_pp,
+   multitude_of_plots(
+
+   )
+ ),
 
 
  #####################
