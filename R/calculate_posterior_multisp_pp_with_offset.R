@@ -152,4 +152,13 @@ calculate_posterior_multisp_pp_with_offset <- function(
                scales = "free") +
     theme_minimal()
 
+  df_validate %>%
+    group_by(sp) %>%
+    summarise(
+      n = n(),
+      D = ks.test(z_resid, pnorm)$statistic,
+      p = ks.test(z_resid, pnorm)$p.value
+    ) %>%
+    arrange(desc(D))
+
 }
