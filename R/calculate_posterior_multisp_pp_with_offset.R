@@ -62,7 +62,7 @@ calculate_posterior_multisp_pp_with_offset <- function(
 
 
   dharma <- DHARMa::createDHARMa(
-    simulatedResponse = t(di_sims[[1]][, , 1]),
+    simulatedResponse = t(pa_dat_sim[[1]][, , 1]),
     observedResponse = pa_dat$obs,
     integerResponse = TRUE
   )

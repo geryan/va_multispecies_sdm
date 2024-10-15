@@ -367,6 +367,47 @@ list(
  ),
 
  ##
+ ## multispecies pp with biophysical offset count
+ ##
+
+ tar_target(
+   model_fit_image_multisp_pp_with_offset_count,
+   fit_model_multisp_pp_with_offset_count(
+     model_data_ragged,
+     spatial_values,
+     model_notna_idx_pa,
+     model_notna_idx_po,
+     image_name = "outputs/images/multisp_pp_with_offset_count.RData",
+     n_burnin = 1000,
+     n_samples = 1000,
+     n_chains = 4
+   )
+ ),
+
+ tar_target(
+   pred_file_multisp_pp_with_offset_count,
+   predict_greta_mspp_with_offset_count(
+     image_filename = model_fit_image_multisp_pp_with_offset_count,
+     prediction_layer = static_vars_agg_mech_nonzero,
+     target_species,
+     output_file = "outputs/rasters/multisp_pp_with_offset_count.tif"
+   )
+ ),
+
+ tar_terra_rast(
+   pred_multisp_pp_with_offset_count,
+   rast(pred_file_multisp_pp_with_offset_count)
+ ),
+#
+#  tar_target(
+#    posterior_multisp_pp_with_offset,
+#    calculate_posterior_multisp_pp_with_offset(
+#      image_filename = model_fit_image_multisp_pp_with_offset
+#    )
+#  ),
+
+
+ ##
  ## multispecies pp (no offset)
  ##
 
@@ -399,12 +440,12 @@ list(
    rast(pred_file_multisp_pp)
  ),
 
- tar_target(
-   plots_pred_multisp_pp,
-   multitude_of_plots(
-
-   )
- ),
+ # tar_target(
+ #   plots_pred_multisp_pp,
+ #   multitude_of_plots(
+ #
+ #   )
+ # ),
 
 
  #####################
