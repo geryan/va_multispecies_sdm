@@ -1,0 +1,19 @@
+remake relative abundance maps
+
+pred abundances for 3 spp per paper
+
+get proportional abundance
+
+plot 3-panel proportions
+or RGB - each sp one col - do both
+
+
+for posterior pred checks
+calculate using draws, not some nsim, which will calculate posterior of draws
+# leave p
+ p <- icloglog(log_lambda[model_notna_idx_pa] + log(area_pa))
+# distribution(data_infilled[model_notna_idx_pa]) <- bernoulli(p)
+
+data_infilled_sim <- bernoulli(p)
+calculate(data_infilled_sim, draws) #@ this simulates the data which is then compared with
+the existing data via DHARMA etc per IR code.
