@@ -148,17 +148,41 @@ list(
   # data wrangling and cleaning
   ###################################
  tar_target(
-   raw_data_file,
-   "data/tabular/final_species_20240314.csv",
+   old_raw_data_file,
+   "data/tabular/update_speciescols_6_FINAL_with_absences_20241105_oldMAP.csv",
    format = "file"
  ),
+
  tar_target(
-   raw_data,
+   old_raw_data,
    read_csv(
-    file = raw_data_file,
+    file = old_raw_data_file,
     guess_max = 30000
    )
  ),
+
+ tar_target(
+   new_raw_data_file,
+   "data/tabular/va_data_merged_20241105.csv",
+   format = "file"
+ ),
+
+ tar_target(
+   new_raw_data,
+   read_csv(
+     file = new_raw_data_file,
+     guess_max = 30000
+   )
+ ),
+
+ tar_target(
+   raw_data,
+   combine_raw_data(
+     old_raw_data,
+     new_raw_data
+   )
+ ),
+
 
  tar_target(
    data_records,
