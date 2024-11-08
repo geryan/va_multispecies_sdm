@@ -5,7 +5,7 @@ make_detailed_data_records <- function(
 
   raw_data |>
     dplyr::select(
-      source_ID,
+      source_id,
       # occ_data,
       # bio_data,
       # binary.presence,
@@ -15,10 +15,10 @@ make_detailed_data_records <- function(
       lon = longitude_1,
       lat = latitude_1,
       #area.type,
-      insecticide.control,
-      ITN.use,
-      starts_with("sampling.method"),
-      starts_with("n_"),
+      insecticide_control,
+      itn_use,
+      starts_with("sampling_occurrence"),
+      starts_with("occurrence_n_"),
       # binary.presence,
       # binary.absence,
       # month_st,
@@ -28,8 +28,7 @@ make_detailed_data_records <- function(
       species
     )  |>
     select( # remove extraneous cols selected with helper funs above
-      -sampling.method.notes,
-      n_tot
+      -occurrence_n_total
     ) |>
     mutate( # clean up species names
       species = clean_species(species)
@@ -42,13 +41,13 @@ make_detailed_data_records <- function(
     # remove points where insecticide is used
     dplyr::mutate(
       no_ic = case_when(
-        is.na(insecticide.control) ~ TRUE,
-        insecticide.control == "yes" ~ FALSE,
+        is.na(insecticide_control) ~ TRUE,
+        insecticide_control == "yes" ~ FALSE,
         TRUE ~ TRUE
       ),
       no_itn = case_when(
-        is.na(ITN.use) ~ TRUE,
-        ITN.use == "yes" ~ FALSE,
+        is.na(itn_use) ~ TRUE,
+        itn_use == "yes" ~ FALSE,
         TRUE ~ TRUE
       )
     ) |>
@@ -56,10 +55,10 @@ make_detailed_data_records <- function(
     mutate(
       control = any(!no_ic, !no_itn)
     ) |>
-    select(-no_itn, -no_ic, -insecticide.control, -ITN.use) |>
+    select(-no_itn, -no_ic, -insecticide_control, -itn_use) |>
     ungroup() |>
     pivot_longer(
-      cols = c(starts_with("sampling.method"), starts_with("n")),
+      cols = c(starts_with("sampling_occurrence"), starts_with("occurrence_n")),
       #cols = sampling.method_1:n_4,
       cols_vary = "slowest",
       names_to = c(".value", "set"),

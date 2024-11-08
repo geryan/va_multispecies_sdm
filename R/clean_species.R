@@ -6,19 +6,23 @@ clean_species <- function(x){
       x == "coluzzi" ~ "coluzzii",
       x == "d'thali" ~ "dthali",
       x == "gambiae _ coluzzii"~ "coluzzii",
-      x == "gambiae (S_M)" ~ "gambiae_complex",
-      x == "gambiae (S/M)" ~ "gambiae_complex",
+      x == "gambiae (S_M)" ~ "gambiae_coluzzii",
+      x == "gambiae (S/M)" ~ "gambiae_coluzzii",
       x == "GAMBIAE COMPLEX" ~ "gambiae_complex",
       x == "marshalii"~ "marshallii",
       x == "marshalli"~ "marshallii",
       x == "mouchetti"~ "moucheti",
       x == "rupicola" ~ "rupicolus",
-      x == "squamosus-cydippis"~ "cydippis",
+      #x == "squamosus-cydippis"~ "cydippis",
       # not confident in the above interpretation but low numbers so will be
       # excluded anyway in sdm analysis
       x == "squasmous "~ "squamosus",
       x == "ziemani"~ "ziemanni",
       x == "wilconi" ~ "wilsoni",
+      x == "COUSTANI COMPLEX" ~ "coustani_complex",
+      x == "FUNESTUS COMPLEX" ~ "funestus_complex",
+      x == "MARSHALLII COMPLEX" ~ "marshallii_complex",
+      x == "NILI COMPLEX" ~ "nili_complex",
       TRUE ~ x
     )
 
