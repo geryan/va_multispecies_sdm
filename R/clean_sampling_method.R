@@ -4,9 +4,13 @@ clean_sampling_method <- function(x){
     x == "HLX"       ~ "HLC",
     x == "HLC - in"  ~ "HLC",
     x == "HLC - out" ~ "HLC",
-    x == "Larvae"    ~ "larvae",
+    x == "Larvae"    ~ "larvae", # consider excluding from count data
     TRUE ~ "other"
-  )
+  ) # use indoor and outdoor to split up HLC data
+
+  # aim for hlc_in, hlc_out,  only use HLC as count data
+  # find effort measures biting_number_of_sampling_nights_indoors
+
 
 
   # "unknown"

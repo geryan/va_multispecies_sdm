@@ -1,5 +1,5 @@
 make_model_data_ragged_detailed <- function(
-  data_records,
+  detailed_data_records,
   bg_points,
   target_species
 ){
@@ -7,35 +7,37 @@ make_model_data_ragged_detailed <- function(
   # this function joins them all together in a big long list
   # then in a separate function we extract the indices for the model
 
-  data_records |>
+  detailed_data_records |>
     filter(
       species %in% target_species
     ) |>
-    mutate(
-      count = case_when(
-        pa == "po" ~ 1, # this will need editing if want to use counts for PO data
-        !is.na(count) ~ count,
-        TRUE ~ presence
-      )
-    ) |>
     select(
+      source_id,
       species,
       lon,
       lat,
-      count,
-      type = pa
+      control,
+      method,
+      type,
+      n
     ) |>
-    group_by(lon, lat, species, type) |>
-    summarise(count = max(count), .groups = "drop") |>
+    group_by(source_id, lon, lat, species, control, method, type) |>
+    summarise(n = max(n), .groups = "drop") |>
+    distinct() |>
     tidyr::pivot_wider(
       names_from = species,
-      values_from = count
+      values_from = n
     ) |>
-    arrange(type) |>
+    arrange(type, method, control) |>
+    mutate(
+      control = as.numeric(control)
+    ) |>
     select(
       lon,
       lat,
       type,
+      method,
+      control,
       all_of(target_species)
     ) # this arranged the columns in same order as target_species
   # which means I can irresponsibly use target_species to name columns etc

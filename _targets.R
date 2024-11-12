@@ -272,6 +272,15 @@ list(
    )
  ),
 
+ tar_target(
+   model_data_ragged_detailed,
+   make_model_data_ragged_detailed(
+     detailed_data_records,
+     bg_points,
+     target_species
+   )
+ ),
+
 
  ## plots before modelling
 
