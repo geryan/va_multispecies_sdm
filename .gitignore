@@ -11,3 +11,5 @@ outputs
 *.Rds
 *.tif
 *.docx
+*.png
+*.zip
