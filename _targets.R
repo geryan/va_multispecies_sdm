@@ -261,6 +261,18 @@ list(
    )
  ),
 
+
+ ## detailed data records
+
+ tar_target(
+   detailed_data_records,
+   make_detailed_data_records(
+     raw_data,
+     static_vars_agg_mech_nonzero[[1]]
+   )
+ ),
+
+
  ## plots before modelling
 
  tar_target(

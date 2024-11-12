@@ -3,13 +3,13 @@ make_detailed_data_records <- function(
     target_area_raster
   ){
 
-  raw_data |>
+  tidy_records <- raw_data |>
     dplyr::select(
       source_id,
       # occ_data,
       # bio_data,
-      # binary.presence,
-      # binary.absence,
+      binary_presence,
+      binary_absence,
       # adult.data,
       # larval.site.data,
       lon = longitude_1,
@@ -56,6 +56,12 @@ make_detailed_data_records <- function(
       control = any(!no_ic, !no_itn)
     ) |>
     select(-no_itn, -no_ic, -insecticide_control, -itn_use) |>
+    mutate(
+      across(
+        starts_with("occurrence_n_"),
+        ~ ifelse(.x == 1000000, NA_integer_, .x) # get rid of NAs in old data that have been replaced with 1000000
+      )
+    )  |>
     ungroup() |>
     pivot_longer(
       cols = c(starts_with("sampling_occurrence"), starts_with("occurrence_n")),
@@ -65,74 +71,59 @@ make_detailed_data_records <- function(
       names_pattern = "(.*.)_(.)"
     ) |>
     select(-set) |>
-    filter(!is.na(sampling.method)) |>
-    arrange(source_ID, species, sampling.method, control) |>
-    group_by(source_ID) |>
+    filter(!is.na(sampling_occurrence)) |>
+    rename(
+      sampling_method = sampling_occurrence,
+      n = occurrence_n
+    )|>
+    arrange(source_id, species, sampling_method, control) |>
     mutate(
-      #pa = ifelse(any(n == 0), "pa", "po")
+      n = ifelse(
+        binary_absence == "yes",
+        0,
+        n
+      )
+    ) |>
+    group_by(source_id) |>
+    mutate(
       type = case_when(
+        all(!is.na(n)) ~ "count",
+        n == 0 ~ "pa",
+        !is.na(n) ~ "count",
+        binary_absence == "yes" ~ "pa",
         any(n == 0) ~ "pa",
         TRUE ~ "po"
       )
     )|>
+    group_by(
+      source_id,
+      species
+    ) |>
+    mutate(
+      type = case_when(
+        all(!is.na(n)) ~ "count",
+        TRUE ~ type
+      )
+    ) |>
     ungroup()|>
     mutate(
-      count = ifelse(is.na(n), FALSE, TRUE),
       n = ifelse(is.na(n), 1, n),
-      species = clean_species(species),
-      method = clean_sampling_method(sampling.method)
-    )
-
-    filter(occ_data == 1) |> # consider whether occ_data == 0 could be PO data
-    rowwise() |> # NB this rowwise is necessary for the below `any` to work by row, but may be slow on a very large dataset
-    mutate(
-      any_sm_na_count = any(
-        !is.na(sampling.method_1) & is.na(n_1),
-        !is.na(sampling.method_2) & is.na(n_2),
-        !is.na(sampling.method_3) & is.na(n_3),
-        !is.na(sampling.method_4) & is.na(n_4)
-      ), # this checks if there are any non-empty sampling methods with a NA count
-      all_sm_na = all(is.na(c_across(starts_with("sampling.method")))) # check if all survey methods are NA so no zero count
+      method = clean_sampling_method(sampling_method)
     ) |>
-    rename(entered_n_tot = n_tot) |> # renaming because want to keep for checking but will get double-counted by the sum(c_across(...)) below if left with a name beginning "n_"
-    mutate(
-      count = case_when(
-        any_sm_na_count ~ NA, # assign NA n_tot if there is a non-empty sampling method that is NA
-        all_sm_na ~ NA,
-        TRUE ~ sum(c_across(starts_with("n_")), na.rm = TRUE) # otherwise sum up the values ignoring NAs
-      )
-    ) |>
-    #select(-entered_n_tot) |>
-    mutate(
-      presence = case_when(
-        #binary.absence == "yes" ~ 0, ignore this and only use
-        count == 0 ~ 0,
-        TRUE ~ 1
-      )
-    ) |>
-    group_by(source_ID) |>
-    mutate(
-      pa = ifelse(any(presence == 0), "pa", "po")
-    )|>
-    ungroup() |>
     select(
-      source_ID,
+      source_id,
       species,
       lon,
       lat,
-      #binary.presence,
-      #binary.absence,
-      #starts_with("n_"),
-      count,
-      presence,
-      pa,
-      starts_with("sampling.method_")
+      control,
+      method,
+      type,
+      n
     ) |>
-    mutate(
-      species = clean_species(species)
-    ) |>
-    arrange(species, pa, presence) |>
-    distinct()
+    distinct() |>
+    arrange(species, type, control, method, source_id, n)
+
+
 
   idx <- which(
     !is.na(
