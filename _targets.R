@@ -115,6 +115,16 @@ list(
     )
   ),
 
+  tar_terra_rast(
+    new_mask_agg,
+    terra::aggregate(
+      x = new_mask,
+      fact = 10
+    )
+  ),
+
+
+
 
   # tar_terra_rast(
   #   static_vars_standardised,
@@ -280,6 +290,31 @@ list(
      target_species
    )
  ),
+
+ # tar_target(
+ #   model_notna_idx_pa,
+ #   get_notna_idx(
+ #     model_data_ragged,
+ #     type = "pa"
+ #   )
+ # ),
+ #
+ # tar_target(
+ #   model_notna_idx_po,
+ #   get_notna_idx(
+ #     model_data_ragged,
+ #     type = "po"
+ #   )
+ # ),
+ #
+ # tar_target(
+ #   spatial_values,
+ #   get_spatial_values(
+ #     lyrs = static_vars_agg_mech_nonzero,
+ #     dat = model_data_ragged,
+ #     bgs = bg_points
+ #   )
+ # ),
 
 
  ## plots before modelling
