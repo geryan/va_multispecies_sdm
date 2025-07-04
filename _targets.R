@@ -145,7 +145,7 @@ list(
     bg_points,
     terra::spatSample(
       x = static_vars_agg_mech_nonzero[[1]],
-      size = 30000,
+      size = 1000,
       na.rm = TRUE,
       as.points = TRUE
     ) %>%
@@ -157,7 +157,11 @@ list(
   ####################################
   # data wrangling and cleaning
   ###################################
- tar_target(
+
+  ##########
+  ## old process
+
+   tar_target(
    old_raw_data_file,
    "data/tabular/update_speciescols_6_FINAL_with_absences_20241105_oldMAP.csv",
    format = "file"
@@ -186,12 +190,33 @@ list(
  ),
 
  tar_target(
-   raw_data,
+   dated_raw_data,
    combine_raw_data(
      old_raw_data,
      new_raw_data
    )
  ),
+
+
+ #####################################
+
+ ## non sus data 20250704
+
+ tar_target(
+   raw_data_file,
+   "data/tabular/non_suspicious_data_20250704.csv",
+   format = "file"
+ ),
+
+ tar_target(
+   raw_data,
+   read_csv(
+     file = raw_data_file,
+     guess_max = 30000
+   )
+ ),
+
+ #########################
 
 
  tar_target(
@@ -337,6 +362,14 @@ list(
      new_mask
    )
  ),
+
+ # tar_target(
+ #   expert_map_plots,
+ #   make_expert_map_plots(
+ #     expert_maps,
+ #     new_mask
+ #   )
+ # ),
 
  ################
  ## models
@@ -484,8 +517,8 @@ list(
      model_notna_idx_pa,
      model_notna_idx_po,
      image_name = "outputs/images/multisp_pp_count.RData",
-     n_burnin = 1000,
-     n_samples = 1000,
+     n_burnin = 100,
+     n_samples = 100,
      n_chains = 4
    )
  ),

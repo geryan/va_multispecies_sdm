@@ -17,3 +17,62 @@ calculate using draws, not some nsim, which will calculate posterior of draws
 data_infilled_sim <- bernoulli(p)
 calculate(data_infilled_sim, draws) #@ this simulates the data which is then compared with
 the existing data via DHARMA etc per IR code.
+
+
+
+
+- confirm taxonomic groupings with WRBU database / MS/AW - then fix clean_species.R
+
+- check target species again - compare data record numbers
+
+-- survey method into data records
+-- have multiple observations for pa/po data? get rid of summarise in make_model_data_ragged l29 (also keep non-uniques)
+-- assumption of presence-absence data type
+- and therefore inference of zeroes in non-na is based on any zero count or binary absence in a given source - check with MS/AW - also applies to wht is count vs what is PA
+
+hierarchy: is it count? failing that is it PA? failing that is it PO. At first two levels can we imply implicit zeroes for other species
+
+- need to differentiate the process for classifying PA/count and process for implying zeroes - i.e. DNA sampling
+
+-- effort level based on survey method (and trap nights? hopefully?)
+-- HLC indoor vs outdoor, CDC, animal baited trap, drop weird methods
+- need RE for method from zero mean RE. Use RE value for outdoor HLC as predictor.
+
+-- later consider neg bin / overdispersion for count data
+
+-- MAP cubes from 2000 - / use time-varying microclimate suitability to predict with offset to make cube
+
+-- reduce covars
+-- get rid of climate covs to
+-- ditch EVI, LST, pressure, solrad,
+-- ditch easting / northing
+
+
+-- (re)consider expert map overlays for all spp, esp ones for which no previous map available (currently none) "use to account for dispersal limitation"
+
+-- need to define base species and complexes before obs models
+
+-- consider alternate bg point sampling eg stratification
+
+- add offsets for exert_opinion and microclim:
+log(offset) = log(expert_opinion_offset) + log(microclim_offset)
+ --- then only sample bg points within the buffer area of the expert opinion maps
+ ---
+-- merow justification for offset approach: https://onlinelibrary.wiley.com/doi/abs/10.1111/geb.12453
+
+
+-- update an gamb microclimate layer - rerun microclim
+
+### data processing assumptions / checks
+- confirmation of diagnostic level with ability to infer zero (e.g. pcr)
+
+
+
+## model
+po_records ~ Poisson(intensity * bias)
+pa ~ Bernoulli(prob_pres)
+count ~  Poisson(lambda * effort)
+intensity = lambda * intercept
+prob_pres = icloglog(lambda * effort)
+
+
