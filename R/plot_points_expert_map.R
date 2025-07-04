@@ -12,6 +12,10 @@ plot_points_expert_map <- function(
     geom_spatraster(
       data = new_mask
     ) +
+    scale_id_continuous( # from idpalette, necessary bc tidyterra don't play nice
+      cols = "grey90",
+      aesthetics = "fill"
+    ) +
     geom_spatvector(
       data = expert_map,
       aes(
@@ -29,7 +33,7 @@ plot_points_expert_map <- function(
     ) +
     scale_colour_viridis_d() +
     scale_id_continuous( # from idpalette, necessary bc tidyterra don't play nice
-      cols = "grey90",
+      cols = "grey70",
       aesthetics = "fill"
     ) +
     theme_void() +
