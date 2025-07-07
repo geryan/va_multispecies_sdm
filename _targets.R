@@ -161,41 +161,41 @@ list(
   ##########
   ## old process
 
-   tar_target(
-   old_raw_data_file,
-   "data/tabular/update_speciescols_6_FINAL_with_absences_20241105_oldMAP.csv",
-   format = "file"
- ),
-
- tar_target(
-   old_raw_data,
-   read_csv(
-    file = old_raw_data_file,
-    guess_max = 30000
-   )
- ),
-
- tar_target(
-   new_raw_data_file,
-   "data/tabular/va_data_merged_20241105.csv",
-   format = "file"
- ),
-
- tar_target(
-   new_raw_data,
-   read_csv(
-     file = new_raw_data_file,
-     guess_max = 30000
-   )
- ),
-
- tar_target(
-   dated_raw_data,
-   combine_raw_data(
-     old_raw_data,
-     new_raw_data
-   )
- ),
+ #   tar_target(
+ #   old_raw_data_file,
+ #   "data/tabular/update_speciescols_6_FINAL_with_absences_20241105_oldMAP.csv",
+ #   format = "file"
+ # ),
+ #
+ # tar_target(
+ #   old_raw_data,
+ #   read_csv(
+ #    file = old_raw_data_file,
+ #    guess_max = 30000
+ #   )
+ # ),
+ #
+ # tar_target(
+ #   new_raw_data_file,
+ #   "data/tabular/va_data_merged_20241105.csv",
+ #   format = "file"
+ # ),
+ #
+ # tar_target(
+ #   new_raw_data,
+ #   read_csv(
+ #     file = new_raw_data_file,
+ #     guess_max = 30000
+ #   )
+ # ),
+ #
+ # tar_target(
+ #   dated_raw_data,
+ #   combine_raw_data(
+ #     old_raw_data,
+ #     new_raw_data
+ #   )
+ # ),
 
 
  #####################################

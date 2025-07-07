@@ -75,4 +75,8 @@ count ~  Poisson(lambda * effort)
 intensity = lambda * intercept
 prob_pres = icloglog(lambda * effort)
 
+#### things to check with MS / AW
 
+- filling lon lats across row if there is a sampling method but no lat or lon
+- confirm taxonomic groupings with WRBU database / MS/AW - then fix clean_species.R
+  and therefore inference of zeroes in non-na is based on any zero count or binary absence in a given source - check with MS/AW - also applies to wht is count vs what is PA
