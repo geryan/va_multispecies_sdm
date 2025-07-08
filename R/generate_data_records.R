@@ -170,7 +170,8 @@ generate_data_records <- function(
     latitude,
     longitude,
     .direction = "down"
-  )
+  ) |>
+   ungroup()
 
 
     ## later when
