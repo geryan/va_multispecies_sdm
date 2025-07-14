@@ -1,80 +1,72 @@
 clean_sampling_method <- function(x){
 
   case_when(
-    x == "?" ~ ,
-    x == "0" ~ ,
-    x == "AB" ~ ,
-    x == "abn" ~ ,
-    x == "ABN" ~ ,
-    x == "alc" ~ ,
-    x == "alc_in" ~ ,
-    x == "cdc lt" ~ ,
-    x == "cdc lt_in" ~ ,
-    x == "cdc lt_out" ~ ,
-    x == "cdc-lt" ~ ,
-    x == "CDC-LT" ~ ,
-    x == "cdc-lt - indoor" ~ ,
-    x == "CDC-LT - indoor" ~ ,
-    x == "CDC-LT - indoors" ~ ,
-    x == "cdc-lt - outdoor" ~ ,
-    x == "CDC-LT - outdoor" ~ ,
-    x == "CDC-LT- indoor" ~ ,
-    x == "CO2" ~ ,
-    x == "col curtains" ~ ,
-    x == "hbn" ~ ,
-    x == "HBN" ~ ,
-    x == "HBN - in" ~ ,
-    x == "HBN - out" ~ ,
-    x == "hbn (in)" ~ ,
-    x == "hbn (out)" ~ ,
-    x == "hbn_in" ~ ,
-    x == "hbn_out" ~ ,
-    x == "hlc" ~ ,
-    x == "HLC" ~ ,
-    x == "hlc - in" ~ ,
-    x == "HLC - in" ~ ,
-    x == "hlc - out" ~ ,
-    x == "HLC - out" ~ ,
-    x == "hlc_in" ~ ,
-    x == "hlc_out" ~ ,
-    x == "hri" ~ ,
-    x == "HRI" ~ ,
-    x == "ILT" ~ ,
-    x == "larvae" ~ ,
-    x == "Larvae" ~ ,
-    x == "LT" ~ ,
-    x == "odour trap" ~ ,
-    x == "odour-trap" ~ ,
-    x == "OLT" ~ ,
-    x == "OS" ~ ,
-    x == "OSA" ~ ,
-    x == "OSN" ~ ,
-    x == "OWT" ~ ,
-    x == "ro" ~ ,
-    x == "RO" ~ ,
-    x == "ro (ani-shelter)" ~ ,
-    x == "RO (ani-shelter)" ~ ,
-    x == "ro (pit)" ~ ,
-    x == "ro (shelter)" ~ ,
-    x == "ro_ani_shelter" ~ ,
-    x == "ro_pit" ~ ,
-    x == "ro_shelter" ~ ,
-    x == "tent trap" ~ ,
-    x == "unknown" ~ ,
-    x == "win exit" ~ ,
-    x == "winexit" ~ ,
-    x == "WinExit" ~ ,
+    x == "?" ~  "other",
+    x == "0" ~  "other",
+    x == "AB" ~ "animal_baited_net",
+    x == "abn" ~ "animal_baited_net",
+    x == "ABN" ~ "animal_baited_net",
+    x == "alc" ~ "other",
+    x == "alc_in" ~  "other",
+    x == "cdc lt" ~ "cdc_lt_unk",
+    x == "cdc lt_in" ~ "cdc_lt_ind",
+    x == "cdc lt_out" ~ "cdc_lt_out",
+    x == "cdc-lt" ~ "cdc_lt_unk",
+    x == "CDC-LT" ~ "cdc_lt_unk",
+    x == "cdc-lt - indoor" ~ "cdc_lt_ind",
+    x == "CDC-LT - indoor" ~ "cdc_lt_ind",
+    x == "CDC-LT - indoors" ~ "cdc_lt_ind",
+    x == "cdc-lt - outdoor" ~ "cdc_lt_out",
+    x == "CDC-LT - outdoor" ~ "cdc_lt_out",
+    x == "CDC-LT- indoor" ~ "cdc_lt_ind",
+    x == "CO2" ~  "other",
+    x == "col curtains" ~  "other",
+    x == "hbn" ~ "human_baited_net_unk",
+    x == "HBN" ~ "human_baited_net_unk",
+    x == "HBN - in" ~ "human_baited_net_ind",
+    x == "HBN - out" ~ "human_baited_net_out",
+    x == "hbn (in)" ~ "human_baited_net_ind",
+    x == "hbn (out)" ~ "human_baited_net_out",
+    x == "hbn_in" ~ "human_baited_net_ind",
+    x == "hbn_out" ~ "human_baited_net_out",
+    x == "hlc" ~ "human_landing_catch_unk",
+    x == "HLC" ~ "human_landing_catch_unk",
+    x == "hlc - in" ~ "human_landing_catch_ind",
+    x == "HLC - in" ~ "human_landing_catch_ind",
+    x == "hlc - out" ~ "human_landing_catch_out",
+    x == "HLC - out" ~ "human_landing_catch_out",
+    x == "hlc_in" ~ "human_landing_catch_ind",
+    x == "hlc_out" ~ "human_landing_catch_out",
+    x == "hri" ~  "hri", # i don't know what this actually is
+    x == "HRI" ~  "hri",
+    x == "ILT" ~ "cdc_lt_ind", # is this the same as a cdc light trap indoor or a different trap?
+    x == "larvae" ~ "larvae",
+    x == "Larvae" ~ "larvae",
+    x == "LT" ~ "cdc_lt_unk", # cdc or just any other light trap?
+    x == "odour trap" ~  "odour",
+    x == "odour-trap" ~  "odour",
+    x == "OLT" ~ "cdc_lt_out",# is this same as cdc outdoor or a different trap? (or different method entirely?)
+    x == "OS" ~  "other",
+    x == "OSA" ~  "other",
+    x == "OSN" ~  "other",
+    x == "OWT" ~  "other",
+    x == "ro" ~  "outdoor_resting",
+    x == "RO" ~  "outdoor_resting",
+    x == "ro (ani-shelter)" ~  "outdoor_resting",
+    x == "RO (ani-shelter)" ~  "outdoor_resting",
+    x == "ro (pit)" ~  "outdoor_resting",
+    x == "ro (shelter)" ~  "outdoor_resting",
+    x == "ro_ani_shelter" ~  "outdoor_resting",
+    x == "ro_pit" ~  "outdoor_resting",
+    x == "ro_shelter" ~  "outdoor_resting",
+    x == "tent trap" ~  "tent_trap",
+    x == "unknown" ~  "other",
+    x == "win exit" ~  "window_exit",
+    x == "winexit" ~  "window_exit",
+    x == "WinExit" ~  "window_exit",
+    is.na(x) ~ "other",
+    .default = NA
   )
-
-
-
-  case_when(
-    x == "HLX"       ~ "HLC",
-    x == "HLC - in"  ~ "HLC",
-    x == "HLC - out" ~ "HLC",
-    x == "Larvae"    ~ "larvae", # consider excluding from count data
-    TRUE ~ "other"
-  ) # use indoor and outdoor to split up HLC data
 
   # aim for hlc_in, hlc_out,  only use HLC as count data
   # find effort measures biting_number_of_sampling_nights_indoors
@@ -146,36 +138,5 @@ clean_sampling_method <- function(x){
   # "winexit",
   # "WinExit",
   # NA
-
-
-  # old
-
-  # "unknown"
-  # "HLC - in"
-  # "HLC - out"
-  # "HRI"
-  # "RO"
-  # "Larvae"
-  # "ILT"
-  # "OWT"
-  # "HLC"
-  # "OSA"
-  # "HBN"
-  # "LT"
-  # "CDC-LT - indoor"
-  # "CDC-LT"
-  # "WinExit"
-  # "OSN"
-  # "0"
-  # "RO (ani-shelter)"
-  # "ABN"
-  # "CO2"
-  # "OS"
-  # "OLT"
-  # "HBN - in"
-  # "HBN - out"
-  # "CDC-LT - outdoor"
-  # "AB"
-  # "CDC-LT - indoors"
 
 }
