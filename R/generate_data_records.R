@@ -1,6 +1,5 @@
 generate_data_records <- function(
-    raw_data,
-    target_area_raster
+    raw_data
   ){
 
  tidy_data_1 <- raw_data |>
@@ -24,6 +23,7 @@ generate_data_records <- function(
       year_start,
       year_end,
       species,
+      starts_with("species_id"),
       confidence_in_georef
     )  |>
     select( # remove extraneous cols selected with helper funs above
@@ -92,6 +92,7 @@ generate_data_records <- function(
       binary_presence,
       itn_use,
       insecticide_control,
+      starts_with("species_id"),
       confidence_in_georef,
       source_id,
       raw_data_row_id,
@@ -163,22 +164,33 @@ generate_data_records <- function(
  # ok so on with filling down
 
  tidy_data_1 |>
-   # actually this stops the above problem with writing into other rows
+   # actually this grouping stops the above problem with writing into other rows
    # but it's a good check to have anyway so fuck off mate
+   # get fucked yourself
   group_by(raw_data_row_id) |>
   fill(
     latitude,
     longitude,
     .direction = "down"
   ) |>
-   ungroup()
+   ungroup() |>
+   # add in cleaned sampling method
+   # and genetic id cols
+   mutate(
+     sampling_method = clean_sampling_method(sampling_occurrence)
+   ) |>
+   mutate(
+     genetic_id = check_genetic_id(
+       species_id_1,
+       species_id_2
+     )
+   )
 
 
-    ## later when
+    ## hold this for later
 
     # remove points where insecticide is used
 
-    ## hold this for later
 
     # dplyr::mutate(
     #   no_ic = case_when(
@@ -196,51 +208,22 @@ generate_data_records <- function(
     #   no_ic & no_itn
     # ) |>
 
-    mutate(
-      presence = case_when(
-        binary_absence == "yes" ~ 0, #ignore this and only use
-        count == 0 ~ 0,
-        TRUE ~ 1
-      )
-    ) |>
-    group_by(source_id) |>
-    mutate(
-      pa = ifelse(any(presence == 0), "pa", "po")
-    )|>
-    ungroup() |>
-    select(
-      source_id,
-      species,
-      lon,
-      lat,
-      #binary.presence,
-      #binary.absence,
-      #starts_with("n_"),
-      count,
-      presence,
-      pa#,
-      #starts_with("sampling.method_")
-    ) |>
-    mutate(
-      species = clean_species(species)
-    ) |>
-    arrange(species, pa, presence) |>
-    distinct()
 
-  idx <- which(
-    !is.na(
-      terra::extract(
-        x = target_area_raster,
-        y = tidy_records |>
-          select(
-            lon,
-            lat
-          ) |>
-          as.matrix()
-      )
-    )
-  )
 
-  tidy_records[idx,]
+  # idx <- which(
+  #   !is.na(
+  #     terra::extract(
+  #       x = target_area_raster,
+  #       y = tidy_records |>
+  #         select(
+  #           lon,
+  #           lat
+  #         ) |>
+  #         as.matrix()
+  #     )
+  #   )
+  # )
+  #
+  # tidy_records[idx,]
 
 }
