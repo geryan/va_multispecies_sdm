@@ -1,8 +1,8 @@
 clean_full_data_records <- function(
     raw_data
-  ){
+){
 
- tidy_data_1 <- raw_data |>
+  tidy_data_1 <- raw_data |>
     dplyr::select(
       source_id,
       # occ_data,
@@ -115,7 +115,7 @@ clean_full_data_records <- function(
       end_date = ym(end_date),
       # and calculate study period
       # this first comes out as days which is over-precise given only month date
-      study_time = difftime(
+      study_days = difftime(
         time1 = end_date,
         time2 = start_date,
         units = "days"
@@ -123,7 +123,11 @@ clean_full_data_records <- function(
         as.numeric(),
       # convert back to approx months and add 0.5 so start and end month of the
       # same month does not give zero time
-      study_months = study_time / 30 + 0.5,
+      study_months = study_days / 30 + 0.5,
+      # check the fucking end date isn't before the start date
+      ends_before_starts = start_date > end_date,
+      study_days = ifelse(ends_before_starts, NA, study_days),
+      study_months = ifelse(ends_before_starts, NA, study_months),
       .after = year_end
     ) |>
     select(
@@ -142,71 +146,71 @@ clean_full_data_records <- function(
       id_obs
     )
 
- # we want to fill any non-na sampling methods with the latitude and longitude
- # from earlier in the same row
- # CHECK THIS WITH MS / AW
- # to do this we arrange and fill down by row id and id obs
- # this will fuck up if there are any rows of raw_data that have NA lat1 or lon1
- # here we check for that and cease operations if there is missing data
- # and complain about this state of affairs
- tidy_1_lat_check <- tidy_data_1 |>
-   filter(id_obs == 1 & is.na(latitude)) |>
-   nrow()
+  # we want to fill any non-na sampling methods with the latitude and longitude
+  # from earlier in the same row
+  # CHECK THIS WITH MS / AW
+  # to do this we arrange and fill down by row id and id obs
+  # this will fuck up if there are any rows of raw_data that have NA lat1 or lon1
+  # here we check for that and cease operations if there is missing data
+  # and complain about this state of affairs
+  tidy_1_lat_check <- tidy_data_1 |>
+    filter(id_obs == 1 & is.na(latitude)) |>
+    nrow()
 
- tidy_1_lon_check <- tidy_data_1 |>
-   filter(id_obs == 1 & is.na(longitude)) |>
-   nrow()
+  tidy_1_lon_check <- tidy_data_1 |>
+    filter(id_obs == 1 & is.na(longitude)) |>
+    nrow()
 
- if(tidy_1_lat_check != 0 | tidy_1_lon_check != 0) {
-   stop("raw_data includes rows with missing latitude_1 or longitude_1")
- }
+  if(tidy_1_lat_check != 0 | tidy_1_lon_check != 0) {
+    stop("raw_data includes rows with missing latitude_1 or longitude_1")
+  }
 
- # ok so on with filling down
+  # ok so on with filling down
 
- tidy_data_1 |>
-   # actually this grouping stops the above problem with writing into other rows
-   # but it's a good check to have anyway so fuck off mate
-   # get fucked yourself
-  group_by(raw_data_row_id) |>
-  fill(
-    latitude,
-    longitude,
-    .direction = "down"
-  ) |>
-   ungroup() |>
-   # add in cleaned sampling method
-   # and genetic id cols
-   mutate(
-     sampling_method = clean_sampling_method(sampling_occurrence)
-   ) |>
-   mutate(
-     genetic_id = check_genetic_id(
-       species_id_1,
-       species_id_2
-     )
-   )
-
-
-    ## hold this for later
-
-    # remove points where insecticide is used
+  tidy_data_1 |>
+    # actually this grouping stops the above problem with writing into other rows
+    # but it's a good check to have anyway so fuck off mate
+    # get fucked yourself
+    group_by(raw_data_row_id) |>
+    fill(
+      latitude,
+      longitude,
+      .direction = "down"
+    ) |>
+    ungroup() |>
+    # add in cleaned sampling method
+    # and genetic id cols
+    mutate(
+      sampling_method = clean_sampling_method(sampling_occurrence)
+    ) |>
+    mutate(
+      genetic_id = check_genetic_id(
+        species_id_1,
+        species_id_2
+      )
+    )
 
 
-    # dplyr::mutate(
-    #   no_ic = case_when(
-    #     is.na(insecticide_control) ~ TRUE,
-    #     insecticide_control == "yes" ~ FALSE,
-    #     TRUE ~ TRUE
-    #   ),
-    #   no_itn = case_when(
-    #     is.na(itn_use) ~ TRUE,
-    #     itn_use == "yes" ~ FALSE,
-    #     TRUE ~ TRUE
-    #   )
-    # ) |>
-    # dplyr::filter(
-    #   no_ic & no_itn
-    # ) |>
+  ## hold this for later
+
+  # remove points where insecticide is used
+
+
+  # dplyr::mutate(
+  #   no_ic = case_when(
+  #     is.na(insecticide_control) ~ TRUE,
+  #     insecticide_control == "yes" ~ FALSE,
+  #     TRUE ~ TRUE
+  #   ),
+  #   no_itn = case_when(
+  #     is.na(itn_use) ~ TRUE,
+  #     itn_use == "yes" ~ FALSE,
+  #     TRUE ~ TRUE
+  #   )
+  # ) |>
+  # dplyr::filter(
+  #   no_ic & no_itn
+  # ) |>
 
 
 
