@@ -18,7 +18,8 @@ tar_option_set(
     "geodata",
     "greta",
     "DHARMa",
-    "lubridate"
+    "lubridate",
+    "magrittr"
   ),
   workspace_on_error = TRUE
 )
@@ -219,11 +220,21 @@ list(
 
  #########################
 
+ # process data
 
+ # clean and make a set of records that are tidy and complete
+ # but not excluding anything yet
  tar_target(
    full_data_records,
    clean_full_data_records(raw_data)
  ),
+
+ tar_target(
+   exploration_full_data_records,
+   explore_full_data_records(full_data_records)
+ ),
+
+
  # tar_target(
  #   data_records,
  #   make_data_records(
@@ -232,26 +243,26 @@ list(
  #   )
  # ),
 
- tar_target(
-   record_table,
-   table(
-     data_records$species,
-     data_records$pa
-   )
- ),
-
- tar_target(
-   record_tbl,
-   tibble(
-     species = rownames(record_table),
-     pa = record_table[,1],
-     po = record_table[,2]
-   ) |>
-     mutate(
-       n = pa + po
-     ) |>
-     arrange(desc(n))
- ),
+ # tar_target(
+ #   record_table,
+ #   table(
+ #     data_records$species,
+ #     data_records$pa
+ #   )
+ # ),
+ #
+ # tar_target(
+ #   record_tbl,
+ #   tibble(
+ #     species = rownames(record_table),
+ #     pa = record_table[,1],
+ #     po = record_table[,2]
+ #   ) |>
+ #     mutate(
+ #       n = pa + po
+ #     ) |>
+ #     arrange(desc(n))
+ # ),
 
  tar_target(
    target_species,
