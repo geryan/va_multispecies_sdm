@@ -17,7 +17,8 @@ tar_option_set(
     "tidyterra",
     "geodata",
     "greta",
-    "DHARMa"
+    "DHARMa",
+    "lubridate"
   ),
   workspace_on_error = TRUE
 )
