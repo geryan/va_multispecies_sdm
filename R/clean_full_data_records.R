@@ -1,4 +1,4 @@
-generate_data_records <- function(
+clean_full_data_records <- function(
     raw_data
   ){
 

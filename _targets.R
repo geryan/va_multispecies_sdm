@@ -221,12 +221,16 @@ list(
 
 
  tar_target(
-   data_records,
-   make_data_records(
-     raw_data,
-     static_vars_agg_mech_nonzero[[1]]
-   )
+   full_data_records,
+   clean_full_data_records(raw_data)
  ),
+ # tar_target(
+ #   data_records,
+ #   make_data_records(
+ #     raw_data,
+ #     static_vars_agg_mech_nonzero[[1]]
+ #   )
+ # ),
 
  tar_target(
    record_table,
