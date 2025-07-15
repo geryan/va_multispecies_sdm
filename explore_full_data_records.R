@@ -40,6 +40,26 @@ explore_full_data_records <- function(full_data_records){
         )
       )
 
+
+    full_data_records |>
+      group_by(species) |>
+      summarise(n = n())
+
+    full_data_records |>
+      group_by(species) |>
+      summarise(n = n()) |>
+      arrange(desc(n)) |>
+      print(n = 999)
+
+
+    full_data_records |>
+      select(species, latitude, longitude) |>
+      distinct() |>
+      group_by(species) |>
+      summarise(n = n()) |>
+      arrange(desc(n)) |>
+      print(n = 999)
+
   return(NULL)
 
 }
