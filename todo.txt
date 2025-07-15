@@ -82,3 +82,6 @@ prob_pres = icloglog(lambda * effort)
   and therefore inference of zeroes in non-na is based on any zero count or binary absence in a given source - check with MS/AW - also applies to wht is count vs what is PA
 - tidy wide range of (largely similar sampling methodologies) - are these categories correct? NB: multiple forms of should-be identical entries
 - survey dates that end before they start. 711 rows with this problem.
+-- 314 rows with no species
+-- refine target species list
+

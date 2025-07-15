@@ -43,13 +43,15 @@ new_raw_data|stem|89ed0adcb0bb43e3|d5bc00c418ecfc5f|ea3427f3dc57b0a7|186158796||
 dated_raw_data|stem|63fee24f37b26e5d|756220ad48d6970e|db25d6876522bd8c|-898468520||t20273.0407383899s|s1726139b|1726139|rds|local|vector|||0.485||
 data_records|stem|ba303aea28dc6ac2|71af860f52a50ddf|8d32bd1b1b51c954|1452997553||t20273.0737955523s|s100107b|100107|rds|local|vector|||13.429||
 model_fit_image_multisp_pp_with_offset|stem|bd8112194c9d3b2e|6b2bfbee0528118f|aac2fdf3cde39ca3|240613032||t20273.1189125634s|s95b|95|rds|local|vector|||3897.326||
-target_species|stem|38411dd5ceabaf68|5b6a4c229505afcc|818ed1356a68618a|1280782395||t20273.1734925155s|s79b|79|rds|local|vector|||2.59|package ‘greta’ was built under R version 4.5.1|
 model_notna_idx_pa|stem|95f87ed98f7bb6a5|104615cf19ba6b7e|07a5fb42d20b8d87|-109078973||t20273.1739752734s|s2297b|2297|rds|local|vector|||0.003||
 model_notna_idx_po|stem|cddf478c1615e67e|119895b07ca17740|07a5fb42d20b8d87|564978248||t20273.1740774514s|s4240b|4240|rds|local|vector|||0.003||
 bg_points|stem|336cbfefc52bfd0b|a226f4fbf95376f4|1a6c130713e2980c|1048788436||t20273.1772819035s|s9796b|9796|rds|local|vector|||1.408||
 model_data_ragged|stem|f060188c5c46ccb2|3df22cc6804a4718|5bf0a0fad3c4c8ae|-2104392691||t20273.1772824456s|s25177b|25177|rds|local|vector|||0.019||
 spatial_values|stem|fc8072994f21f0f1|5940b4c4538a4a0b|edfb8aa12c1d5c9e|570544416||t20273.1772847757s|s278440b|278440|rds|local|vector|||0.135||
 expert_maps|stem|24839404b04d2ed7|957dc9859317a19a|47930c03b94d8bc1|1393525444||t20273.1812565162s|s2547712b|2547712|format_custom&read=ewogICAgaWYgKCJHUEtHIiA9PSAiRVNSSSBTaGFwZWZpbGUiKSB7CiAgICAgICAgdGVycmE6OnZlY3QocGFzdGUwKCIvdnNpemlwL3siLCBwYXRoLCAifSIpKQogICAgfQogICAgZWxzZSB7CiAgICAgICAgdGVycmE6OnZlY3QocGF0aCkKICAgIH0KfQ&write=ewogICAgZG8uY2FsbCh0ZXJyYTo6d3JpdGVWZWN0b3IsIGMobGlzdCh4ID0gb2JqZWN0LCBmaWxlbmFtZSA9IGlmZWxzZSgiR1BLRyIgPT0gCiAgICAgICAgIkVTUkkgU2hhcGVmaWxlIiwgeWVzID0gcGFzdGUwKHBhdGgsICIuc2h6IiksIG5vID0gcGF0aCksIAogICAgICAgIGZpbGV0eXBlID0gIkdQS0ciLCBvdmVyd3JpdGUgPSBUUlVFLCBvcHRpb25zID0gIkVOQ09ESU5HPVVURi04IiksIAogICAgICAgIGxpc3QoKSkpCiAgICBpZiAoIkdQS0ciID09ICJFU1JJIFNoYXBlZmlsZSIpIHsKICAgICAgICBmaWxlLnJlbmFtZShwYXN0ZTAocGF0aCwgIi5zaHoiKSwgcGF0aCkKICAgIH0KfQ&marshal=dGVycmE6OndyYXAob2JqZWN0KQ&unmarshal=dGVycmE6OnVud3JhcChvYmplY3Qp&convert=&copy=&repository=|local|list|||2.689|package ‘greta’ was built under R version 4.5.1|
+full_data_records|stem|beefd021b8f73aa2|4b1d500c11120fd3|2f0beffec4966aaf|784196675||t20283.2645978923s|s448151b|448151|rds|local|vector|||0.758|There were 2 warnings in `mutate()`. The first warning was: ℹ In argument: `start_date = ym(start_date)`. Caused by warning: !  5403 failed to parse. ℹ Run `dplyr::last_dplyr_warnings()` to see the 1 remaining warning.|
+target_species|stem|92fd8d4567fdbb90|5b6a4c229505afcc|80be7af0dee9aa86|1280782395||t20284.1734914713s|s173b|173|rds|local|vector|||2.241||
+target_species_test|stem|39357fe8564c4631|965df5580888fab2|8aff70bcae2748b3|-1010385964||t20284.1738087202s|s91b|91|rds|local|vector|||1.901||
 prepare_model_layers_mech|function|8ce5c8245ea44469
 .Random.seed|object|b8baa73906ec595f
 calculate_posterior_multisp_pp_with_offset|function|89b6e72efdf8d411
@@ -63,11 +65,12 @@ inits|function|2bdc4458734d4aea
 clean_sampling_method|function|a03e4217be186314
 make_records_table|function|e53a1219d75840f8
 make_record_plot|function|1db94e342475a8ce
-target_spp|function|8f6efd2493e283de
+target_spp|function|5835f773d33e2b77
 make_model_data_ragged_detailed|function|0b351ee16e3e6a7b
 filter_few|function|c5c8909a44af479d
 format_mpp_data|function|0ccf3a9c37d0fe52
 plot_expert_map|function|237146f503bb67ac
+target_spp_test_only|function|232cc0caa3ce7ff1
 make_new_mask|function|28e53edc14353f5e
 make_plot_points|function|5613292e3a1880f7
 tidy_va_data|function|1f8e56ff1d942e22
@@ -76,11 +79,13 @@ check_genetic_id|function|34eb5c8f13469fab
 get_spatial_values|function|5860e3b561a8fff0
 poisson_to_prob|function|8408bc3157f8fe3b
 make_record_plot_data|function|9f9d7b55211fb8c5
+generate_model_data_records|function|d8a4b103a4daa030
 predict_greta_mspp|function|4508027015ed7b1f
 rcms|function|0e757d93e5f8a559
-predict_greta_mspp_with_offset|function|58d45f611483b1d3
 get_expert_maps|function|24ad975508022b97
+predict_greta_mspp_with_offset|function|58d45f611483b1d3
 predict_greta_mspp_with_offset_count|function|5798688ada532b33
+target_spp_test|function|8f6efd2493e283de
 make_covariate_plots|function|9b409d2e528c1680
 predict_greta_mspp_count|function|1bc8eb3432f10ed5
 prepare_bias|function|1da934e6fe11e4de
@@ -98,4 +103,3 @@ make_detailed_data_records|function|312b188d85e52072
 make_expert_map_plots|function|a289d06be0b61de1
 clean_full_data_records|function|6c3c03efbe046e79
 prepare_covariates|function|af3c207e6578be2f
-full_data_records|stem|beefd021b8f73aa2|4b1d500c11120fd3|2f0beffec4966aaf|784196675||t20283.2645978923s|s448151b|448151|rds|local|vector|||0.758|There were 2 warnings in `mutate()`. The first warning was: ℹ In argument: `start_date = ym(start_date)`. Caused by warning: !  5403 failed to parse. ℹ Run `dplyr::last_dplyr_warnings()` to see the 1 remaining warning.|

@@ -229,44 +229,32 @@ list(
    clean_full_data_records(raw_data)
  ),
 
+
+ # some exploration of the full data set
+ # this does not return anything
  tar_target(
    exploration_full_data_records,
    explore_full_data_records(full_data_records)
  ),
 
-
- # tar_target(
- #   data_records,
- #   make_data_records(
- #     raw_data,
- #     static_vars_agg_mech_nonzero[[1]]
- #   )
- # ),
-
- # tar_target(
- #   record_table,
- #   table(
- #     data_records$species,
- #     data_records$pa
- #   )
- # ),
- #
- # tar_target(
- #   record_tbl,
- #   tibble(
- #     species = rownames(record_table),
- #     pa = record_table[,1],
- #     po = record_table[,2]
- #   ) |>
- #     mutate(
- #       n = pa + po
- #     ) |>
- #     arrange(desc(n))
- # ),
-
+ # need to refine this list
  tar_target(
    target_species,
    target_spp()
+ ),
+
+ tar_target(
+   target_species_test,
+   target_spp_test_only()
+ ),
+
+
+ tar_target(
+   model_data_records,
+   generate_model_data_records(
+     full_data_records,
+     target_species = target_species_test
+   )
  ),
 
  tar_target(
