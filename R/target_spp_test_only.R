@@ -1,4 +1,4 @@
-target_spp <- function(){
+target_spp_test_only <- function(){
 
   # latest 20241108
 
@@ -18,7 +18,7 @@ target_spp <- function(){
     # "cinereus",
     # "claviger",
     "coluzzii",
-    "coustani",
+#    "coustani",
     # "coustani_complex",
     # "cristipalpis",
     # "cydippis",
@@ -31,12 +31,12 @@ target_spp <- function(){
     # "fontenillei",
     # "freetownensis",
     "funestus",
-    "funestus_complex",
+#    "funestus_complex",
     # "funestus-like",
     # "gabonensis",
-    "gambiae",
-    "gambiae_coluzzii",
-    "gambiae_complex",
+    "gambiae"#,
+#    "gambiae_coluzzii",
+#    "gambiae_complex",
     # "garnhami",
     # "gibbinsi",
     # "hancocki",
@@ -52,20 +52,20 @@ target_spp <- function(){
     # "marshallii",
     # "marshallii_complex",
     # "mascarensis",
-    "melas",
-    "merus",
-    "moucheti",
+#    "melas",
+#    "merus",
+#    "moucheti",
     # "multicolor",
     # "namibiensis",
     # "natalensis",
-    "nili",
+#    "nili",
     # "nili_complex",
     # "obscurus",
     # "ovengensis",
     # "paludis",
     # "parensis",
     # "pauliani",
-    "pharoensis",
+#    "pharoensis",
     # "pretoriensis",
     # "pseudopunctipennis",
     # "quadriannulatus",
@@ -75,12 +75,12 @@ target_spp <- function(){
     # "rhodesiensis",
     # "rivulorum",
     # "rivulorum-like",
-    "rufipes",
+#    "rufipes",
     # "rupicolus",
     # "salbaii",
     # "sergentii",
     # "smithii",
-    "squamosus",
+#    "squamosus",
     # "stephensi",
     # "swahilicus",
     # "tenebrosus",
@@ -89,7 +89,7 @@ target_spp <- function(){
     # "vinckei",
     # "wellcomei",
     # "wilsoni",
-    "ziemanni"
+#    "ziemanni"
   )
 
 
