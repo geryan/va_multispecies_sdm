@@ -66,7 +66,8 @@ log(offset) = log(expert_opinion_offset) + log(microclim_offset)
 ### data processing assumptions / checks
 - confirmation of diagnostic level with ability to infer zero (e.g. pcr)
 
-
+GR general todos
+-- refine target species list
 
 ## model
 po_records ~ Poisson(intensity * bias)
@@ -83,5 +84,4 @@ prob_pres = icloglog(lambda * effort)
 - tidy wide range of (largely similar sampling methodologies) - are these categories correct? NB: multiple forms of should-be identical entries
 - survey dates that end before they start. 711 rows with this problem.
 -- 314 rows with no species
--- refine target species list
 
