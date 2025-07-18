@@ -68,6 +68,7 @@ log(offset) = log(expert_opinion_offset) + log(microclim_offset)
 
 GR general todos
 -- refine target species list
+- can probably use the data where country doesn't match or are in sea - might be in islands in a more high res map. will get chucked if fail.
 
 ## model
 po_records ~ Poisson(intensity * bias)
@@ -85,3 +86,4 @@ prob_pres = icloglog(lambda * effort)
 - survey dates that end before they start. 711 rows with this problem.
 -- 314 rows with no species
 
+-- cover image for landing page to marianne and for upload in data page
