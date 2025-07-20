@@ -202,11 +202,11 @@ list(
 
  #####################################
 
- ## non sus data 20250704
+ ## All VA data 20250716
 
  tar_target(
    raw_data_file,
-   "data/tabular/non_suspicious_data_20250718.csv",
+   "data/tabular/VA_FULL_DATA_20250716.csv",
    format = "file"
  ),
 
