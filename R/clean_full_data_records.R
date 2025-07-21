@@ -77,6 +77,24 @@ clean_full_data_records <- function(
           is.na(occurrence_n)
       )
     ) |>
+    # fuck off rows with only one of lon or lat (this should be very small ~5)
+    filter(
+      !(
+        (is.na(longitude) & !is.na(latitude)) |
+          (!is.na(longitude) & is.na(latitude))
+      )
+    ) |>
+    # fuck off rows with impossible coordinates (12 of em)
+    mutate(
+      impossible_coordinates = check_impossible_coordinates(
+        latitude,
+        longitude
+      )
+    ) |>
+    filter(
+      !impossible_coordinates
+    ) |>
+    select(-impossible_coordinates) |>
     # rearrange col order so it has info i want to see up front
     select(
       species,
