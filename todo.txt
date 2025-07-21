@@ -68,7 +68,6 @@ log(offset) = log(expert_opinion_offset) + log(microclim_offset)
 
 GR general todos
 -- refine target species list
-- can probably use the data where country doesn't match or are in sea - might be in islands in a more high res map. will get chucked if fail.
 
 ## model
 po_records ~ Poisson(intensity * bias)
