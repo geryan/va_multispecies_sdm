@@ -2,7 +2,7 @@ clean_full_data_records <- function(
     raw_data
 ){
 
-  tidy_data_1 <- raw_data |>
+  raw_data |>
     dplyr::select(
       source_id,
       # occ_data,
@@ -158,7 +158,9 @@ clean_full_data_records <- function(
       everything()
     ) |>
   # we want to fill any non-na sampling methods with the latitude and longitude
-  # from earlier in the same row
+  # from earlier in the same row or failing that later in the same row
+  # likewise want to fill any non-na lat longs with missint sampling methods
+  # in same fashion
   # CHECK THIS WITH MS / AW
   # to do this we arrange and fill down by row id and id obs
   # this will fuck up if there are any rows of raw_data that have NA lat1 or lon1
@@ -176,27 +178,31 @@ clean_full_data_records <- function(
     fill(
       latitude,
       longitude,
+      sampling_occurrence,
       .direction = "down"
     ) |>
+    fill(
+      latitude,
+      longitude,
+      sampling_occurrence,
+      .direction = "up"
+    ) |>
     ungroup() |>
-    # add in cleaned sampling method
-    # and genetic id cols
+    # clean sampling method
     mutate(
       sampling_method = clean_sampling_method(sampling_occurrence)
     ) |>
+    # and genetic id cols
     mutate(
       genetic_id = check_genetic_id(
         species_id_1,
         species_id_2
       )
+    ) |>
+    select(
+      - sampling_occurrence,
+      - starts_with("species_id")
     )
-
-
-  ## hold this for later
-
-  # remove points where insecticide is used
-
-
   # dplyr::mutate(
   #   no_ic = case_when(
   #     is.na(insecticide_control) ~ TRUE,
@@ -212,7 +218,6 @@ clean_full_data_records <- function(
   # dplyr::filter(
   #   no_ic & no_itn
   # ) |>
-
 
 
   # idx <- which(
