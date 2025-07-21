@@ -157,35 +157,18 @@ clean_full_data_records <- function(
       id_obs,
       everything()
     ) |>
-    mutate(id_obs = as.numeric(id_obs)) |>
-    arrange(
-      #source_id,
-      raw_data_row_id,
-      id_obs
-    )
-
   # we want to fill any non-na sampling methods with the latitude and longitude
   # from earlier in the same row
   # CHECK THIS WITH MS / AW
   # to do this we arrange and fill down by row id and id obs
   # this will fuck up if there are any rows of raw_data that have NA lat1 or lon1
-  # here we check for that and cease operations if there is missing data
-  # and complain about this state of affairs
-  tidy_1_lat_check <- tidy_data_1 |>
-    filter(id_obs == 1 & is.na(latitude)) |>
-    nrow()
-
-  tidy_1_lon_check <- tidy_data_1 |>
-    filter(id_obs == 1 & is.na(longitude)) |>
-    nrow()
-
-  if(tidy_1_lat_check != 0 | tidy_1_lon_check != 0) {
-    stop("raw_data includes rows with missing latitude_1 or longitude_1")
-  }
-
+    mutate(id_obs = as.numeric(id_obs)) |>
+    arrange(
+      #source_id,
+      raw_data_row_id,
+      id_obs
+    ) |>
   # ok so on with filling down
-
-  tidy_data_1 |>
     # actually this grouping stops the above problem with writing into other rows
     # but it's a good check to have anyway so fuck off mate
     # get fucked yourself
