@@ -218,9 +218,13 @@ clean_full_data_records <- function(
         is.na(itn_use) ~ FALSE,
         itn_use == "yes" ~ TRUE,
         TRUE ~ FALSE
-      ),
+      )
+    ) |>
+    rowwise() |>
+    mutate(
       insecticide = any(ic, itn)
     ) |>
+    ungroup() |>
     # check if point or not  -
     mutate(
       point_data = check_point_data_type(area_type)
