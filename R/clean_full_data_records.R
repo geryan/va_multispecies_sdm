@@ -143,6 +143,7 @@ clean_full_data_records <- function(
       # same month does not give zero time
       study_months = study_days / 30 + 0.5,
       # check the fucking end date isn't before the start date
+      # make it NA if it is
       ends_before_starts = start_date > end_date,
       study_days = ifelse(ends_before_starts, NA, study_days),
       study_months = ifelse(ends_before_starts, NA, study_months),
@@ -150,7 +151,8 @@ clean_full_data_records <- function(
     ) |>
     select(
       - starts_with("month"),
-      - starts_with("year")
+      - starts_with("year"),
+      - ends_before_starts,
     ) |>
     select(
       raw_data_row_id,
@@ -199,25 +201,30 @@ clean_full_data_records <- function(
         species_id_2
       )
     ) |>
+    # flag insecticide use
+    mutate(
+      ic = case_when(
+        is.na(insecticide_control) ~ FALSE,
+        insecticide_control == "yes" ~ TRUE,
+        TRUE ~ FALSE
+      ),
+      itn = case_when(
+        is.na(itn_use) ~ FALSE,
+        itn_use == "yes" ~ TRUE,
+        TRUE ~ FALSE
+      ),
+      insecticide = any(ic, itn)
+    ) |>
+    # get rid of cols I dgaf about eh
     select(
       - sampling_occurrence,
-      - starts_with("species_id")
+      - starts_with("species_id"),
+      - ic,
+      -itn,
+      -insecticide_control,
+      -itn_use
     )
-  # dplyr::mutate(
-  #   no_ic = case_when(
-  #     is.na(insecticide_control) ~ TRUE,
-  #     insecticide_control == "yes" ~ FALSE,
-  #     TRUE ~ TRUE
-  #   ),
-  #   no_itn = case_when(
-  #     is.na(itn_use) ~ TRUE,
-  #     itn_use == "yes" ~ FALSE,
-  #     TRUE ~ TRUE
-  #   )
-  # ) |>
-  # dplyr::filter(
-  #   no_ic & no_itn
-  # ) |>
+
 
 
   # idx <- which(
