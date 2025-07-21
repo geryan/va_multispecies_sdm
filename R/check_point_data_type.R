@@ -22,6 +22,7 @@ check_point_data_type <- function(x) {
     x == "small polygon" ~ FALSE,
     x == "wide area" ~ TRUE,
     x == "within 5km" ~ FALSE,
+    .default = TRUE
   )
 
 }
