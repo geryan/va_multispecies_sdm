@@ -23,7 +23,7 @@ generate_model_data_records <- function(
     # target species only |>
     filter(species %in% target_species) |>
     mutate(
-      sampling_method = reduce_sampling_methods(sampling_method)
+      sampling_method = reduce_sampling_methods(sampling_method),,
     )
 
 

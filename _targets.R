@@ -240,11 +240,7 @@ list(
  # need to refine this list
  tar_target(
    target_species,
-   target_spp()
- ),
-
- tar_target(
-   target_species_test,
+   #target_spp(),
    target_spp_test_only()
  ),
 

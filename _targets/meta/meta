@@ -47,14 +47,15 @@ bg_points|stem|336cbfefc52bfd0b|a226f4fbf95376f4|1a6c130713e2980c|1048788436||t2
 model_data_ragged|stem|f060188c5c46ccb2|3df22cc6804a4718|5bf0a0fad3c4c8ae|-2104392691||t20273.1772824456s|s25177b|25177|rds|local|vector|||0.019||
 spatial_values|stem|fc8072994f21f0f1|5940b4c4538a4a0b|edfb8aa12c1d5c9e|570544416||t20273.1772847757s|s278440b|278440|rds|local|vector|||0.135||
 expert_maps|stem|24839404b04d2ed7|957dc9859317a19a|47930c03b94d8bc1|1393525444||t20273.1812565162s|s2547712b|2547712|format_custom&read=ewogICAgaWYgKCJHUEtHIiA9PSAiRVNSSSBTaGFwZWZpbGUiKSB7CiAgICAgICAgdGVycmE6OnZlY3QocGFzdGUwKCIvdnNpemlwL3siLCBwYXRoLCAifSIpKQogICAgfQogICAgZWxzZSB7CiAgICAgICAgdGVycmE6OnZlY3QocGF0aCkKICAgIH0KfQ&write=ewogICAgZG8uY2FsbCh0ZXJyYTo6d3JpdGVWZWN0b3IsIGMobGlzdCh4ID0gb2JqZWN0LCBmaWxlbmFtZSA9IGlmZWxzZSgiR1BLRyIgPT0gCiAgICAgICAgIkVTUkkgU2hhcGVmaWxlIiwgeWVzID0gcGFzdGUwKHBhdGgsICIuc2h6IiksIG5vID0gcGF0aCksIAogICAgICAgIGZpbGV0eXBlID0gIkdQS0ciLCBvdmVyd3JpdGUgPSBUUlVFLCBvcHRpb25zID0gIkVOQ09ESU5HPVVURi04IiksIAogICAgICAgIGxpc3QoKSkpCiAgICBpZiAoIkdQS0ciID09ICJFU1JJIFNoYXBlZmlsZSIpIHsKICAgICAgICBmaWxlLnJlbmFtZShwYXN0ZTAocGF0aCwgIi5zaHoiKSwgcGF0aCkKICAgIH0KfQ&marshal=dGVycmE6OndyYXAob2JqZWN0KQ&unmarshal=dGVycmE6OnVud3JhcChvYmplY3Qp&convert=&copy=&repository=|local|list|||2.689|package ‘greta’ was built under R version 4.5.1|
-target_species|stem|92fd8d4567fdbb90|5b6a4c229505afcc|80be7af0dee9aa86|1280782395||t20284.1734914713s|s173b|173|rds|local|vector|||2.241||
 target_species_test|stem|39357fe8564c4631|965df5580888fab2|8aff70bcae2748b3|-1010385964||t20284.1738087202s|s91b|91|rds|local|vector|||1.901||
 target_spp_test|function|8f6efd2493e283de
 raw_data_file|stem|a1bad57b4ded7d8e|65652e5f214edcc2|2c530c1562a7fbd1|-669943514|data/tabular/VA_FULL_DATA_20250716.csv|t20287.0274560279s|s101121768b|101121768|file|local|vector|||2.585||
 raw_data|stem|564af7aa1ecafcc1|4ed02d5bcc9d7627|ac9455e20be64389|-1101284392||t20289.946024265s|s2286459b|2286459|rds|local|vector|||4.195|One or more parsing issues, call `problems()` on your data frame for details, e.g.:   dat <- vroom(...)   problems(dat)|
+target_species|stem|39357fe8564c4631|965df5580888fab2|8aff70bcae2748b3|1280782395||t20290.2096108995s|s91b|91|rds|local|vector|||2.239||
 prepare_model_layers_mech|function|8ce5c8245ea44469
+check_point_data_type|function|97d4c761dfa2f5b1
 .Random.seed|object|b8baa73906ec595f
-reduce_sampling_methods|function|4193f3d1a4353fec
+reduce_sampling_methods|function|28e1b88bdd0fc7a8
 calculate_posterior_multisp_pp_with_offset|function|89b6e72efdf8d411
 clean_species|function|3aabcad3112bef5d
 prepare_mask|function|3672cdd5f1a4078f
@@ -91,7 +92,7 @@ make_covariate_plots|function|9b409d2e528c1680
 predict_greta_mspp_count|function|1bc8eb3432f10ed5
 prepare_bias|function|1da934e6fe11e4de
 format_mpp_data_fac|function|cf2da02fee54d0e5
-generate_model_data_records|function|bf34338882505865
+generate_model_data_records|function|2977c54ab5b72b9d
 make_data_records|function|870605b0b644d5fe
 prep_rcrds_2|function|2e469243f6d04e16
 prep_rcrds|function|804684b71044b5cc
@@ -103,6 +104,6 @@ fit_model_multisp_pp_count|function|7178e001a4665c2c
 fit_model_multisp_pp|function|d70f8fde2956232b
 make_detailed_data_records|function|312b188d85e52072
 make_expert_map_plots|function|a289d06be0b61de1
-clean_full_data_records|function|3e97dd8df96fe015
+clean_full_data_records|function|be76386a2fe0309b
 prepare_covariates|function|af3c207e6578be2f
-full_data_records|stem|f0424d3180df94ba|4b1d500c11120fd3|c1b25c54ee3b9183|784196675||t20290.049000682s|s491311b|491311|rds|local|vector|||1.145|There were 2 warnings in `mutate()`. The first warning was: ℹ In argument: `start_date = ym(start_date)`. Caused by warning: !  6805 failed to parse. ℹ Run `dplyr::last_dplyr_warnings()` to see the 1 remaining warning.|
+full_data_records|stem|3f1fe300c1bf2d20|4b1d500c11120fd3|6994dd1e4ac8ad5c|784196675||t20290.2510597464s|s493026b|493026|rds|local|vector|||1.161|There were 2 warnings in `mutate()`. The first warning was: ℹ In argument: `start_date = ym(start_date)`. Caused by warning: !  6741 failed to parse. ℹ Run `dplyr::last_dplyr_warnings()` to see the 1 remaining warning.|
