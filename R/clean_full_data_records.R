@@ -13,7 +13,7 @@ clean_full_data_records <- function(
       # larval.site.data,
       starts_with("latitude"),
       starts_with("longitude"),
-      #area.type,
+      area_type,
       insecticide_control,
       itn_use,
       starts_with("sampling_occurrence"),
@@ -29,6 +29,11 @@ clean_full_data_records <- function(
     select( # remove extraneous cols selected with helper funs above
       -occurrence_n_total
     ) |>
+    # fuck off rows with no species or no source_id
+    filter(!is.na(species)) |>
+    # nb all of the no source_id also have no species except 1
+    # so the second term here doesn't change much
+    filter(!is.na(source_id)) |>
     mutate(
       # clean up species names
       species = clean_species(species),
@@ -102,6 +107,7 @@ clean_full_data_records <- function(
       sampling_occurrence,
       latitude,
       longitude,
+      area_type,
       month_start,
       month_end,
       year_start,
@@ -215,6 +221,10 @@ clean_full_data_records <- function(
       ),
       insecticide = any(ic, itn)
     ) |>
+    # check if point or not  -
+    mutate(
+      point_data = check_point_data_type(area_type)
+    ) |>
     # get rid of cols I dgaf about eh
     select(
       - sampling_occurrence,
@@ -222,7 +232,8 @@ clean_full_data_records <- function(
       - ic,
       -itn,
       -insecticide_control,
-      -itn_use
+      -itn_use,
+      -area_type
     )
 
 
