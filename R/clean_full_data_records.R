@@ -196,17 +196,20 @@ clean_full_data_records <- function(
       .direction = "up"
     ) |>
     ungroup() |>
+    filter(!(is.na(latitude) & is.na(longitude))) |>
     # clean sampling method
     mutate(
       sampling_method = clean_sampling_method(sampling_occurrence)
     ) |>
     # and genetic id cols
+    rowwise() |>
     mutate(
       genetic_id = check_genetic_id(
         species_id_1,
         species_id_2
       )
     ) |>
+    ungroup() |>
     # flag insecticide use
     mutate(
       ic = case_when(
@@ -229,6 +232,16 @@ clean_full_data_records <- function(
     mutate(
       point_data = check_point_data_type(area_type)
     ) |>
+    mutate(
+      sampling_method = reduce_sampling_methods(sampling_method),
+      known_indoor = case_when(
+        stringr::str_ends(sampling_method, "ind") ~ TRUE,
+        sampling_method == "hri" ~ TRUE,
+        .default = FALSE
+      ),
+      ic_ki = insecticide & known_indoor
+    ) |>
+    filter(!ic_ki) |>
     # get rid of cols I dgaf about eh
     select(
       - sampling_occurrence,
