@@ -19,7 +19,8 @@ tar_option_set(
     "greta",
     "DHARMa",
     "lubridate",
-    "magrittr"
+    "magrittr",
+    "stringr"
   ),
   workspace_on_error = TRUE
 )
@@ -249,72 +250,89 @@ list(
    model_data_records,
    generate_model_data_records(
      full_data_records,
-     target_species = target_species_test
+     target_species = target_species
+   )
+ ),
+
+ # tar_target(
+ #   plot_points,
+ #   make_plot_points(
+ #     data_records,
+ #     target_species
+ #   )
+ # ),
+ #
+ #
+ # tar_target(
+ #   model_data_ragged,
+ #   make_model_data_ragged(
+ #     data_records,
+ #     bg_points,
+ #     target_species
+ #   )
+ # ),
+ #
+ # tar_target(
+ #   model_notna_idx_pa,
+ #   get_notna_idx(
+ #     model_data_ragged,
+ #     type = "pa"
+ #   )
+ # ),
+ #
+ # tar_target(
+ #   model_notna_idx_po,
+ #   get_notna_idx(
+ #     model_data_ragged,
+ #     type = "po"
+ #   )
+ # ),
+
+ tar_target(
+   model_data_all,
+   bind_rows(
+     model_data_records,
+     bg_points |>
+       as_tibble() |>
+       rename(
+         latitude = y,
+         longitude = x
+       ) |>
+       mutate(
+         data_type = "bg",
+         n = 0
+       )
    )
  ),
 
  tar_target(
-   plot_points,
-   make_plot_points(
-     data_records,
-     target_species
-   )
- ),
-
-
- tar_target(
-   model_data_ragged,
-   make_model_data_ragged(
-     data_records,
-     bg_points,
-     target_species
-   )
- ),
-
- tar_target(
-   model_notna_idx_pa,
-   get_notna_idx(
-     model_data_ragged,
-     type = "pa"
-   )
- ),
-
- tar_target(
-   model_notna_idx_po,
-   get_notna_idx(
-     model_data_ragged,
-     type = "po"
-   )
- ),
-
- tar_target(
-   spatial_values,
+   model_data_spatial,
    get_spatial_values(
      lyrs = static_vars_agg_mech_nonzero,
-     dat = model_data_ragged,
-     bgs = bg_points
-   )
+     dat = model_data_all
+   ) |>
+     filter(!is.na(ag_microclim))
  ),
 
 
  ## detailed data records
 
- tar_target(
-   detailed_data_records,
-   make_detailed_data_records(
-     raw_data,
-     static_vars_agg_mech_nonzero[[1]]
-   )
- ),
-
- tar_target(
-   model_data_ragged_detailed,
-   make_model_data_ragged_detailed(
-     detailed_data_records,
-     bg_points,
-     target_species
-   )
- ),
+ # tar_target(
+ #   detailed_data_records,
+ #   make_detailed_data_records(
+ #     raw_data,
+ #     static_vars_agg_mech_nonzero[[1]]
+ #   )
+ # ),
+ #
+ # tar_target(
+ #   model_data_ragged_detailed,
+ #   make_model_data_ragged_detailed(
+ #     detailed_data_records,
+ #     bg_points,
+ #     target_species
+ #   )
+ # ),
 
  # tar_target(
  #   model_notna_idx_pa,

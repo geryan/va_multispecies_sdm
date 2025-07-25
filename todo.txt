@@ -86,3 +86,14 @@ prob_pres = icloglog(lambda * effort)
 -- 314 rows with no species
 
 -- cover image for landing page to marianne and for upload in data page
+
+
+- removing ic_ki, think alter about adding insecticide control as extra model term effecting abundance
+
+
+Data foibles
+-  occurrence_n > 0 where binary_absence == "yes"
+- binary_presence == "yes" & binary_absence = "yes"
+- unclear what "no" means in the binary_presence and binary_absence columns
+-- biting_number_of_sampling_nights_x / biting_activity - data barely filled in and sus records - don't necessarily correspond to hlc methods and some very high values
+
