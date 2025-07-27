@@ -10,9 +10,7 @@ fit_model_multisp_pp_with_offset_count_new <- function(
 
   ## get data in order for model
 
-  #for all points (pa, po, bg):
-
-
+  # index of distinct locations
   distinct_idx <- model_data_spatial |>
     mutate(
       rn = row_number(),
@@ -74,7 +72,7 @@ fit_model_multisp_pp_with_offset_count_new <- function(
   n_cov_bias <- ncol(z)
 
   # number of species
-  n_species_with_bg <- unique(model_data_spatial$species)
+  n_species_with_bg <- unique(model_data_spatial$species) # includes NA
 
   n_species <- length(n_species_with_bg[!is.na(n_species_with_bg)])
 
@@ -94,7 +92,7 @@ fit_model_multisp_pp_with_offset_count_new <- function(
 
   ## impute bg sampling methods and species
 
-  model_data_spatial <- model_data_spatial |>
+  model_data_spatial_bg <- model_data_spatial |>
     mutate(
       sampling_method = case_when(
         data_type == "bg" ~ sample(
@@ -111,7 +109,7 @@ fit_model_multisp_pp_with_offset_count_new <- function(
       )
     )
 
-  bg_data <- model_data_spatial |>
+  bg_data <- model_data_spatial_bg |>
     filter(data_type == "bg") |>
     select(-species) |>
     expand_grid(species = target_species) |>
@@ -122,7 +120,7 @@ fit_model_multisp_pp_with_offset_count_new <- function(
     pull(locatenate)
 
   model_data <- bind_rows(
-    model_data_spatial |>
+    model_data_spatial_bg |>
       filter(data_type != "bg"),
     bg_data
   ) |>
@@ -147,7 +145,7 @@ fit_model_multisp_pp_with_offset_count_new <- function(
   )$area
 
 
-  n_bg <- model_data_spatial |>
+  n_bg <- model_data_spatial_bg |>
     filter(data_type == "bg") |>
     nrow()
 
@@ -345,8 +343,8 @@ fit_model_multisp_pp_with_offset_count_new <- function(
   # define and fit the model by MAP and MCMC
   m <- model(alpha, beta, gamma, delta)
 
-  n_burnin <- 5000
-  n_samples <- 1000
+  n_burnin <- 500
+  n_samples <- 10
   n_chains <- 20
 
   draws <- mcmc(

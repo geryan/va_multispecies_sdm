@@ -20,7 +20,8 @@ tar_option_set(
     "DHARMa",
     "lubridate",
     "magrittr",
-    "stringr"
+    "stringr",
+    "bayesplot"
   ),
   workspace_on_error = TRUE
 )
@@ -37,7 +38,7 @@ list(
   # https://github.com/geryan/africa_spatial_data
 
 
-  # aggregated predictor variables, i.e., lower resolution images for quicker processting
+  # aggregated predictor variables, i.e., lower resolution images for quicker processing
   # but use the high res ones for final product
   # # mech layer is set to the minimum value above zero
   tar_terra_rast(
