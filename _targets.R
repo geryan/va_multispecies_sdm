@@ -372,7 +372,7 @@ list(
  tar_target(
    simple_point_plots,
    make_point_plots(
-     plot_points,
+     model_data_spatial,
      expert_maps,
      new_mask
    )

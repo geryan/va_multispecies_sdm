@@ -1,5 +1,5 @@
 make_point_plots <- function(
-    plot_points,
+    model_data_spatial,
     expert_maps,
     new_mask
 ){
