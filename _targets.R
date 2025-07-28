@@ -42,9 +42,50 @@ list(
   # but use the high res ones for final product
   # # mech layer is set to the minimum value above zero
   tar_terra_rast(
-    static_vars_agg_mech_nonzero,
+    covariate_rast_all,
     rast("data/raster/static_vars_agg_mech_nonzero.tif")
   ),
+
+  tar_target(
+    target_covariate_names,
+    c(
+      #ag_microclim,
+      #research_tt_by_country,
+      #arid,
+      # built_volume,
+      # cropland,
+      "elevation",
+      "evi_mean", # correlates with pressure_mean rainfall_mean and solrad_mean
+      "footprint", # correlates with built_volume and cropland
+      "lst_day_mean",
+      # lst_night_mean,
+      # # pressure_mean,
+      # # rainfall_mean,
+      # soil_clay,
+      # # solrad_mean,
+      # # surface_water, remove and replace with distance to surface water
+      "tcb_mean" #, # strongly correlates with tcw
+      # # tcw_mean,
+      # windspeed_mean,
+      #easting,
+      #northing
+    )
+  ),
+
+  tar_target(
+    offset_names,
+    c("ag_microclim")
+  ),
+
+  tar_terra_rast(
+    covariate_rast,
+    subset_covariate_rast(
+      covariate_rast_all,
+      target_covariate_names,
+      offset_names
+    )
+  ),
+
 
   tar_terra_rast(
     new_mask,
@@ -148,7 +189,7 @@ list(
   tar_target(
     bg_points,
     terra::spatSample(
-      x = static_vars_agg_mech_nonzero[[1]],
+      x = covariate_rast[[1]],
       size = 1000,
       na.rm = TRUE,
       as.points = TRUE
@@ -309,56 +350,11 @@ list(
  tar_target(
    model_data_spatial,
    get_spatial_values(
-     lyrs = static_vars_agg_mech_nonzero,
+     lyrs = covariate_rast,
      dat = model_data_all
    ) |>
      filter(!is.na(ag_microclim))
  ),
-
-
- ## detailed data records
-
- # tar_target(
- #   detailed_data_records,
- #   make_detailed_data_records(
- #     raw_data,
- #     static_vars_agg_mech_nonzero[[1]]
- #   )
- # ),
- #
- # tar_target(
- #   model_data_ragged_detailed,
- #   make_model_data_ragged_detailed(
- #     detailed_data_records,
- #     bg_points,
- #     target_species
- #   )
- # ),
-
- # tar_target(
- #   model_notna_idx_pa,
- #   get_notna_idx(
- #     model_data_ragged,
- #     type = "pa"
- #   )
- # ),
- #
- # tar_target(
- #   model_notna_idx_po,
- #   get_notna_idx(
- #     model_data_ragged,
- #     type = "po"
- #   )
- # ),
- #
- # tar_target(
- #   spatial_values,
- #   get_spatial_values(
- #     lyrs = static_vars_agg_mech_nonzero,
- #     dat = model_data_ragged,
- #     bgs = bg_points
- #   )
- # ),
 
 
  ## plots before modelling
@@ -366,10 +362,10 @@ list(
  tar_target(
    covs_plots,
    make_covariate_plots(
-     spatial_values,
+     model_data_spatial,
      target_species,
-     model_notna_idx_pa,
-     model_notna_idx_po
+     target_covariate_names,
+     offset_names
    )
  ),
 
@@ -394,45 +390,6 @@ list(
  ## models
  ################
 
- ##
- ## multispecies pp with biophysical offset
- ##
-
- tar_target(
-   model_fit_image_multisp_pp_with_offset,
-   fit_model_multisp_pp_with_offset(
-     model_data_ragged,
-     spatial_values,
-     model_notna_idx_pa,
-     model_notna_idx_po,
-     image_name = "outputs/images/multisp_pp_with_offset.RData",
-     n_burnin = 1000,
-     n_samples = 1000,
-     n_chains = 4
-   )
- ),
-
- tar_target(
-   pred_file_multisp_pp_with_offset,
-   predict_greta_mspp_with_offset(
-     image_filename = model_fit_image_multisp_pp_with_offset,
-     prediction_layer = static_vars_agg_mech_nonzero,
-     target_species,
-     output_file = "outputs/rasters/multisp_pp_with_offset.tif"
-   )
- ),
-
- tar_terra_rast(
-   pred_multisp_pp_with_offset,
-   rast(pred_file_multisp_pp_with_offset)
- ),
-
- tar_target(
-   posterior_multisp_pp_with_offset,
-   calculate_posterior_multisp_pp_with_offset(
-     image_filename = model_fit_image_multisp_pp_with_offset
-   )
- ),
 
  ##
  ## multispecies pp with biophysical offset count
@@ -440,7 +397,7 @@ list(
 
  tar_target(
    model_fit_image_multisp_pp_with_offset_count,
-   fit_model_multisp_pp_with_offset_count(
+   fit_model_multisp_pp_with_offset_count_new(
      model_data_ragged,
      spatial_values,
      model_notna_idx_pa,
@@ -485,85 +442,8 @@ list(
  # ),
 
 
- ##
- ## multispecies pp (no offset)
- ##
 
- tar_target(
-   model_fit_image_multisp_pp,
-   fit_model_multisp_pp(
-     model_data_ragged,
-     spatial_values,
-     model_notna_idx_pa,
-     model_notna_idx_po,
-     image_name = "outputs/images/multisp_pp.RData",
-     n_burnin = 1000,
-     n_samples = 1000,
-     n_chains = 4
-   )
- ),
 
- tar_target(
-   pred_file_multisp_pp,
-   predict_greta_mspp(
-     image_filename = model_fit_image_multisp_pp,
-     prediction_layer = static_vars_agg_mech_nonzero,
-     target_species,
-     output_file = "outputs/rasters/multisp_pp.tif"
-   )
- ),
-
- tar_terra_rast(
-   pred_multisp_pp,
-   rast(pred_file_multisp_pp)
- ),
-
- # tar_target(
- #   plots_pred_multisp_pp,
- #   multitude_of_plots(
- #
- #   )
- # ),
-
- ##
- ## multispecies pp (no offset) with count
- ##
- tar_target(
-   model_fit_image_multisp_pp_count,
-   fit_model_multisp_pp_count(
-     model_data_ragged,
-     spatial_values,
-     model_notna_idx_pa,
-     model_notna_idx_po,
-     image_name = "outputs/images/multisp_pp_count.RData",
-     n_burnin = 100,
-     n_samples = 100,
-     n_chains = 4
-   )
- ),
-
- tar_target(
-   pred_file_multisp_pp_count,
-   predict_greta_mspp_count(
-     image_filename = model_fit_image_multisp_pp_count,
-     prediction_layer = static_vars_agg_mech_nonzero,
-     target_species,
-     output_file = "outputs/rasters/multisp_pp_count.tif"
-   )
- ),
-
- tar_terra_rast(
-   pred_multisp_pp_count,
-   rast(pred_file_multisp_pp_count)
- ),
-
- tar_terra_rast(
-   pred_multisp_pp_count_p_presence,
-   poisson_to_prob(
-     pred_multisp_pp_count,
-     filename = "outputs/rasters/multisp_pp_count_p_presence.tif"
-   )
- ),
 
  #####################
 
