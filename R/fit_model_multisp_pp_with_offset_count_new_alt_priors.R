@@ -32,6 +32,9 @@ fit_model_multisp_pp_with_offset_count_new <- function(
   log_offset <- log(model_data_spatial[distinct_idx,"ag_microclim"])|>
     as.matrix()
 
+
+  ## FIX BELOW SO COMPUTATIONALLY SELECTED
+
   # get covariate values
   x <- model_data_spatial[distinct_idx,] |>
     as_tibble() |>
@@ -41,17 +44,17 @@ fit_model_multisp_pp_with_offset_count_new <- function(
       #arid,
       # built_volume,
       # cropland,
-      elevation,
+      #elevation,
       evi_mean, # correlates with pressure_mean rainfall_mean and solrad_mean
-      footprint, # correlates with built_volume and cropland
-      lst_day_mean,
+      #footprint, # correlates with built_volume and cropland
+      #lst_day_mean,
       # lst_night_mean,
       # # pressure_mean,
       # # rainfall_mean,
       # soil_clay,
       # # solrad_mean,
       # # surface_water, remove and replace with distance to surface water
-      tcb_mean#, # strongly correlates with tcw
+      #tcb_mean#, # strongly correlates with tcw
       # # tcw_mean,
       # windspeed_mean,
       #easting,
@@ -154,12 +157,12 @@ fit_model_multisp_pp_with_offset_count_new <- function(
 
   # define parameters with normal priors, matching the ridge regression setup in
   # multispeciesPP defaults
-  #penalty.l2.intercept <- 1e-4
-  #penalty.l2.sdm <- penalty.l2.bias <- 0.1
+  penalty.l2.intercept <- 1e-4
+  penalty.l2.sdm <- penalty.l2.bias <- 0.1
 
   # trying others
-   penalty.l2.intercept <- 5e-2
-   penalty.l2.sdm <- penalty.l2.bias <- 0.3
+   # penalty.l2.intercept <- 5e-2
+   # penalty.l2.sdm <- penalty.l2.bias <- 0.3
 
   intercept_sd <- sqrt(1 / penalty.l2.intercept)
   beta_sd <- sqrt(1 / penalty.l2.sdm)
@@ -294,15 +297,19 @@ fit_model_multisp_pp_with_offset_count_new <- function(
   # p <- icloglog(log_lambda[model_notna_idx_pa] + log(area_pa))
   # distribution(data_infilled[model_notna_idx_pa]) <- bernoulli(p)
 
-  log_lambda_obs_pa <-log_lambda[pa_data_loc_sp_idx] +
-    sampling_re[pa_data_index$sampling_method_id]
 
-  pa_data_response <- model_data |>
-    filter(data_type == "pa") |>
-    pull(n)
 
-  distribution(pa_data_response) <- bernoulli(icloglog(log_lambda_obs_pa))
-  # above technically should have + log(area_pa inside but it's zero)
+  # log_lambda_obs_pa <-log_lambda[pa_data_loc_sp_idx] +
+  #   sampling_re[pa_data_index$sampling_method_id]
+  #
+  # pa_data_response <- model_data |>
+  #   filter(data_type == "pa") |>
+  #   pull(n)
+  #
+  # distribution(pa_data_response) <- bernoulli(icloglog(log_lambda_obs_pa))
+  # # above technically should have + log(area_pa inside but it's zero)
+
+
 
 
   # PO and BG likelihoods
@@ -313,41 +320,42 @@ fit_model_multisp_pp_with_offset_count_new <- function(
   # this value only changes all the gamma parameters by a fixed amount, and these
   # are not the parameters of interest
 
-  area_po <- 1e-3 # very small
-
-  area_pobg <- model_data |>
-    filter(data_type %in% c("po", "bg")) |>
-    mutate(area = case_when(data_type == "po" ~ area_po, data_type == "bg" ~ area_bg)) |>
-    pull(area)
-
-
-  po_data_response <- model_data |>
-    filter(data_type %in% c("po", "bg")) |>
-       pull(n)
-
-  log_bias_obs_pobg <- log_bias[pobg_data_loc_sp_idx]
-
-  log_lambda_obs_pobg <-log_lambda[pobg_data_loc_sp_idx] +
-    sampling_re[pobg_data_index$sampling_method_id]
-
-  distribution(po_data_response) <- poisson(
-    exp(
-      log_lambda_obs_pobg +
-        log_bias_obs_pobg +
-        log(area_pobg)
-    )
-  )
-
+  # area_po <- 1e-3 # very small
+  #
+  # area_pobg <- model_data |>
+  #   filter(data_type %in% c("po", "bg")) |>
+  #   mutate(area = case_when(data_type == "po" ~ area_po, data_type == "bg" ~ area_bg)) |>
+  #   pull(area)
+  #
+  #
+  # po_data_response <- model_data |>
+  #   filter(data_type %in% c("po", "bg")) |>
+  #      pull(n)
+  #
+  # log_bias_obs_pobg <- log_bias[pobg_data_loc_sp_idx]
+  #
+  # log_lambda_obs_pobg <-log_lambda[pobg_data_loc_sp_idx] +
+  #   sampling_re[pobg_data_index$sampling_method_id]
+  #
+  # distribution(po_data_response) <- poisson(
+  #   exp(
+  #     log_lambda_obs_pobg +
+  #       log_bias_obs_pobg +
+  #       log(area_pobg)
+  #   )
+  # )
+  #
 
   # define and fit the model by MAP and MCMC
   m <- model(alpha, beta, gamma, delta, sampling_re_raw, sampling_re_sd)
 
-  n_burnin <- 5000
-  n_samples <- 1000
-  n_chains <- 20
 
-  optim <- opt(m)
-  optim
+  n_burnin <- 2000
+  n_samples <- 500
+  n_chains <- 50
+
+  # optim <- opt(m)
+  # optim
 
   draws <- mcmc(
     m,

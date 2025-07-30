@@ -97,3 +97,9 @@ Data foibles
 - unclear what "no" means in the binary_presence and binary_absence columns
 -- biting_number_of_sampling_nights_x / biting_activity - data barely filled in and sus records - don't necessarily correspond to hlc methods and some very high values
 
+
+# run pa and count
+
+run calculate to sim priors at presence-only values - shouldn't be mostly 0s or 1s
+- if is step back through calcs to see where it's coming from - is it the area param or something about bias model?
+

@@ -54,17 +54,17 @@ list(
       #arid,
       # built_volume,
       # cropland,
-      "elevation",
-      "evi_mean", # correlates with pressure_mean rainfall_mean and solrad_mean
-      "footprint", # correlates with built_volume and cropland
-      "lst_day_mean",
+      #"elevation",
+      "evi_mean"#, # correlates with pressure_mean rainfall_mean and solrad_mean
+      #"footprint", # correlates with built_volume and cropland
+      #"lst_day_mean",
       # lst_night_mean,
       # # pressure_mean,
       # # rainfall_mean,
       # soil_clay,
       # # solrad_mean,
       # # surface_water, remove and replace with distance to surface water
-      "tcb_mean" #, # strongly correlates with tcw
+      #"tcb_mean" #, # strongly correlates with tcw
       # # tcw_mean,
       # windspeed_mean,
       #easting,
@@ -77,12 +77,18 @@ list(
     c("ag_microclim")
   ),
 
+  tar_target(
+    bias_names,
+    "research_tt_by_country"
+  ),
+
   tar_terra_rast(
     covariate_rast,
     subset_covariate_rast(
       covariate_rast_all,
       target_covariate_names,
-      offset_names
+      offset_names,
+      bias_names
     )
   ),
 
