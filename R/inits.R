@@ -1,12 +1,12 @@
 inits <- function(
   n_chains = 1,
   nsp = 4, # number of species / alpha values
-  ncv = 10, # nuber of covariates of abundance/presence / beta/alpha covariates
+  ncv = 1, # nuber of covariates of abundance/presence / beta/alpha covariates
   #ncb = 1, # number of bias layers / delta values
-  ina = -15e-1, # mean initial value for alpha
+  ina = 15e-1, # mean initial value for alpha
   inb = 1e-1, # mean initial value for beta
-  ing = -1, # mean initial value for gamma
-  ind = 1e-4, # mean initial value for delta
+  ing = -15, # mean initial value for gamma
+  ind = 30, # mean initial value for delta
   sda = 1e-2,
   sdb = 3e-1,
   sdg = 1e-4,
