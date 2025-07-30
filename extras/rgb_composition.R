@@ -11,8 +11,8 @@ tar_load_everything()
 multisp <- rast("outputs/rasters/va_plots_20250718/expert_offset_preds_mspp.tif")
 
 # subset to target species
-target_species <- c("arabiensis", "gambiae_coluzzii", "funestus")
-target_multisp <- multisp[[match(target_species, names(multisp))]]
+rgb_target_species <- c("arabiensis", "gambiae_coluzzii", "funestus")
+target_multisp <- multisp[[match(rgb_target_species, names(multisp))]]
 
 # convert to abundance by inverting cloglog link, then exponentiating
 
