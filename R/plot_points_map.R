@@ -1,7 +1,7 @@
 plot_points_map <- function(
     sp,
     new_mask,
-    plot_points
+    data
 ){
 
   spname <- paste0("Anopheles ", sp)
@@ -11,13 +11,19 @@ plot_points_map <- function(
     geom_spatraster(
       data = new_mask
     ) +
-
     geom_point(
-      data = plot_points |> filter(species == sp),
+      data = data |>
+        mutate(
+          detected = case_when(
+            presence == 1 ~ "Detected",
+            presence == 0 ~ "Undetected"
+          )
+        ),
       aes(
-        x = lon,
-        y = lat,
-        col = type
+        x = longitude,
+        y = latitude,
+        shape = data_type,
+        col = detected
       ),
       alpha = 0.7
     ) +

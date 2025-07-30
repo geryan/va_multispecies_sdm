@@ -4,7 +4,63 @@ make_point_plots <- function(
     new_mask
 ){
 
-  alsp <- unique(plot_points$species)
+  alsp <- model_data_spatial$species |>
+    na.omit() |>
+    unique()
+
+  plot_data <- model_data_spatial |>
+    filter(data_type != "bg") |>
+    select(
+      species,
+      latitude,
+      longitude,
+      sampling_method,
+      data_type,
+      presence,
+      count
+    ) |>
+    distinct()
+
+  npd <- plot_data |>
+    select(
+      -sampling_method,
+      -count
+    ) |>
+    nest_by(species)
+
+  mapply(
+    FUN = function(data, sp, new_mask){
+
+      p <- plot_points_map(
+        sp,
+        new_mask,
+        data
+      )
+
+      ggsave(
+        filename = sprintf(
+          "outputs/figures/point_plots/points_%s.png",
+          sp
+        ),
+        plot = p,
+        width = 3600,
+        height = 2000,
+        units = "px"
+      )
+
+      sp
+
+    },
+    data = npd$data,
+    sp = npd$species,
+    MoreArgs = list(
+      new_mask = new_mask
+    ),
+    SIMPLIFY = FALSE
+  )
+
+
+
   exsp <- expert_maps$species
 
   map_type <- case_when(
@@ -18,6 +74,10 @@ make_point_plots <- function(
     "gambiae",
     alsp
   )
+
+
+
+
 
   mapply(
     FUN = function(
