@@ -12,9 +12,10 @@
 subset_covariate_rast <- function(
   covariate_rast_all,
   target_covariate_names,
-  offset_names
+  offset_names,
+  bias_names
 ) {
 
-  covariate_rast_all[[c(offset_names, target_covariate_names)]]
+  covariate_rast_all[[c(offset_names, target_covariate_names, bias_names)]]
 
 }
