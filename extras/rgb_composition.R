@@ -37,6 +37,12 @@ names(totals_norm) <- "transparency"
 
 plots <- c(props, trans = 1 - totals_norm) * 255
 # plot as RGB
+
+writeRaster(
+  x = plots,
+  filename = "outputs/rasters/va_plots_20250718/anopheles_rel_abund_rgb.tif"
+)
+
 terra::plotRGB(
   plots,
   r = 1, # red = arabiensis
@@ -67,4 +73,99 @@ terra::plotRGB(
   b = 3, # blue = funestus
   a = 4 # transparent = none
 )
+dev.off()
+
+
+###### plotting over mask
+
+
+target_multisp_pa <- app(target_multisp, function(x) pmin(x, 0.999))
+target_multisp_abund <- -log(1 - target_multisp_pa)
+
+
+thold <- 0.025
+any_above_threshold <- app(
+  x = target_multisp_pa,
+  fun = function(x){
+    any(x > thold)
+  }
+) |>
+  app(
+    fun = function(x){ ifelse(x == 0, NA, 1)}
+  )
+plot(any_above_threshold)
+
+
+aatvals <- values(any_above_threshold) |>
+  as.numeric()
+mvals <- values(multisp[[1]]) |>
+  as.numeric()
+
+naatvals <- case_when(
+  is.na(mvals) ~ NA,
+  !is.na(aatvals) ~ NA,
+  .default = 1
+)
+naat <- any_above_threshold
+naat[] <- naatvals
+naat
+plot(naat)
+
+
+# renormalise to proportions
+totals <- app(target_multisp_abund, sum)
+props <- target_multisp_abund / totals
+
+most <- global(totals, "max", na.rm = TRUE)$max
+totals_norm <- totals / most
+names(totals_norm) <- "transparency"
+plot(totals_norm)
+
+relabund_unmasked <- c(props, trans = 1 - totals_norm) * 255
+
+relabund <- terra::mask(
+  relabund_unmasked,
+  any_above_threshold
+)
+
+# plot as RGB
+plotRGB(relabund)
+
+prgb <- RGB(relabund, value = 1:3)
+
+colz <- colorize(prgb, to = "col")
+
+plot(colz)
+
+plot(
+  x = new_mask,
+  col = "grey80",
+  legend = FALSE,
+  axes = FALSE,
+  box = FALSE
+)
+plot(
+  colz,
+  add = TRUE
+)
+
+png(
+  filename = "outputs/figures/distribution_plots/plots_for_va_mtg_20250718/rgb_agcf_withbg.png",
+  width = 3200,
+  height = 3200,
+  res = 300,
+  units = "px"
+)
+plot(
+  x = new_mask,
+  col = "grey80",
+  legend = FALSE,
+  axes = FALSE,
+  box = FALSE
+)
+plot(
+  colz,
+  add = TRUE
+)
+
 dev.off()
