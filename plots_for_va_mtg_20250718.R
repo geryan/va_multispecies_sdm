@@ -80,7 +80,7 @@ writeRaster(
   expert_offset_preds_mspp,
   "outputs/rasters/va_plots_20250718/expert_offset_preds_mspp.tif"
 )
-
+expert_offset_preds_mspp <- rast("outputs/rasters/va_plots_20250718/expert_offset_preds_mspp.tif")
 
 distplot_pts <- function(rst, sp, pts){
   spname <- paste0("Anopheles ", sp)
@@ -228,5 +228,126 @@ ggsave(
 )
 
 
-# relative abund plots
+#### alt colours
+
+eo_plots_rb <- sapply(
+  X = names(expert_offset_preds_mspp),
+  # FUN = function(x, expert_offset_preds_mspp){
+  #   distplot(expert_offset_preds_mspp, x)
+  # },
+  FUN = function(sp, rst){
+    spname <- paste0("Anopheles ", sp)
+
+    r <- subset(rst, sp)
+
+    ggplot() +
+      geom_spatraster(
+        data = r
+      ) +
+      # scale_fill_viridis_c(
+      #   option = "G",
+      #   direction = -1,
+      #   na.value = "transparent"
+      # ) +
+      scale_colour_distiller(
+        palette = "RdBu",
+        type = "div",
+        aesthetics = c("fill"),
+        na.value = "transparent"
+      ) +
+      theme_void() +
+      labs(
+        title = bquote(italic(.(spname)))
+      ) +
+      guides(
+        fill = "none"
+      )
+
+  },
+  rst = expert_offset_preds_mspp
+)
+
+
+eo_plots_rb$arabiensis
+
+ts_plots_rb <- eo_plots_rb[target_species]
+
+ts_plots_points_rb <- sapply(
+  X = target_species,
+  FUN = function(
+    x,
+    ts_plots_rb,
+    model_data_spatial
+  ){
+    p <- ts_plots_rb[[x]]
+
+    d <- model_data_spatial |>
+      filter(
+        species == x,
+        data_type != presence
+      )
+
+    p2 <- p +
+      geom_point(
+        data = d |>
+          mutate(
+            detected = case_when(
+              presence == 1 ~ "Detected",
+              presence == 0 ~ "Undetected"
+            )
+          ),
+        aes(
+          x = longitude,
+          y = latitude,
+          #shape = data_type,
+          col = detected
+        ),
+        alpha = 0.7,
+        size = 0.4
+      ) +
+      scale_colour_manual(
+        values = c("yellow", "grey70")
+      ) +
+      theme(legend.position = "none")
+
+    p2
+
+  },
+  ts_plots_rb,
+  model_data_spatial
+)
+
+library(patchwork)
+
+# 4-species / 4-panel distribution plot with points
+
+ts_points_plot_all_rb <- (ts_plots_points_rb$coluzzii + ts_plots_points_rb$gambiae) /
+  (ts_plots_points_rb$arabiensis + ts_plots_points_rb$funestus)
+
+ts_points_plot_all_rb
+
+ggsave(
+  filename = "outputs/figures/distribution_plots/plots_for_va_mtg_20250718/mspp_dist_4spp_points_rb.png",
+  plot = ts_points_plot_all_rb,
+  width = 3200,
+  height = 3200,
+  dpi = 300,
+  units = "px"
+)
+
+# without points
+
+ts_plot_all_rb <- (ts_plots_rb$coluzzii + ts_plots_rb$gambiae) /
+  (ts_plots_rb$arabiensis + ts_plots_rb$funestus)
+
+ts_plot_all_rb
+
+ggsave(
+  filename = "outputs/figures/distribution_plots/plots_for_va_mtg_20250718/mspp_dist_4spp_rb.png",
+  plot = ts_plot_all_rb,
+  width = 3200,
+  height = 3200,
+  dpi = 300,
+  units = "px"
+)
 
