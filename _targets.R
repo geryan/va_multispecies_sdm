@@ -438,17 +438,40 @@ list(
    )
  ),
 
+ #####
+
+ # distribution plots
+
+ tar_terra_rast(
+   pred_dist,
+   rast("outputs/rasters/va_plots_20250718/expert_offset_preds_mspp.tif")[[target_species]]
+ ),
 
 
- # tar_target(
- #   posterior_multisp_pp_with_offset,
- #   calculate_posterior_multisp_pp_with_offset(
- #     image_filename = model_fit_image_multisp_pp_with_offset
- #   )
- # ),
 
+ ## relative abundance
 
+ tar_terra_rast(
+   pred_dist_rgb,
+   rast("outputs/rasters/va_plots_20250718/expert_offset_preds_mspp.tif")
+ ),
 
+ tar_terra_rast(
+   rel_abund_rgb,
+   make_rel_abund_rgb(
+     x = pred_dist_rgb,
+     threshold = 0.05
+   )
+ ),
+
+ tar_target(
+   rel_abund_plots,
+   make_rel_abund_rgb_plot(
+     rel_abund_rgb,
+     project_mask,
+     filename = "outputs/figures/rgb_relative_abundance.png"
+   )
+ ),
 
 
  #####################
