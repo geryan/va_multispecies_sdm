@@ -94,8 +94,8 @@ list(
 
 
   tar_terra_rast(
-    new_mask,
-    rast("~/Documents/tki_work/vector_atlas/africa_spatial_data/outputs/raster/new_mask.tif")
+    project_mask,
+    make_project_mask(covariate_rast)
   ),
 
   ## specific regions/ countries of interest for close-up plots
