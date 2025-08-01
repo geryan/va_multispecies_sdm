@@ -122,7 +122,7 @@ model_data <- bind_rows(
 # area of background cells
 
 total_area <- expanse(
-  static_vars_agg_mech_nonzero[[1]],
+  project_mask,
   unit = "km"
 )$area
 
@@ -329,10 +329,15 @@ distribution(po_data_response) <- poisson(
 m <- model(alpha, beta, gamma, delta, sampling_re_raw, sampling_re_sd)
 
 
+
 n_burnin <- 1000
 n_samples <- 500
 n_chains <- 50
 
+init_vals <- generate_valid_inits(
+  model = m,
+  chains = n_chains
+)
 # optim <- opt(m)
 # optim
 
@@ -341,11 +346,7 @@ draws <- mcmc(
   warmup = n_burnin,
   n_samples = n_samples,
   chains = n_chains,
-  initial_values = inits(
-    n_chains = n_chains,
-    nsp = n_species,
-    ncv = n_cov_abund
-  )
+  initial_values = init_vals
 )
 
 
