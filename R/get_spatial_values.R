@@ -12,32 +12,8 @@
 get_spatial_values <- function(
     lyrs,
     dat,
-    bgs,
-    old = FALSE
+    project_mask
   ) {
-
-  if(old) {
-    spatial_values <- bind_rows(
-      dat |>
-        select(
-          lon,
-          lat,
-        ),
-      bgs |>
-        as_tibble() |>
-        rename(
-          lon = x,
-          lat = y
-        )
-    ) |>
-      as.matrix() |>
-      extract(
-        x = lyrs,
-        y = _
-      )
-
-    return(spatial_values)
-  }
 
   dat_distinct <- dat |>
     select(
@@ -47,7 +23,7 @@ get_spatial_values <- function(
     distinct()
 
   svs <- terra::extract(
-      x = lyrs,
+      x = c(project_mask, lyrs),
       y = dat_distinct |>
         rename(
           lon = longitude,
@@ -64,6 +40,8 @@ get_spatial_values <- function(
   dat |>
     left_join(
       y = sv_distinct
-    )
+    ) |>
+    filter(!is.na(project_mask)) |>
+    select(-project_mask)
 
 }

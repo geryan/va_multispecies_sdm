@@ -166,28 +166,6 @@ list(
     )
   ),
 
-  tar_terra_rast(
-    new_mask_agg,
-    terra::aggregate(
-      x = new_mask,
-      fact = 10
-    )
-  ),
-
-
-
-
-  # tar_terra_rast(
-  #   static_vars_standardised,
-  #   rast("~/Documents/tki_work/vector_atlas/africa_spatial_data/outputs/raster/africa_static_vars_std.tif")
-  # ),
-  #
-  #
-  # tar_terra_rast(
-  #   unstandardised_layers,
-  #   rast("~/Documents/tki_work/vector_atlas/africa_spatial_data/outputs/raster/africa_static_vars.tif")
-  # ),
-
   tar_seed_set(
     tar_seed_create("bg_points")
   ),
@@ -201,55 +179,11 @@ list(
       as.points = TRUE
     ) %>%
       crds()
-  ), #mfing slow but setting of seed stops it rerunning # upped number and not that mfing slow???
-
-
+  ),
 
   ####################################
   # data wrangling and cleaning
   ###################################
-
-  ##########
-  ## old process
-
- #   tar_target(
- #   old_raw_data_file,
- #   "data/tabular/update_speciescols_6_FINAL_with_absences_20241105_oldMAP.csv",
- #   format = "file"
- # ),
- #
- # tar_target(
- #   old_raw_data,
- #   read_csv(
- #    file = old_raw_data_file,
- #    guess_max = 30000
- #   )
- # ),
- #
- # tar_target(
- #   new_raw_data_file,
- #   "data/tabular/va_data_merged_20241105.csv",
- #   format = "file"
- # ),
- #
- # tar_target(
- #   new_raw_data,
- #   read_csv(
- #     file = new_raw_data_file,
- #     guess_max = 30000
- #   )
- # ),
- #
- # tar_target(
- #   dated_raw_data,
- #   combine_raw_data(
- #     old_raw_data,
- #     new_raw_data
- #   )
- # ),
-
-
- #####################################
 
  ## All VA data 20250716
 
@@ -302,40 +236,6 @@ list(
    )
  ),
 
- # tar_target(
- #   plot_points,
- #   make_plot_points(
- #     data_records,
- #     target_species
- #   )
- # ),
- #
- #
- # tar_target(
- #   model_data_ragged,
- #   make_model_data_ragged(
- #     data_records,
- #     bg_points,
- #     target_species
- #   )
- # ),
- #
- # tar_target(
- #   model_notna_idx_pa,
- #   get_notna_idx(
- #     model_data_ragged,
- #     type = "pa"
- #   )
- # ),
- #
- # tar_target(
- #   model_notna_idx_po,
- #   get_notna_idx(
- #     model_data_ragged,
- #     type = "po"
- #   )
- # ),
-
  tar_target(
    model_data_all,
    bind_rows(
@@ -357,9 +257,9 @@ list(
    model_data_spatial,
    get_spatial_values(
      lyrs = covariate_rast,
-     dat = model_data_all
-   ) |>
-     filter(!is.na(ag_microclim))
+     dat = model_data_all,
+     project_mask
+   )
  ),
 
 
@@ -380,7 +280,7 @@ list(
    make_point_plots(
      model_data_spatial,
      expert_maps,
-     new_mask
+     project_mask
    )
  ),
 
@@ -395,7 +295,6 @@ list(
  ################
  ## models
  ################
-
 
  ##
  ## multispecies pp with biophysical offset count
@@ -482,9 +381,6 @@ list(
  )
 
 )
-
-
-
 
 
 # tar_load_everything()
