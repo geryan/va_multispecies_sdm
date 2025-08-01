@@ -341,15 +341,24 @@ list(
 
  # distribution plots
 
+ # this is the temporary thang until the above are tidied
  tar_terra_rast(
    pred_dist,
    rast("outputs/rasters/va_plots_20250718/expert_offset_preds_mspp.tif")[[target_species]]
  ),
 
-
+ tar_target(
+   distribution_plots,
+   make_distribution_plots(
+     pred_dist,
+     model_data_spatial,
+     plot_dir = "outputs/figures/distribution_plots/distns_20250731"
+   )
+ ),
 
  ## relative abundance
 
+ # this is the temporary thang until the above are tidied
  tar_terra_rast(
    pred_dist_rgb,
    rast("outputs/rasters/va_plots_20250718/expert_offset_preds_mspp.tif")
