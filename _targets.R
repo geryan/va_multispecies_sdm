@@ -369,7 +369,8 @@ list(
    make_rel_abund_rgb(
      x = pred_dist_rgb,
      threshold = 0.05
-   )
+   ),
+   datatype = "INT1U"
  ),
 
  tar_target(

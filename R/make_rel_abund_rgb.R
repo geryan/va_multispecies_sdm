@@ -41,9 +41,7 @@ make_rel_abund_rgb <- function(
      )
   }
 
-  # geotargets doesn't currently facilitate saving color tables
-  # so do this later when plotting
-  #terra::RGB(relabund, value = 1:3)
+  relabund <- terra::RGB(relabund, value = 1:3)
 
   relabund
 

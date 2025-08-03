@@ -7,10 +7,10 @@ make_rel_abund_rgb_plot <- function(
     res = 300
 ) {
 
-
-  prgb <- RGB(rel_abund_rgb, value = 1:3)
-
-  colz <- colorize(prgb, to = "col")
+  colz <- colorize(
+    rel_abund_rgb,
+    to = "col"
+  )
 
   png(
     filename = filename,
