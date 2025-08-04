@@ -23,9 +23,46 @@ make_distribution_plots <- function(
 
   saveplotlist(
     dist_plots_mako,
-    dir = "outputs/figures/distribution_plots/distn_20250804",
+    dir = plot_dir,
     prefix = "distribution"
   )
+
+  dist_plots_rb <- distplotlist(
+    pred_dist,
+    colscheme = "rb"
+  )
+
+  saveplotlist(
+    dist_plots_rb,
+    dir = plot_dir,
+    prefix = "distribution_rb"
+  )
+
+
+  dist_plots_mako_points <- add_pa_points_list(
+    dist_plots_mako,
+    model_data_spatial
+  )
+
+  saveplotlist(
+    dist_plots_mako_points,
+    dir = plot_dir,
+    prefix = "distpoints"
+  )
+
+
+  dist_plots_rb_points <- add_pa_points_list(
+    dist_plots_rb,
+    model_data_spatial,
+    colp = "yellow"
+  )
+
+  saveplotlist(
+    dist_plots_rb_points,
+    dir = plot_dir,
+    prefix = "distpoints_rb"
+  )
+
 
 
 }

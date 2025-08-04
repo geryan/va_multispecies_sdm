@@ -352,7 +352,7 @@ list(
    make_distribution_plots(
      pred_dist,
      model_data_spatial,
-     plot_dir = "outputs/figures/distribution_plots/distns_20250731"
+     plot_dir = "outputs/figures/distribution_plots/distn_20250804"
    )
  ),
 
