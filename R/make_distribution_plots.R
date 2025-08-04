@@ -16,12 +16,15 @@ make_distribution_plots <- function(
 ) {
 
 
-  eo_plots <- sapply(
-    X = names(expert_offset_preds_mspp),
-    FUN = function(x, expert_offset_preds_mspp){
-      distplot(expert_offset_preds_mspp, x)
-    },
-    expert_offset_preds_mspp
+  dist_plots_mako <- distplotlist(
+    pred_dist,
+    colscheme = "mako"
+  )
+
+  saveplotlist(
+    dist_plots_mako,
+    dir = "outputs/figures/distribution_plots/distn_20250804",
+    prefix = "distribution"
   )
 
 
