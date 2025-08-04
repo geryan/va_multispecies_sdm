@@ -14,23 +14,23 @@ enforce_dim <- function(r_value, greta_array) {
 }
 
 # convert an inits list into a matrix of free states
-get_free_states <- function(inits_list, variable_greta_arrays, model) {
+get_free_states <- function(inits_list, variable_greta_arrays, mod) {
   # attach the variable greta arrays here, to be found by
   # parse_initial_values(), which is hard-coded to look in a particular number
   # of parent frames above
   attach(variable_greta_arrays, warn.conflicts = FALSE)
   free_state_list <- lapply(inits_list,
                             greta:::parse_initial_values,
-                            model$dag)
+                            mod$dag)
   do.call(rbind, free_state_list)
 }
 
 # sample a batch of n free state values from the model priors, but only return
 # those that are valid
-prior_sample_free_states_batch <- function(model, n) {
+prior_sample_free_states_batch <- function(mod, n) {
 
   # 1. simulate n times from priors for all parameters (as in calculate)
-  variable_nodes <- model$dag$node_list[model$dag$node_types == "variable"]
+  variable_nodes <- mod$dag$node_list[mod$dag$node_types == "variable"]
   variable_greta_arrays <- lapply(variable_nodes, greta:::as.greta_array)
   sims <- do.call(calculate, c(variable_greta_arrays, list(nsim = n)))
 
@@ -42,7 +42,7 @@ prior_sample_free_states_batch <- function(model, n) {
 
   free_states <- get_free_states(inits_list,
                                  variable_greta_arrays,
-                                 model)
+                                 mod)
 
   library(tensorflow)
   # compute densities and their gradients
@@ -50,7 +50,7 @@ prior_sample_free_states_batch <- function(model, n) {
   tf_free_states <- greta:::tf$constant(free_states)
   with(greta:::tf$GradientTape() %as% tape, {
     tape$watch(tf_free_states)
-    log_probs <- model$dag$tf_log_prob_function_adjusted(tf_free_states)
+    log_probs <- mod$dag$tf_log_prob_function_adjusted(tf_free_states)
   })
   grads <- tape$gradient(log_probs, tf_free_states)
 
@@ -75,10 +75,10 @@ prior_sample_free_states_batch <- function(model, n) {
 # these can be use to define initial values for models that are difficult to
 # sample from. Iteratively add samples to get at least n, but give up after
 # trying max_tries.
-prior_sample_free_states <- function(model, n, max_tries = n * 100, initial_tries = n) {
+prior_sample_free_states <- function(mod, n, max_tries = n * 100, initial_tries = n) {
 
   # first attempt, hopefully they are all there
-  free_states <- prior_sample_free_states_batch(model, initial_tries)
+  free_states <- prior_sample_free_states_batch(mod, initial_tries)
   tries <- initial_tries
 
   while (tries < max_tries & nrow(free_states) < n) {
@@ -101,7 +101,7 @@ prior_sample_free_states <- function(model, n, max_tries = n * 100, initial_trie
     n_to_try <- pmin(n_to_try, max_tries - tries)
 
     # try them
-    free_state_new <- prior_sample_free_states_batch(model, n_to_try)
+    free_state_new <- prior_sample_free_states_batch(mod, n_to_try)
     free_states <- rbind(free_states, free_state_new)
     tries <- tries + n_to_try
 
@@ -138,17 +138,17 @@ prior_sample_free_states <- function(model, n, max_tries = n * 100, initial_trie
 
 # check that all the variable greta arrays are available so that inits can be
 # specified for them
-inits_are_deterministic <- function(model) {
+inits_are_deterministic <- function(mod) {
 
   # check all the required greta arrays are visible
-  visible_greta_arrays <- model$visible_greta_arrays
+  visible_greta_arrays <- mod$visible_greta_arrays
   visible_nodes <- lapply(visible_greta_arrays, greta:::get_node)
   visible_node_names <- vapply(visible_nodes,
                                greta:::member,
                                "unique_name",
                                FUN.VALUE = character(1))
 
-  variable_nodes <- model$dag$node_list[model$dag$node_types == "variable"]
+  variable_nodes <- mod$dag$node_list[mod$dag$node_types == "variable"]
   variable_node_names <- vapply(variable_nodes,
                                 greta:::member,
                                 "unique_name",
@@ -159,9 +159,9 @@ inits_are_deterministic <- function(model) {
 }
 
 # function to create a list of initial values object from a matrix of free states
-initials_from_free_states <- function(model, free_states) {
+initials_from_free_states <- function(mod, free_states) {
 
-  if(!inits_are_deterministic(model)) {
+  if(!inits_are_deterministic(mod)) {
     msg <- cli::format_warning(
       c("not all variable greta arrays are visible in the current workspace",
         "some initial values for some variables cannot all be validated")
@@ -170,9 +170,9 @@ initials_from_free_states <- function(model, free_states) {
   }
 
   n <- nrow(free_states)
-  dag <- model$dag
+  dag <- mod$dag
   tfe <- dag$tf_environment
-  visible_greta_arrays <- model$visible_greta_arrays
+  visible_greta_arrays <- mod$visible_greta_arrays
 
   # find visible greta arrays that are variables
   vga_nodes <- lapply(visible_greta_arrays, greta:::get_node)
@@ -202,12 +202,12 @@ initials_from_free_states <- function(model, free_states) {
 # object of the correct shape that ensures the initial values for all variable
 # greta arrays visiblle in the workspace result in finite density and gradient
 # values
-generate_valid_inits <- function(model, chains, max_tries = chains * 100, initial_tries = chains) {
-  free_states <- prior_sample_free_states(model,
+generate_valid_inits <- function(mod, chains, max_tries = chains * 100, initial_tries = chains) {
+  free_states <- prior_sample_free_states(mod,
                                           chains,
                                           max_tries = max_tries,
                                           initial_tries = initial_tries)
-  initials_from_free_states(model,
+  initials_from_free_states(mod,
                             free_states)
 }
 

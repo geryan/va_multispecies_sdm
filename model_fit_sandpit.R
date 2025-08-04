@@ -30,7 +30,6 @@ distinct_coords <- model_data_spatial[distinct_idx, c("latitude", "longitude")]
 log_offset <- log(model_data_spatial[distinct_idx,"ag_microclim"])|>
   as.matrix()
 
-
 ## FIX BELOW SO COMPUTATIONALLY SELECTED
 
 # get covariate values
@@ -136,7 +135,7 @@ area_bg <- total_area/n_bg
 
 # define parameters with normal priors, matching the ridge regression setup in
 # multispeciesPP defaults
-penalty.l2.intercept <- 1e-4
+penalty.l2.intercept <- 1e-2
 penalty.l2.sdm <- penalty.l2.bias <- 0.1
 
 # trying others
@@ -234,6 +233,7 @@ pobg_data_loc_sp_idx <- pobg_data_index |>
 
 ##### define likelihoods
 
+######################
 # count data likelihood
 
 # log_lambda_obs_count <-log_lambda[count_data_loc_sp_idx] +
@@ -245,26 +245,26 @@ pobg_data_loc_sp_idx <- pobg_data_index |>
 #
 # distribution(count_data_response) <- poisson(exp(log_lambda_obs_count))
 
-# for relabund
-# log_lambda ~ unscaled abundance
-# need in scaling factor plus random effect of trap type
-# per covid model to get size and prob for negbin
-# expected_abundance <- exp(log_lambda[abund,] + trap_effect + species_scaling_factor)
-#
-# sqrt_inv_size <- normal(0, 0.5, truncation = c(0, Inf), dim = 1)
-# size <- 1 / sqrt(sqrt_inv_size)
-# prob <- 1 / (1 + expected_abundance / size)
-# distribution(abundance) <- negative_binomial(size = size, prob = prob)
+# # for relabund
+# # log_lambda ~ unscaled abundance
+# # need in scaling factor plus random effect of trap type
+# # per covid model to get size and prob for negbin
+# # expected_abundance <- exp(log_lambda[abund,] + trap_effect + species_scaling_factor)
+# #
+# # sqrt_inv_size <- normal(0, 0.5, truncation = c(0, Inf), dim = 1)
+# # size <- 1 / sqrt(sqrt_inv_size)
+# # prob <- 1 / (1 + expected_abundance / size)
+# # distribution(abundance) <- negative_binomial(size = size, prob = prob)
 
-
+#########################
 # PA data likelihood
 
 # compute probability of presence (and detection) at the PA sites, assuming
 # area/effort of 1 in all these sites, for identifiability
 
 ### can compute separately for each PA PO and RELABUND
-area_pa <- 1
-#area_pa <- uniform(0,1)
+# #area_pa <- uniform(0,1)
+# area_pa <- 1
 
 # predict for each species lambda + species_scaling_factor
 # mod to per relative abundance paper also for output
@@ -275,7 +275,6 @@ area_pa <- 1
 
 # p <- icloglog(log_lambda[model_notna_idx_pa] + log(area_pa))
 # distribution(data_infilled[model_notna_idx_pa]) <- bernoulli(p)
-
 
 
 # log_lambda_obs_pa <-log_lambda[pa_data_loc_sp_idx] +
@@ -290,15 +289,15 @@ area_pa <- 1
 
 
 
-
+#######################
 # PO and BG likelihoods
 
-# compute (biased) expected numbers of presence-only observations across all
-# presence and background sites, assuming presence-only count aggregation area
-# of 1 (as in multispeciesPP definition). Not that when these are all the same,
-# this value only changes all the gamma parameters by a fixed amount, and these
-# are not the parameters of interest
-
+# # compute (biased) expected numbers of presence-only observations across all
+# # presence and background sites, assuming presence-only count aggregation area
+# # of 1 (as in multispeciesPP definition). Not that when these are all the same,
+# # this value only changes all the gamma parameters by a fixed amount, and these
+# # are not the parameters of interest
+#
 area_po <- 1e-3 # very small
 
 area_pobg <- model_data |>
@@ -313,8 +312,8 @@ po_data_response <- model_data |>
 
 log_bias_obs_pobg <- log_bias[pobg_data_loc_sp_idx]
 
-log_lambda_obs_pobg <-log_lambda[pobg_data_loc_sp_idx] +
-  sampling_re[pobg_data_index$sampling_method_id]
+log_lambda_obs_pobg <-log_lambda[pobg_data_loc_sp_idx] #+
+  #sampling_re[pobg_data_index$sampling_method_id]
 
 distribution(po_data_response) <- poisson(
   exp(
@@ -323,118 +322,130 @@ distribution(po_data_response) <- poisson(
       log(area_pobg)
   )
 )
-#
+#######################
 
 # define and fit the model by MAP and MCMC
 m <- model(alpha, beta, gamma, delta, sampling_re_raw, sampling_re_sd)
+#m <- model(alpha, beta, gamma, delta)
 
 
-
-n_burnin <- 1000
-n_samples <- 500
+n_burnin <- 500
+n_samples <- 100
 n_chains <- 50
 
-init_vals <- generate_valid_inits(
-  model = m,
-  chains = n_chains
-)
-# optim <- opt(m)
-# optim
+# init_vals <- generate_valid_inits(
+#   mod = m,
+#   chains = n_chains
+# )
 
 draws <- mcmc(
   m,
   warmup = n_burnin,
   n_samples = n_samples,
-  chains = n_chains,
-  initial_values = init_vals
+  chains = n_chains#,
+  #initial_values = init_vals
 )
 
+mcmc_trace(draws)
+
+# converging OK
+# pa only with no re, no initials - nb can't initialised with generate_valid_inits, errors by failingin t generate enough values
+# pa only with re, no initials
+
+# failing
+# PA and count with no initialisation
+# count only no initialisation = some movement from inits but not mixing properly
+
+
+
+# optim <- opt(m)
+# optim
 
 # work through priors for PO model
-
-# pbg sims
-po_prior_array <- exp(
-  log_lambda_obs_pobg +
-    log_bias_obs_pobg +
-    log(area_pobg)
-)
-
-po_prior <- calculate(po_prior_array, values = inits(1)[[1]], nsim = 1)
-dpois(po_data_response, po_prior$po_prior_array, log = TRUE) |> sum()
-#plot(po_prior$po_prior_array, po_data_response)
-
-dpois(po_data_response, po_prior$po_prior_array, log = TRUE) |> sum()
-
-dpois(1, po_prior$po_prior_array[po_data_response == 1], log = TRUE) |>
-  mean()
-
-dpois(1, po_prior$po_prior_array[po_data_response == 1], log = TRUE) |>
-  range()
-
-po_prior <- calculate(po_prior_array, values = inits(1)[[1]], nsim = 1)
-dpois(0, po_prior$po_prior_array[po_data_response == 0], log = TRUE) |>
-  range()
-
-range(po_prior$po_prior_array) # all basically zero
-
-
-po_prior_array <- exp(
-  log_lambda_obs_pobg +
-    log_bias_obs_pobg +
-    log(area_pobg)
-)
-
-po_prior_ll_obs <- calculate(log_lambda_obs_pobg, nsim = 1)
-
-plot(po_prior_ll_obs$log_lambda_obs_pobg, po_data_response)
-
-range(po_prior_ll_obs)
-
-
-po_prior_l_bias <- calculate(log_bias_obs_pobg, nsim = 1)
-
-plot(po_prior_l_bias$log_bias_obs_pobg, po_data_response)
-
-range(po_prior_l_bias)
-
-
-prior_log_lambda <- calculate(log_lambda[pobg_data_loc_sp_idx], nsim = 1)
-
-range(prior_log_lambda$`log_lambda[pobg_data_loc_sp_idx]`)
-
-
-count_prior_array <- exp(
-  log_lambda_obs_count
-)
-
-count_prior <- calculate(count_prior_array, values = inits(1)[[1]], nsim = 1)
-dpois(count_data_response, count_prior$count_prior_array, log = TRUE) |> sum()
-hist(count_prior$count_prior_array)
-
-
-
-
-# area_po <- 1e-3 # very small
 #
-# area_pobg <- model_data |>
-#   filter(data_type %in% c("po", "bg")) |>
-#   mutate(area = case_when(data_type == "po" ~ area_po, data_type == "bg" ~ area_bg)) |>
-#   pull(area)
-#
-#
-# po_data_response <- model_data |>
-#   filter(data_type %in% c("po", "bg")) |>
-#   pull(n)
-#
-# log_bias_obs_pobg <- log_bias[pobg_data_loc_sp_idx]
-#
-# log_lambda_obs_pobg <-log_lambda[pobg_data_loc_sp_idx] +
-#   sampling_re[pobg_data_index$sampling_method_id]
-#
-# distribution(po_data_response) <- poisson(
-#   exp(
-#     log_lambda_obs_pobg +
-#       log_bias_obs_pobg +
-#       log(area_pobg)
-#   )
+# # pbg sims
+# po_prior_array <- exp(
+#   log_lambda_obs_pobg +
+#     log_bias_obs_pobg +
+#     log(area_pobg)
 # )
+#
+# po_prior <- calculate(po_prior_array, values = inits(1)[[1]], nsim = 1)
+# dpois(po_data_response, po_prior$po_prior_array, log = TRUE) |> sum()
+# #plot(po_prior$po_prior_array, po_data_response)
+#
+# dpois(po_data_response, po_prior$po_prior_array, log = TRUE) |> sum()
+#
+# dpois(1, po_prior$po_prior_array[po_data_response == 1], log = TRUE) |>
+#   mean()
+#
+# dpois(1, po_prior$po_prior_array[po_data_response == 1], log = TRUE) |>
+#   range()
+#
+# po_prior <- calculate(po_prior_array, values = inits(1)[[1]], nsim = 1)
+# dpois(0, po_prior$po_prior_array[po_data_response == 0], log = TRUE) |>
+#   range()
+#
+# range(po_prior$po_prior_array) # all basically zero
+#
+#
+# po_prior_array <- exp(
+#   log_lambda_obs_pobg +
+#     log_bias_obs_pobg +
+#     log(area_pobg)
+# )
+#
+# po_prior_ll_obs <- calculate(log_lambda_obs_pobg, nsim = 1)
+#
+# plot(po_prior_ll_obs$log_lambda_obs_pobg, po_data_response)
+#
+# range(po_prior_ll_obs)
+#
+#
+# po_prior_l_bias <- calculate(log_bias_obs_pobg, nsim = 1)
+#
+# plot(po_prior_l_bias$log_bias_obs_pobg, po_data_response)
+#
+# range(po_prior_l_bias)
+#
+#
+# prior_log_lambda <- calculate(log_lambda[pobg_data_loc_sp_idx], nsim = 1)
+#
+# range(prior_log_lambda$`log_lambda[pobg_data_loc_sp_idx]`)
+#
+#
+# count_prior_array <- exp(
+#   log_lambda_obs_count
+# )
+#
+# count_prior <- calculate(count_prior_array, values = inits(1)[[1]], nsim = 1)
+# dpois(count_data_response, count_prior$count_prior_array, log = TRUE) |> sum()
+# hist(count_prior$count_prior_array)
+#
+#
+#
+#
+# # area_po <- 1e-3 # very small
+# #
+# # area_pobg <- model_data |>
+# #   filter(data_type %in% c("po", "bg")) |>
+# #   mutate(area = case_when(data_type == "po" ~ area_po, data_type == "bg" ~ area_bg)) |>
+# #   pull(area)
+# #
+# #
+# # po_data_response <- model_data |>
+# #   filter(data_type %in% c("po", "bg")) |>
+# #   pull(n)
+# #
+# # log_bias_obs_pobg <- log_bias[pobg_data_loc_sp_idx]
+# #
+# # log_lambda_obs_pobg <-log_lambda[pobg_data_loc_sp_idx] +
+# #   sampling_re[pobg_data_index$sampling_method_id]
+# #
+# # distribution(po_data_response) <- poisson(
+# #   exp(
+# #     log_lambda_obs_pobg +
+# #       log_bias_obs_pobg +
+# #       log(area_pobg)
+# #   )
+# # )

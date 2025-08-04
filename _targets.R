@@ -11,9 +11,9 @@ tar_option_set(
     "terra",
     "ggplot2",
     "geotargets", # install.packages("geotargets", repos = c("https://njtierney.r-universe.dev", "https://cran.r-project.org"))
-    "multispeciesPP", # remotes::install_github("wfithian/multispeciesPP")
-    "idpalette", # remotes::install_github("idem-lab/idpalette)
-    "rasterVis",
+    #"multispeciesPP", # remotes::install_github("wfithian/multispeciesPP")
+    #"idpalette", # remotes::install_github("idem-lab/idpalette)
+    #"rasterVis",
     "tidyterra",
     "geodata",
     "greta",
@@ -21,7 +21,8 @@ tar_option_set(
     "lubridate",
     "magrittr",
     "stringr",
-    "bayesplot"
+    "bayesplot",
+    "patchwork"
   ),
   workspace_on_error = TRUE
 )
