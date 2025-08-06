@@ -22,12 +22,12 @@ generate_model_data_records <- function(
   fdr <- full_data_records |>
     # target species only |>
     filter(species %in% target_species) |>
-    # fuck off vague points
+    # fruit off vague points
     filter(
       (confidence_in_georef != "greater than 10km") |
         is.na(confidence_in_georef)
     ) |>
-    # fuck off polygons and centroid of admin points
+    # fruit off polygons and centroid of admin points
     filter(point_data) |>
     mutate(
       sampling_method = reduce_sampling_methods(sampling_method),

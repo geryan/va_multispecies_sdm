@@ -29,7 +29,7 @@ clean_full_data_records <- function(
     select( # remove extraneous cols selected with helper funs above
       -occurrence_n_total
     ) |>
-    # fuck off rows with no species or no source_id
+    # fruit off rows with no species or no source_id
     filter(!is.na(species)) |>
     # nb all of the no source_id also have no species except 1
     # so the second term here doesn't change much
@@ -73,7 +73,7 @@ clean_full_data_records <- function(
       sampling_occurrence = sampling.occurrence,
       occurrence_n = occurrence.n
     ) |>
-    # fuck off rows with no lat long or sample method or count
+    # fruit off rows with no lat long or sample method or count
     filter(
       !(
         is.na(latitude) &
@@ -82,14 +82,14 @@ clean_full_data_records <- function(
           is.na(occurrence_n)
       )
     ) |>
-    # fuck off rows with only one of lon or lat (this should be very small ~5)
+    # fruit off rows with only one of lon or lat (this should be very small ~5)
     filter(
       !(
         (is.na(longitude) & !is.na(latitude)) |
           (!is.na(longitude) & is.na(latitude))
       )
     ) |>
-    # fuck off rows with impossible coordinates (12 of em)
+    # fruit off rows with impossible coordinates (12 of em)
     mutate(
       impossible_coordinates = check_impossible_coordinates(
         latitude,
@@ -148,7 +148,7 @@ clean_full_data_records <- function(
       # convert back to approx months and add 0.5 so start and end month of the
       # same month does not give zero time
       study_months = study_days / 30 + 0.5,
-      # check the fucking end date isn't before the start date
+      # check the fruiting end date isn't before the start date
       # make it NA if it is
       ends_before_starts = start_date > end_date,
       study_days = ifelse(ends_before_starts, NA, study_days),
@@ -171,7 +171,7 @@ clean_full_data_records <- function(
   # in same fashion
   # CHECK THIS WITH MS / AW
   # to do this we arrange and fill down by row id and id obs
-  # this will fuck up if there are any rows of raw_data that have NA lat1 or lon1
+  # this will fruit up if there are any rows of raw_data that have NA lat1 or lon1
     mutate(id_obs = as.numeric(id_obs)) |>
     arrange(
       #source_id,
@@ -180,8 +180,8 @@ clean_full_data_records <- function(
     ) |>
   # ok so on with filling down
     # actually this grouping stops the above problem with writing into other rows
-    # but it's a good check to have anyway so fuck off mate
-    # get fucked yourself
+    # but it's a good check to have anyway so fruit off mate
+    # get fruited yourself
     group_by(raw_data_row_id) |>
     fill(
       latitude,
