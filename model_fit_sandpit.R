@@ -135,7 +135,7 @@ area_bg <- total_area/n_bg
 
 # define parameters with normal priors, matching the ridge regression setup in
 # multispeciesPP defaults
-penalty.l2.intercept <- 1e-2
+penalty.l2.intercept <- 1e-4
 penalty.l2.sdm <- penalty.l2.bias <- 0.1
 
 # trying others
@@ -235,7 +235,7 @@ pobg_data_loc_sp_idx <- pobg_data_index |>
 
 ######################
 # count data likelihood
-
+#
 # log_lambda_obs_count <-log_lambda[count_data_loc_sp_idx] +
 #   sampling_re[count_data_index$sampling_method_id]
 #
@@ -297,7 +297,7 @@ pobg_data_loc_sp_idx <- pobg_data_index |>
 # # of 1 (as in multispeciesPP definition). Not that when these are all the same,
 # # this value only changes all the gamma parameters by a fixed amount, and these
 # # are not the parameters of interest
-#
+
 area_po <- 1e-3 # very small
 
 area_pobg <- model_data |>
@@ -329,21 +329,23 @@ m <- model(alpha, beta, gamma, delta, sampling_re_raw, sampling_re_sd)
 #m <- model(alpha, beta, gamma, delta)
 
 
-n_burnin <- 500
+n_burnin <- 2000
 n_samples <- 100
 n_chains <- 50
 
-# init_vals <- generate_valid_inits(
-#   mod = m,
-#   chains = n_chains
-# )
+init_vals <- generate_valid_inits(
+  mod = m,
+  chains = n_chains
+)
+
+init_vals <- inits(n_chains = n_chains)
 
 draws <- mcmc(
   m,
   warmup = n_burnin,
   n_samples = n_samples,
-  chains = n_chains#,
-  #initial_values = init_vals
+  chains = n_chains,
+  initial_values = init_vals
 )
 
 mcmc_trace(draws)
@@ -355,6 +357,7 @@ mcmc_trace(draws)
 # failing
 # PA and count with no initialisation
 # count only no initialisation = some movement from inits but not mixing properly
+# count with no initialisation is better than with generate_valid inits - it has some mixing in betas
 
 
 

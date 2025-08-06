@@ -103,3 +103,20 @@ Data foibles
 run calculate to sim priors at presence-only values - shouldn't be mostly 0s or 1s
 - if is step back through calcs to see where it's coming from - is it the area param or something about bias model?
 
+
+
+## #
+
+summary of posterieors for converged PA model
+
+- run PO only - get to converge?
+- run count only - get to converge?
+
+- set inits to only matching space
+
+gen valid inits
+circa l55
+instead generate 1000 samples, get 8 most likely
+
+
+
