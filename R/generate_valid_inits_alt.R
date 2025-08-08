@@ -32,7 +32,7 @@ prior_sample_free_states_batch <- function(mod, n) {
   # 1. simulate n times from priors for all parameters (as in calculate)
   variable_nodes <- mod$dag$node_list[mod$dag$node_types == "variable"]
   variable_greta_arrays <- lapply(variable_nodes, greta:::as.greta_array)
-  sims <- do.call(calculate, c(variable_greta_arrays, list(nsim = n)))
+  sims <- do.call(greta::calculate, c(variable_greta_arrays, list(nsim = n)))
 
   # 2. convert these back to free state values
   inits_list <- lapply(seq_len(n),
@@ -72,7 +72,22 @@ prior_sample_free_states_batch <- function(mod, n) {
 
 }
 
-select_probs <- function(inits_list, mod, variable_greta_arrays){
+prob_sample_free_states <- function(
+    mod,
+    nsamples,
+    nsims = 2000
+  ){
+
+  # 1. simulate n times from priors for all parameters (as in calculate)
+  variable_nodes <- mod$dag$node_list[mod$dag$node_types == "variable"]
+  variable_greta_arrays <- lapply(variable_nodes, greta:::as.greta_array)
+  sims <- do.call(greta::calculate, c(variable_greta_arrays, list(nsim = nsims)))
+
+  # 2. convert these back to free state values
+  inits_list <- lapply(seq_len(nsims),
+                       make_inits,
+                       sims,
+                       variable_greta_arrays)
 
   free_states <- get_free_states(inits_list,
                                  variable_greta_arrays,
@@ -88,7 +103,11 @@ select_probs <- function(inits_list, mod, variable_greta_arrays){
   # determine validity (finite density and grads) and return only the valid free states
   log_probs_np <- log_probs$numpy()
 
-  sample(init_index, replace = FALSE, prob = exp(log_probs))
+  probs <- exp(log_probs_np)
+
+  init_index <- 1:nsims
+
+  sample(init_index, size = nsamples, replace = FALSE, prob = exp(log_probs_np))
 
   # to help refine inits function
   #
@@ -105,7 +124,7 @@ select_probs <- function(inits_list, mod, variable_greta_arrays){
 prior_sample_free_states <- function(mod, n, max_tries = n * 100, initial_tries = n) {
 
   # first attempt, hopefully they are all there
-  free_states <- prior_sample_free_states_batch(mod, initial_tries)
+  free_states <- prior_sample_free_states_batch(mod, n = initial_tries)
   tries <- initial_tries
 
   while (tries < max_tries & nrow(free_states) < n) {

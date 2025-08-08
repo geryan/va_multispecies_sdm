@@ -312,8 +312,8 @@ po_data_response <- model_data |>
 
 log_bias_obs_pobg <- log_bias[pobg_data_loc_sp_idx]
 
-log_lambda_obs_pobg <-log_lambda[pobg_data_loc_sp_idx] #+
-  #sampling_re[pobg_data_index$sampling_method_id]
+log_lambda_obs_pobg <-log_lambda[pobg_data_loc_sp_idx] +
+  sampling_re[pobg_data_index$sampling_method_id]
 
 distribution(po_data_response) <- poisson(
   exp(
@@ -330,7 +330,7 @@ m <- model(alpha, beta, gamma, delta, sampling_re_raw, sampling_re_sd)
 
 
 n_burnin <- 2000
-n_samples <- 100
+n_samples <- 1000
 n_chains <- 50
 
 init_vals <- generate_valid_inits(
@@ -338,7 +338,7 @@ init_vals <- generate_valid_inits(
   chains = n_chains
 )
 
-init_vals <- inits(n_chains = n_chains)
+#init_vals <- inits(n_chains = n_chains)
 
 draws <- mcmc(
   m,

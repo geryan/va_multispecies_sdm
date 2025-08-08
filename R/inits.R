@@ -5,8 +5,8 @@ inits <- function(
   #ncb = 1, # number of bias layers / delta values
   ina = 15e-1, # mean initial value for alpha
   inb = 1e-1, # mean initial value for beta
-  ing = -15, # mean initial value for gamma
-  ind = 30, # mean initial value for delta
+  ing = -15, # mean initial value for gamma # again wtf - large value with tiny variation
+  ind = 30, # mean initial value for delta # wtf am i doiung here - large value with very small sd below
   sda = 1e-2,
   sdb = 3e-1,
   sdg = 1e-4,
