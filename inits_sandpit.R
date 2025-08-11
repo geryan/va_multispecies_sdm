@@ -30,7 +30,6 @@ distinct_coords <- model_data_spatial[distinct_idx, c("latitude", "longitude")]
 log_offset <- log(model_data_spatial[distinct_idx,"ag_microclim"])|>
   as.matrix()
 
-## FIX BELOW SO COMPUTATIONALLY SELECTED
 
 # get covariate values
 x <- model_data_spatial[distinct_idx,] |>
@@ -136,12 +135,13 @@ area_bg <- total_area/n_bg
 
 # define parameters with normal priors, matching the ridge regression setup in
 # multispeciesPP defaults
+# originals
 penalty.l2.intercept <- 1e-4
 penalty.l2.sdm <- penalty.l2.bias <- 0.1
 
 # trying others
-# penalty.l2.intercept <- 5e-2
-# penalty.l2.sdm <- penalty.l2.bias <- 0.3
+# penalty.l2.intercept <- 1e-2
+# penalty.l2.sdm <- penalty.l2.bias <- 0.1
 
 intercept_sd <- sqrt(1 / penalty.l2.intercept)
 beta_sd <- sqrt(1 / penalty.l2.sdm)
@@ -159,10 +159,13 @@ beta <- normal(0, beta_sd, dim = c(n_cov_abund, n_species))
 
 # log rates across all sites
 # larval habitat based on env covariates
-log_lambda_larval_habitat <- sweep(x %*% beta, 2, alpha, FUN = "+")
+# log_lambda_larval_habitat <- sweep(x %*% beta, 2, alpha, FUN = "+")
+log_lambda_larval_habitat <- sweep(zeros(n_pixel, n_species), 2, alpha, FUN = "+")
+
 
 # offset from calculated gambiae adult survival given habitat
-log_lambda_adults <- log_offset
+#log_lambda_adults <- log_offset
+log_lambda_adults <- rep(0, times = dim(log_offset)[[1]])
 
 # combine larval habitat and adult life cycle offset
 log_lambda <- sweep(log_lambda_larval_habitat, 1, log_lambda_adults, "+")
@@ -171,7 +174,8 @@ log_lambda <- sweep(log_lambda_larval_habitat, 1, log_lambda_adults, "+")
 # GP on covariate space or something mechanistic
 
 # bias across pixels (shared coefficient) and species (different intercepts)
-log_bias_coef <- sweep(zeros(n_pixel, n_species), 1, z %*% delta, FUN = "+")
+log_bias_coef <- sweep(zeros(n_pixel, n_species), 1, log(z) %*% delta, FUN = "+")
+# log_bias_coef <- zeros(n_pixel, n_species)
 log_bias <- sweep(log_bias_coef, 2, gamma, FUN = "+")
 
 # rates across all sites and species
@@ -181,9 +185,9 @@ lambda <- exp(log_lambda)
 bias <- exp(log_bias)
 
 # random effects
-# sampling_re_sd <- normal(0, 1, truncation = c(0, Inf))
-# sampling_re_raw <- normal(0, 1, dim = n_sampling_methods)
-# sampling_re <- sampling_re_raw * sampling_re_sd
+sampling_re_sd <- normal(0, 1, truncation = c(0, Inf))
+sampling_re_raw <- normal(0, 1, dim = n_sampling_methods)
+sampling_re <- sampling_re_raw * sampling_re_sd
 
 ########## indices
 # count data index
@@ -236,6 +240,32 @@ pobg_data_loc_sp_idx <- pobg_data_index |>
 
 ##### likelihood
 
+######################
+# count data likelihood
+
+log_lambda_obs_count <-log_lambda[count_data_loc_sp_idx] #+
+  #sampling_re[count_data_index$sampling_method_id]
+
+count_data_response <- model_data |>
+  filter(data_type == "count") |>
+  pull(n)
+
+distribution(count_data_response) <- poisson(exp(log_lambda_obs_count))
+
+# PA likelihood
+
+log_lambda_obs_pa <-log_lambda[pa_data_loc_sp_idx] #+
+  #sampling_re[pa_data_index$sampling_method_id]
+
+pa_data_response <- model_data |>
+  filter(data_type == "pa") |>
+  pull(n)
+
+distribution(pa_data_response) <- bernoulli(icloglog(log_lambda_obs_pa))
+
+
+## PO likelihood
+
 area_po <- 1e-3 # very small
 
 area_pobg <- model_data |>
@@ -249,6 +279,10 @@ po_data_response <- model_data |>
   pull(n)
 
 log_bias_obs_pobg <- log_bias[pobg_data_loc_sp_idx]
+#
+# pp_log_bias_obs_pobg <- calculate(log_bias_obs_pobg, nsim = 1000)
+
+# pp_log_bias_obs_pobg <- calculate(log_bias_obs_pobg, nsim = 1000, values = list(gamma = rep(0, times = 4), delta = 1e-4))
 
 log_lambda_obs_pobg <-log_lambda[pobg_data_loc_sp_idx] #+
   #sampling_re[pobg_data_index$sampling_method_id]
@@ -256,7 +290,7 @@ log_lambda_obs_pobg <-log_lambda[pobg_data_loc_sp_idx] #+
 distribution(po_data_response) <- poisson(
   exp(
     log_lambda_obs_pobg +
-      #log_bias_obs_pobg +
+      log_bias_obs_pobg +
       log(area_pobg)
   )
 )
@@ -264,46 +298,190 @@ distribution(po_data_response) <- poisson(
 
 # define and fit the model by MAP and MCMC
 #m <- model(alpha, beta, gamma, delta, sampling_re_raw, sampling_re_sd)
-#m <- model(alpha, beta, gamma, delta)
-m <- model(alpha, beta)
+# m <- model(alpha, beta, gamma)
+# plot(m)
 
-plot(m)
+# ############## simulate from priors and calculate probabilities
+# mod <- m
+# nsims <- 2000
+# nsamples <- 50
 
-############## simulate from priors and calculate probabilities
-mod <- m
-nsims <- 2000
-nsamples <- 50
-
-# 1. simulate n times from priors for all parameters (as in calculate)
-variable_nodes <- mod$dag$node_list[mod$dag$node_types == "variable"]
-variable_greta_arrays <- lapply(variable_nodes, greta:::as.greta_array)
-sims <- do.call(greta::calculate, c(variable_greta_arrays, list(nsim = nsims)))
-
-# 2. convert these back to free state values
-inits_list <- lapply(seq_len(nsims),
-                     make_inits,
-                     sims,
-                     variable_greta_arrays)
-
-free_states <- get_free_states(inits_list,
-                               variable_greta_arrays,
-                               mod)
-
-
-library(tensorflow)
-# compute densities and their gradients
-# tf_free_states <- tf$constant(free_states[1, , drop = FALSE])
-tf_free_states <- greta:::tf$constant(free_states)
-log_probs <- mod$dag$tf_log_prob_function_adjusted(tf_free_states)
-
-# determine validity (finite density and grads) and return only the valid free states
-log_probs_np <- log_probs$numpy()
-
-probs <- exp(log_probs_np)
-
-probs
-probs[which(probs != 0)]
+# # 1. simulate n times from priors for all parameters (as in calculate)
+# variable_nodes <- mod$dag$node_list[mod$dag$node_types == "variable"]
+# variable_greta_arrays <- lapply(variable_nodes, greta:::as.greta_array)
+# sims <- do.call(greta::calculate, c(variable_greta_arrays, list(nsim = nsims)))
+#
+# # 2. convert these back to free state values
+# inits_list <- lapply(seq_len(nsims),
+#                      make_inits,
+#                      sims,
+#                      variable_greta_arrays)
+#
+# free_states <- get_free_states(inits_list,
+#                                variable_greta_arrays,
+#                                mod)
+#
+#
+# library(tensorflow)
+# # compute densities and their gradients
+# # tf_free_states <- tf$constant(free_states[1, , drop = FALSE])
+# tf_free_states <- greta:::tf$constant(free_states)
+# log_probs <- mod$dag$tf_log_prob_function_adjusted(tf_free_states)
+#
+# # determine validity (finite density and grads) and return only the valid free states
+# log_probs_np <- log_probs$numpy()
+#
+# log_probs_np
+#
+# probs <- exp(log_probs_np)
+#
+# probs
+# probs[which(probs != 0)]
 
 #init_index <- 1:nsims
 
 #sample(init_index, size = nsamples, replace = FALSE, prob = exp(log_probs_np))
+
+m <- model(alpha, gamma, delta)
+plot(m)
+
+# fit model
+n_burnin <-200
+n_samples <- 100
+n_chains <- 50
+
+# init_vals <- generate_valid_inits(
+#   mod = m,
+#   chains = n_chains
+# )
+#
+source("R/inits.R")
+init_vals <- inits(n_chains)
+
+#
+optim <- opt(m)
+optim$par
+
+init_vals <- inits(
+  n_chains = n_chains,
+  ina = optim$par$alpha,
+  inb = optim$par$beta,
+  ing = optim$par$gamma
+)
+# delta back in
+# beta back in
+# optimiser for inits?
+# species-specific offsets from expert maps
+#
+
+
+
+draws <- mcmc(
+  m,
+  warmup = n_burnin,
+  n_samples = n_samples,
+  chains = n_chains,
+  initial_values = init_vals
+)
+
+
+mcmc_trace(draws)
+
+
+
+# converged estimates from count, pa, po model with no bias
+# inits generated by greta
+# areabg and area po included in bg points
+# Mean       SD  Naive SE Time-series SE
+# alpha[1,1] -3.2242 0.003618 1.618e-05      7.129e-05
+# alpha[2,1] -5.5829 0.009805 4.385e-05      1.778e-04
+# alpha[3,1] -3.3594 0.003454 1.545e-05      6.046e-05
+# alpha[4,1] -4.7764 0.007250 3.242e-05      2.410e-04
+# beta[1,1]  -0.7291 0.003814 1.706e-05      1.893e-04
+# beta[1,2]  -0.5030 0.010674 4.774e-05      6.078e-04
+# beta[1,3]  -0.5328 0.003682 1.647e-05      1.975e-04
+# beta[1,4]  -0.1270 0.006855 3.065e-05      4.323e-04
+
+
+# converged estimates from count pa po model with only alpha and gamma
+# inits from function with alpha = - 4 and beta = 0
+# area excluded from po likelihood
+# Mean       SD  Naive SE Time-series SE
+# alpha[1,1]  3.1248 0.003231 1.445e-05      2.352e-05
+# alpha[2,1]  0.5799 0.009929 4.440e-05      5.278e-05
+# alpha[3,1]  2.8002 0.003287 1.470e-05      3.271e-05
+# alpha[4,1]  1.8412 0.005969 2.669e-05      9.529e-05
+# gamma[1,1] -3.5647 0.023874 1.068e-04      1.934e-04
+# gamma[2,1] -2.9035 0.096654 4.322e-04      2.378e-03
+# gamma[3,1] -3.1733 0.021580 9.651e-05      1.821e-04
+# gamma[4,1] -3.8421 0.078160 3.495e-04      1.271e-03
+
+# check po mean abund adds up to alpha and gamma
+# model_data_spatial |>
+#   mutate(
+#     cp = case_when(
+#       data_type == "count" ~ count,
+#       .default = presence
+#     )
+#   ) |>
+#   group_by(species, data_type) |>
+#   summarise(
+#     mean_cp = mean(cp),
+#     #sumpbgration = (sum(cp)*1e-3)/(1000*area_bg + sum(cp)*1e-3)
+#     sumpbgration = sum(cp) / (area_po * sum(cp) + area_bg * n_bg)
+#   ) |>
+#   ungroup() |>
+#   mutate(mcp = ifelse(data_type =="po", sumpbgration, mean_cp)) |>
+#   arrange(data_type, species) |>
+#   select(-mean_cp, -sumpbgration) |>
+#   mutate(lcp = case_when(
+#     data_type == "pa" ~ log(-log(1 - mcp)),
+#     data_type == "po" ~ log(mcp),
+#     data_type == "count" ~ log(mcp)
+#   ))
+#
+# summary(calculate(alpha + gamma, values = draws))
+
+# check points in/outside of offset layer
+# model_data_spatial |>
+#   mutate(is_low = ifelse(ag_microclim < 0.001, TRUE, FALSE)) |>
+#   group_by(data_type, species) |>
+#   summarise(
+#     p_low = sum(is_low)/n()
+#   )
+#
+#
+# agbin <- covariate_rast[["ag_microclim"]]
+# agbin[] <- agbin < 0.001
+#
+# ggplot() +
+#   geom_spatraster(data = agbin) +
+#   geom_spatvector(
+#     data = model_data_spatial|>
+#       filter(species =="arabiensis") |>
+#       mutate(lon = longitude, lat = latitude) |>
+#       as.data.frame() |>
+#       select(lon, lat, data_type) |>
+#       vect(crs = crs(covariate_rast)),
+#     aes(col = data_type)
+#   )
+#
+# arv <- model_data_spatial|>
+#   filter(species =="arabiensis") |>
+#   mutate(lon = longitude, lat = latitude) |>
+#   as.data.frame() |>
+#   select(lon, lat, data_type, presence, count) |>
+#   vect(crs = crs(covariate_rast))
+#
+# arvpa <- arv |> filter(data_type == "pa", presence == 1)
+# arvpo <- arv |> filter(data_type == "po")
+# arvct <- arv |> filter(data_type == "count", count > 0)
+#
+# par(mfrow = c(2,2))
+# plot(agbin)
+# plot(agbin)
+# plot(arvpo, add = TRUE, col = "grey80")
+# plot(agbin)
+# plot(arvpa, add = TRUE, col = "grey80")
+# plot(agbin)
+# plot(arvct, add = TRUE, col = "grey80")
