@@ -56,8 +56,8 @@ list(
       # built_volume,
       # cropland,
       #"elevation",
-      "evi_mean"#, # correlates with pressure_mean rainfall_mean and solrad_mean
-      #"footprint", # correlates with built_volume and cropland
+      # "evi_mean"#, # correlates with pressure_mean rainfall_mean and solrad_mean
+      "footprint"#, # correlates with built_volume and cropland
       #"lst_day_mean",
       # lst_night_mean,
       # # pressure_mean,
@@ -164,6 +164,15 @@ list(
         # "sergentii",
         # "superpictus",
       )
+    )
+  ),
+
+  tar_terra_rast(
+    expert_offset_maps,
+    make_expert_offset_maps(
+      expert_maps,
+      project_mask,
+      buffer_km = 1000
     )
   ),
 

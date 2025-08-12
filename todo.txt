@@ -118,5 +118,6 @@ gen valid inits
 circa l55
 instead generate 1000 samples, get 8 most likely
 
-
+##
+check points falling out of offset area
 

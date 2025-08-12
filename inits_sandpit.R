@@ -5,7 +5,6 @@ library(targets)
 tar_load_globals()
 tar_load_everything()
 
-
 ## get data in order for model
 
 # index of distinct locations
@@ -159,8 +158,8 @@ beta <- normal(0, beta_sd, dim = c(n_cov_abund, n_species))
 
 # log rates across all sites
 # larval habitat based on env covariates
-# log_lambda_larval_habitat <- sweep(x %*% beta, 2, alpha, FUN = "+")
-log_lambda_larval_habitat <- sweep(zeros(n_pixel, n_species), 2, alpha, FUN = "+")
+log_lambda_larval_habitat <- sweep(x %*% beta, 2, alpha, FUN = "+")
+# log_lambda_larval_habitat <- sweep(zeros(n_pixel, n_species), 2, alpha, FUN = "+")
 
 
 # offset from calculated gambiae adult survival given habitat
@@ -184,10 +183,12 @@ lambda <- exp(log_lambda)
 # offset stuff
 bias <- exp(log_bias)
 
-# random effects
+# sampling random effects
+# hierarchical decentering
 sampling_re_sd <- normal(0, 1, truncation = c(0, Inf))
 sampling_re_raw <- normal(0, 1, dim = n_sampling_methods)
 sampling_re <- sampling_re_raw * sampling_re_sd
+
 
 ########## indices
 # count data index
@@ -266,7 +267,7 @@ distribution(pa_data_response) <- bernoulli(icloglog(log_lambda_obs_pa))
 
 ## PO likelihood
 
-area_po <- 1e-3 # very small
+area_po <- 1 # very small
 
 area_pobg <- model_data |>
   filter(data_type %in% c("po", "bg")) |>
@@ -342,11 +343,11 @@ distribution(po_data_response) <- poisson(
 
 #sample(init_index, size = nsamples, replace = FALSE, prob = exp(log_probs_np))
 
-m <- model(alpha, gamma, delta)
+m <- model(alpha, beta, gamma, delta)
 plot(m)
 
 # fit model
-n_burnin <-200
+n_burnin <- 500
 n_samples <- 100
 n_chains <- 50
 
@@ -356,7 +357,7 @@ n_chains <- 50
 # )
 #
 source("R/inits.R")
-init_vals <- inits(n_chains)
+#init_vals <- inits(n_chains)
 
 #
 optim <- opt(m)
@@ -364,29 +365,49 @@ optim$par
 
 init_vals <- inits(
   n_chains = n_chains,
+  #ina = 2,
   ina = optim$par$alpha,
-  inb = optim$par$beta,
-  ing = optim$par$gamma
+  #inb = optim$par$beta,
+  ing = optim$par$gamma,
+  ind = optim$par$delta#,
+  #inre = optim$par$sampling_re,
+  #inresd = optim$par$sampling_re_sd
 )
-# delta back in
-# beta back in
-# optimiser for inits?
+# beta back in - tried footprint and EVI - fuct.
 # species-specific offsets from expert maps
-#
+# check points outside expert area / offset buffer
+# send back to MS/AW
 
-
+# prior sampling / ppcs using prior simulations
+# try to manually shove into right space
 
 draws <- mcmc(
   m,
   warmup = n_burnin,
   n_samples = n_samples,
   chains = n_chains,
-  initial_values = init_vals
+  initial_values = init_vals,
+  sampler = hmc(diag_sd = 1)
 )
 
 
 mcmc_trace(draws)
 
+
+# converged estimates for alpha gamma delta model
+# with bg / po area
+# no offset
+# inits via optimisation
+#
+# alpha[1,1]   3.125 0.003219 4.552e-05      7.231e-05
+# alpha[2,1]   0.580 0.009702 1.372e-04      2.131e-04
+# alpha[3,1]   2.800 0.003191 4.512e-05      6.916e-05
+# alpha[4,1]   1.841 0.006141 8.685e-05      1.545e-04
+# gamma[1,1] -10.529 0.029839 4.220e-04      5.786e-04
+# gamma[2,1] -10.796 0.102183 1.445e-03      2.420e-03
+# gamma[3,1] -10.003 0.028378 4.013e-04      5.337e-04
+# gamma[4,1] -11.692 0.083177 1.176e-03      1.886e-03
+# delta       30.892 0.462241 6.537e-03      8.401e-03
 
 
 # converged estimates from count, pa, po model with no bias
