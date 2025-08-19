@@ -4,9 +4,8 @@ make_point_plots <- function(
     new_mask
 ){
 
-  alsp <- model_data_spatial$species |>
-    na.omit() |>
-    unique()
+
+  # prepare data for plotting, nest by species
 
   plot_data <- model_data_spatial |>
     filter(data_type != "bg") |>
@@ -27,6 +26,8 @@ make_point_plots <- function(
       -count
     ) |>
     nest_by(species)
+
+  # make plots of points only
 
   mapply(
     FUN = function(data, sp, new_mask){
@@ -59,7 +60,9 @@ make_point_plots <- function(
     SIMPLIFY = FALSE
   )
 
+  # make plots of points with expert range map
 
+  alsp <- npd$species
 
   exsp <- expert_maps$species
 
@@ -76,56 +79,50 @@ make_point_plots <- function(
   )
 
 
-
-
-
   mapply(
     FUN = function(
-      alsp,
+      data,
+      sp,
       map_type,
       map_exp_sp,
-      plot_points,
-      expert_maps,
-      new_mask
+      new_mask,
+      expert_maps
     ){
+
       if(map_type == "exp"){
-        p <- plot_points_expert_map(
-          alsp,
+        p <- plot_points_map(
+          sp,
           new_mask,
-          plot_points,
+          data,
           expert_map = expert_maps |>
             filter(species == map_exp_sp)
         )
-      } else {
-        p <- plot_points_map(
-          alsp,
-          new_mask,
-          plot_points
+
+        ggsave(
+          filename = sprintf(
+            "outputs/figures/point_plots/exp_points_%s.png",
+            sp
+          ),
+          plot = p,
+          width = 3600,
+          height = 2000,
+          units = "px"
         )
+
       }
 
-      ggsave(
-        filename = sprintf(
-          "outputs/figures/point_plots/points_%s.png",
-          alsp
-        ),
-        plot = p,
-        width = 3600,
-        height = 2000,
-        units = "px"
-      )
-
+      sp
     },
-    alsp,
-    map_type,
-    map_exp_sp,
+    data = npd$data,
+    sp = npd$species,
+    map_type = map_type,
+    map_exp_sp = map_exp_sp,
     MoreArgs = list(
-      plot_points,
-      expert_maps,
-      new_mask
-    )
+      new_mask = new_mask,
+      expert_maps = expert_maps
+    ),
+    SIMPLIFY = FALSE
   )
-
 
 
 
