@@ -12,7 +12,7 @@ tar_option_set(
     "ggplot2",
     "geotargets", # install.packages("geotargets", repos = c("https://njtierney.r-universe.dev", "https://cran.r-project.org"))
     #"multispeciesPP", # remotes::install_github("wfithian/multispeciesPP")
-    #"idpalette", # remotes::install_github("idem-lab/idpalette)
+    "idpalette", # remotes::install_github("idem-lab/idpalette")
     #"rasterVis",
     "tidyterra",
     "geodata",
@@ -52,13 +52,13 @@ list(
     c(
       #ag_microclim,
       #research_tt_by_country,
-      #arid,
+      #"arid",
       # built_volume,
       # cropland,
       #"elevation",
-      # "evi_mean"#, # correlates with pressure_mean rainfall_mean and solrad_mean
-      "footprint"#, # correlates with built_volume and cropland
-      #"lst_day_mean",
+      "evi_mean", # correlates with pressure_mean rainfall_mean and solrad_mean
+      "footprint", # correlates with built_volume and cropland
+      "lst_day_mean"#,
       # lst_night_mean,
       # # pressure_mean,
       # # rainfall_mean,
@@ -181,14 +181,33 @@ list(
   ),
 
   tar_target(
+    n_bg,
+    1000
+  ),
+
+  tar_target(
     bg_points,
     terra::spatSample(
       x = covariate_rast[[1]],
-      size = 1000,
+      size = n_bg,
       na.rm = TRUE,
       as.points = TRUE
     ) %>%
       crds()
+  ),
+
+  tar_target(
+    bg_kmeans_list,
+    bg_points_kmeans(
+      n_bg,
+      covariate_rast,
+      n_samples_per_bg = 200
+    )
+  ),
+
+  tar_target(
+    bg_kmeans_df,
+    frame_bg_kmeans(bg_kmeans_list)
   ),
 
   ####################################
@@ -246,29 +265,38 @@ list(
    )
  ),
 
+ # tar_target(
+ #   model_data_all,
+ #   bind_rows(
+ #     model_data_records,
+ #     bg_points |>
+ #       as_tibble() |>
+ #       rename(
+ #         latitude = y,
+ #         longitude = x
+ #       ) |>
+ #       mutate(
+ #         data_type = "bg",
+ #         n = 0
+ #       )
+ #   )
+ # ),
+
  tar_target(
-   model_data_all,
-   bind_rows(
-     model_data_records,
-     bg_points |>
-       as_tibble() |>
-       rename(
-         latitude = y,
-         longitude = x
-       ) |>
-       mutate(
-         data_type = "bg",
-         n = 0
-       )
+   record_data_spatial,
+   get_spatial_values(
+     lyrs = covariate_rast,
+     dat = model_data_records,
+     project_mask
    )
  ),
 
  tar_target(
    model_data_spatial,
-   get_spatial_values(
-     lyrs = covariate_rast,
-     dat = model_data_all,
-     project_mask
+   bind_rows(
+     record_data_spatial |>
+       mutate(weight = 1),
+     bg_kmeans_df
    )
  ),
 
