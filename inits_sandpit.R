@@ -128,7 +128,8 @@ n_bg <- model_data_spatial_bg |>
   filter(data_type == "bg") |>
   nrow()
 
-area_bg <- total_area/n_bg
+# don't need this with weight
+#area_bg <- total_area/n_bg
 
 ########### priors
 
@@ -267,12 +268,12 @@ distribution(pa_data_response) <- bernoulli(icloglog(log_lambda_obs_pa))
 
 ## PO likelihood
 
-area_po <- 1 # very small
+#area_po <- 1 # very small
 
+# get weights from either set as 1 for po or weight from k-means clustering for bg
 area_pobg <- model_data |>
   filter(data_type %in% c("po", "bg")) |>
-  mutate(area = case_when(data_type == "po" ~ area_po, data_type == "bg" ~ area_bg)) |>
-  pull(area)
+  pull(weight)
 
 
 po_data_response <- model_data |>
@@ -345,6 +346,13 @@ distribution(po_data_response) <- poisson(
 
 m <- model(alpha, beta, gamma, delta)
 plot(m)
+
+
+######## Prior predictive checks
+
+hist(z)
+
+
 
 # fit model
 n_burnin <- 500

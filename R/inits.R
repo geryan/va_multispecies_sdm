@@ -92,8 +92,8 @@ inits <- function(
     ina = -4, # mean initial value for alpha
     inb = 0, # mean initial value for beta
     ing = 0,
-    inre = 0,
-    inresd = 0.001,
+    inre = 1e-4,
+    inresd = 1e-4,
     ind = 1e-4,
     sda = 0,
     sdb = 0,
@@ -158,15 +158,17 @@ inits <- function(
             sd = sdd
           )
         )#, # this taking of the absolute value is a hack to ensure it's >= zero, per the truncated normal in the model
-        # sampling_re = rnorm(
+        # sampling_re_raw = rnorm(
         #   n = nsm,
         #   mean = inre,
         #   sd = sdre
         # ),
-        # sampling_re_sd = rnorm(
-        #   n = 1,
-        #   mean = inresd,
-        #   sd = sdsdre
+        # sampling_re_sd = abs(
+        #   rnorm(
+        #     n = 1,
+        #     mean = inresd,
+        #     sd = sdsdre
+        #   )
         # )
       )
     )
