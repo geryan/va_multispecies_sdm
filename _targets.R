@@ -22,7 +22,8 @@ tar_option_set(
     "magrittr",
     "stringr",
     "bayesplot",
-    "patchwork"
+    "patchwork",
+    "see"
   ),
   workspace_on_error = TRUE
 )
@@ -55,17 +56,17 @@ list(
       #"arid",
       # built_volume,
       # cropland,
-      #"elevation",
+      "elevation",
       "evi_mean", # correlates with pressure_mean rainfall_mean and solrad_mean
       "footprint", # correlates with built_volume and cropland
-      "lst_day_mean"#,
-      # lst_night_mean,
+      #"lst_day_mean"#,
+      "lst_night_mean",
       # # pressure_mean,
       # # rainfall_mean,
-      # soil_clay,
+      "soil_clay",
       # # solrad_mean,
       # # surface_water, remove and replace with distance to surface water
-      #"tcb_mean" #, # strongly correlates with tcw
+      "tcb_mean" #, # strongly correlates with tcw
       # # tcw_mean,
       # windspeed_mean,
       #easting,
@@ -182,7 +183,7 @@ list(
 
   tar_target(
     n_bg,
-    1000
+    250
   ),
 
   tar_target(
@@ -283,12 +284,29 @@ list(
  # ),
 
  tar_target(
-   record_data_spatial,
+   record_data_spatial_all,
    get_spatial_values(
-     lyrs = covariate_rast,
+     lyrs = covariate_rast_all,
      dat = model_data_records,
      project_mask
    )
+ ),
+
+ tar_target(
+   record_data_spatial,
+   record_data_spatial_all |>
+     select(
+       - all_of(
+         names(covariate_rast_all)[
+           !names(covariate_rast_all) %in%
+             c(
+               target_covariate_names,
+               offset_names,
+               bias_names
+             )
+         ]
+       ),
+     )
  ),
 
  tar_target(
@@ -307,11 +325,33 @@ list(
    covs_plots,
    make_covariate_plots(
      model_data_spatial,
-     target_species,
-     target_covariate_names,
-     offset_names
+     cvnames = target_covariate_names
    )
  ),
+
+ tar_target(
+   bias_offset_plots,
+   make_covariate_plots(
+     model_data_spatial,
+     cvnames = c(
+       offset_names,
+       bias_names
+     )
+   )
+ ),
+
+ tar_target(
+   covs_plots_all,
+   make_covariate_plots(
+     model_data_spatial_all,
+     target_species,
+     target_covariate_names, # this needs tweaking as it
+     # won't currently get the non-target covs which is the whole point - need to extract from covariate rasters
+     offset_names,
+     bias_names
+   )
+ ),
+
 
  tar_target(
    simple_point_plots,

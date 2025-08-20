@@ -1,36 +1,50 @@
 make_covariate_plots <- function(
     model_data_spatial,
-    target_species,
-    target_covariate_names,
-    offset_names,
+    cvnames,
     w = 3200,
     h = 2000
 ){
 
-  cvnames <- c(offset_names, target_covariate_names)
 
-  p <- model_data_spatial |>
-    filter(
-      data_type != "bg",
-      presence != 0
-    ) |>
+  p<- model_data_spatial |>
+    filter(data_type != "bg") |>
+    mutate(
+     dtype = case_when(
+       data_type == "po" ~ "presence_po",
+       data_type == "pa" & presence == 1 ~ "presence_pa",
+       data_type == "pa" & presence == 0 ~ "absence_pa",
+       data_type == "count" & count > 0 ~ "presence_count",
+       data_type == "count" & count == 0 ~ "absence_count",
+     ),
+     presence = as.factor(presence)
+    )|>
     pivot_longer(
       cols = all_of(cvnames),
       names_to = "var",
       values_to = "value"
     ) |>
     ggplot() +
-    geom_violin(
+    geom_violinhalf(
       aes(
-        x = species,
+        x = data_type,
         y = value,
-        fill = species
+        fill = presence,
+        color = presence
+      ),
+      flip = c(1,3),
+      position = position_identity()
+    ) +
+    facet_grid(
+      species ~ var
+    ) +
+    theme(
+      axis.text.x = element_text(
+        angle = 315,
+        hjust = 0,
+        vjust = 0.5
       )
     ) +
-    facet_wrap(
-      ~ var,
-      scales = "free"
-    )
+    theme_minimal()
 
     ggsave(
       filename = "outputs/figures/cov_violins.png",

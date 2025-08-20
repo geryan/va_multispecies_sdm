@@ -139,8 +139,9 @@ generate_model_data_records <- function(
     ungroup() |>
     mutate(
       presence = case_when(
-        bpres ~ 1,
         occurrence_n > 0 ~ 1,
+        occurrence_n == 0 ~ 0,
+        bpres ~ 1,
         (babs & !bpres) ~ 0,
         !inferred ~ 1,
         .default = 0
