@@ -24,10 +24,10 @@ make_covariate_plots <- function(
     ) |>
     mutate(
       dtype = case_when(
-        data_type == "po" ~ "po",
-        data_type == "bg" ~ "po",
-        data_type == "pa" ~ "pa",
-        data_type == "count" ~ "count",
+        data_type == "po" ~ "Presence-\nbackground",
+        data_type == "bg" ~ "Presence-\nbackground",
+        data_type == "pa" ~ "Presence-\nabsence",
+        data_type == "count" ~ "Count",
       ),
       pres = case_when(
         data_type == "count" & count > 0 ~ "present",
@@ -63,10 +63,13 @@ make_covariate_plots <- function(
         vjust = 0.5
       )
     ) +
+
     labs(
       x = "Data type",
       y = "Standardised value",
-
+      fill = "Presence",
+      colour = "Presence",
+      title = "Covariate distributions by data type and detected presence"
     )
 
     ggsave(
