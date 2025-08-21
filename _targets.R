@@ -197,9 +197,18 @@ list(
       crds()
   ),
 
+  # tar_target(
+  #   bg_kmeans_list_env,
+  #   bg_points_kmeans_env(
+  #     n_bg,
+  #     covariate_rast,
+  #     n_samples_per_bg = 200
+  #   )
+  # ),
+
   tar_target(
-    bg_kmeans_list,
-    bg_points_kmeans(
+    bg_kmeans_list_spatial,
+    bg_points_kmeans_spatial(
       n_bg,
       covariate_rast,
       n_samples_per_bg = 200
@@ -208,7 +217,7 @@ list(
 
   tar_target(
     bg_kmeans_df,
-    frame_bg_kmeans(bg_kmeans_list)
+    frame_bg_kmeans(bg_kmeans_list_spatial)
   ),
 
   ####################################
@@ -314,7 +323,11 @@ list(
    bind_rows(
      record_data_spatial |>
        mutate(weight = 1),
-     bg_kmeans_df
+     bg_kmeans_df |>
+       mutate(
+         data_type = "bg",
+         presence = 0
+       )
    )
  ),
 
@@ -343,7 +356,7 @@ list(
  tar_target(
    covs_plots_all,
    make_covariate_plots(
-     model_data_spatial_all,
+     record_data_spatial_all,
      target_species,
      target_covariate_names, # this needs tweaking as it
      # won't currently get the non-target covs which is the whole point - need to extract from covariate rasters

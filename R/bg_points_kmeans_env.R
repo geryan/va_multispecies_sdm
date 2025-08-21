@@ -7,7 +7,7 @@
 # of 'n_samples_per_bg' should therefore result in better clustering, but with a
 # longer run time. Other arguments to `stats::kmeans()` can be passed via the
 # dots argument.
-bg_points_kmeans <- function(n_bg, covariate_rast, n_samples_per_bg = 50, ...) {
+bg_points_kmeans_env <- function(n_bg, covariate_rast, n_samples_per_bg = 50, ...) {
 
   # sample random values from the raster and use them to train kmeans clustering
 

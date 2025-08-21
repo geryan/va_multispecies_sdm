@@ -6,37 +6,56 @@ make_covariate_plots <- function(
 ){
 
 
-  p<- model_data_spatial |>
-    filter(data_type != "bg") |>
-    mutate(
-     dtype = case_when(
-       data_type == "po" ~ "presence_po",
-       data_type == "pa" & presence == 1 ~ "presence_pa",
-       data_type == "pa" & presence == 0 ~ "absence_pa",
-       data_type == "count" & count > 0 ~ "presence_count",
-       data_type == "count" & count == 0 ~ "absence_count",
-     ),
-     presence = as.factor(presence)
-    )|>
+  pdat <- model_data_spatial |>
+    filter(data_type == "bg") |>
+    select(-species) |>
+    expand_grid(
+      species = unique(model_data_spatial$species)[!is.na(unique(model_data_spatial$species))]
+    ) |>
+    select(species, everything()) |>
+    bind_rows(
+      model_data_spatial |>
+        filter(data_type != "bg")
+    ) |>
     pivot_longer(
       cols = all_of(cvnames),
       names_to = "var",
       values_to = "value"
     ) |>
-    ggplot() +
+    mutate(
+      dtype = case_when(
+        data_type == "po" ~ "po",
+        data_type == "bg" ~ "po",
+        data_type == "pa" ~ "pa",
+        data_type == "count" ~ "count",
+      ),
+      pres = case_when(
+        data_type == "count" & count > 0 ~ "present",
+        data_type == "count" & count == 0 ~ "absent",
+        presence == 1 ~ "present",
+        presence == 0 ~ "absent"
+      )
+    )
+
+
+
+  ggplot(pdat) +
     geom_violinhalf(
       aes(
-        x = data_type,
+        x = dtype,
         y = value,
-        fill = presence,
-        color = presence
+        fill = pres,
+        color = pres
       ),
-      flip = c(1,3),
+      flip = c(1, 3, 5),
       position = position_identity()
     ) +
     facet_grid(
-      species ~ var
+      #species ~ var
+      var ~ species,
+      scales = "free"
     ) +
+    theme_minimal() +
     theme(
       axis.text.x = element_text(
         angle = 315,
@@ -44,7 +63,11 @@ make_covariate_plots <- function(
         vjust = 0.5
       )
     ) +
-    theme_minimal()
+    labs(
+      x = "Data type",
+      y = "Standardised value",
+
+    )
 
     ggsave(
       filename = "outputs/figures/cov_violins.png",
