@@ -383,6 +383,18 @@ list(
  #   )
  # ),
 
+ ######
+ # PCA Covariate layers
+ ######
+ tar_terra_rast(
+   pca_covariate_layers,
+   make_pca_covariate_layers(
+     covariate_rast,
+     target_covariate_names,
+     model_data_spatial
+   )
+ ),
+
  ################
  ## models
  ################
