@@ -15,10 +15,13 @@ tar_load_everything()
 #   )
 # target_covariate_names <- target_covariate_names[1:2]
 
-
+model_data_spatial_pca <- model_data_spatial_pca |>
+  select(
+    - names(pca_covariate_layers)[2:4]
+  )
 
 # index of distinct locations
-distinct_idx <- model_data_spatial |>
+distinct_idx <- model_data_spatial_pca |>
   mutate(
     rn = row_number(),
     .before = species
@@ -32,25 +35,28 @@ distinct_idx <- model_data_spatial |>
   filter(rnsp == 1) |>
   pull(rn)
 
-distinct_coords <- model_data_spatial[distinct_idx, c("latitude", "longitude")]
+distinct_coords <- model_data_spatial_pca[distinct_idx, c("latitude", "longitude")]
 
 
 # get offset values from gambiae mechanistic model
-log_offset <- log(model_data_spatial[distinct_idx,"ag_microclim"])|>
-  as.matrix()
+log_offset <- log(model_data_spatial_pca[distinct_idx,"ag_microclim"])|>
+  as.matrix() |>
+  as_data()
 
 
 # get covariate values
-x <- model_data_spatial[distinct_idx,] |>
+x <- model_data_spatial_pca[distinct_idx,] |>
   as_tibble() |>
   select(
-    all_of(target_covariate_names)
+    starts_with("covariate_")
   ) |>
-  as.matrix()
+  as.matrix() |>
+  as_data()
 
 # get bias values
-z <- model_data_spatial[distinct_idx,"research_tt_by_country"] |>
-  as.matrix()
+z <- model_data_spatial_pca[distinct_idx,"research_tt_by_country"] |>
+  as.matrix() |>
+  as_data()
 
 
 # number of cells in analysis data per Fithian model (not in raster)
@@ -61,14 +67,14 @@ n_cov_abund <- ncol(x)
 n_cov_bias <- ncol(z)
 
 # number of species
-n_species_with_bg <- unique(model_data_spatial$species) # includes NA
+n_species_with_bg <- unique(model_data_spatial_pca$species) # includes NA
 
 n_species <- length(n_species_with_bg[!is.na(n_species_with_bg)])
 
 
 ## sampling methods
 sm_freq <- table(
-  na.omit(model_data_spatial$sampling_method)
+  na.omit(model_data_spatial_pca$sampling_method)
 ) |>
   as.matrix()
 
@@ -81,7 +87,7 @@ n_sampling_methods <- length(sampling_methods)
 
 ## impute bg sampling methods and species
 
-model_data_spatial_bg <- model_data_spatial |>
+model_data_spatial_bg <- model_data_spatial_pca |>
   mutate(
     sampling_method = case_when(
       data_type == "bg" ~ sample(
@@ -151,7 +157,7 @@ n_bg <- model_data_spatial_bg |>
 
 # trying others
 penalty.l2.intercept <- 1e-4
-penalty.l2.sdm <- penalty.l2.bias <- 100
+penalty.l2.sdm <- penalty.l2.bias <- 0.5
 
 intercept_sd <- sqrt(1 / penalty.l2.intercept)
 beta_sd <- sqrt(1 / penalty.l2.sdm)
@@ -175,7 +181,8 @@ log_lambda_larval_habitat <- sweep(x %*% beta, 2, alpha, FUN = "+")
 
 # offset from calculated gambiae adult survival given habitat
 #log_lambda_adults <- log_offset
-log_lambda_adults <- rep(0, times = dim(log_offset)[[1]])
+log_lambda_adults <- rep(0, times = dim(log_offset)[[1]]) |>
+  as_data()
 
 # combine larval habitat and adult life cycle offset
 log_lambda <- sweep(log_lambda_larval_habitat, 1, log_lambda_adults, "+")
@@ -184,7 +191,8 @@ log_lambda <- sweep(log_lambda_larval_habitat, 1, log_lambda_adults, "+")
 # GP on covariate space or something mechanistic
 
 # bias across pixels (shared coefficient) and species (different intercepts)
-log_bias_coef <- sweep(zeros(n_pixel, n_species), 1, log(z) %*% delta, FUN = "+")
+zero_pixels <- zeros(n_pixel, n_species)
+log_bias_coef <- sweep(zero_pixels, 1, log(z) %*% delta, FUN = "+")
 # log_bias_coef <- zeros(n_pixel, n_species)
 log_bias <- sweep(log_bias_coef, 2, gamma, FUN = "+")
 
@@ -260,7 +268,8 @@ log_lambda_obs_count <-log_lambda[count_data_loc_sp_idx] #+
 
 count_data_response <- model_data |>
   filter(data_type == "count") |>
-  pull(n)
+  pull(n) |>
+  as_data()
 
 distribution(count_data_response) <- poisson(exp(log_lambda_obs_count))
 
@@ -271,7 +280,8 @@ log_lambda_obs_pa <-log_lambda[pa_data_loc_sp_idx] #+
 
 pa_data_response <- model_data |>
   filter(data_type == "pa") |>
-  pull(n)
+  pull(n) |>
+  as_data()
 
 distribution(pa_data_response) <- bernoulli(icloglog(log_lambda_obs_pa))
 
@@ -283,12 +293,14 @@ distribution(pa_data_response) <- bernoulli(icloglog(log_lambda_obs_pa))
 # get weights from either set as 1 for po or weight from k-means clustering for bg
 area_pobg <- model_data |>
   filter(data_type %in% c("po", "bg")) |>
-  pull(weight)
+  pull(weight) |>
+  as_data()
 
 
 po_data_response <- model_data |>
   filter(data_type %in% c("po", "bg")) |>
-  pull(n)
+  pull(n) |>
+  as_data()
 
 log_bias_obs_pobg <- log_bias[pobg_data_loc_sp_idx]
 #
@@ -382,9 +394,9 @@ plot(m)
 # plot(log(count_data_response), log(pred_count))
 
 # fit model
-n_burnin <- 500
-n_samples <- 100
-n_chains <- 50
+n_burnin  <- 2000
+n_samples <- 500
+n_chains  <- 50
 
 # init_vals <- generate_valid_inits(
 #   mod = m,
@@ -408,6 +420,17 @@ init_vals <- inits(
   #inre = optim$par$sampling_re,
   #inresd = optim$par$sampling_re_sd
 )
+
+
+init_vals <- inits(
+  n_chains = n_chains,
+  ncv = dim(x)[2],
+  ina = optim$par$alpha,
+  inb = optim$par$beta,
+  ing = optim$par$gamma,
+  ind = optim$par$delta
+)
+
 # beta back in - tried footprint and EVI - fuct.
 # species-specific offsets from expert maps
 # check points outside expert area / offset buffer
@@ -425,7 +448,6 @@ draws <- mcmc(
   #sampler = adaptive_hmc(diag_sd = 1)
 )
 
-
 mcmc_trace(draws)
 
 # plots of data vs each covariate
@@ -433,29 +455,37 @@ mcmc_trace(draws)
 # pca on env space of data then predict to covariate layers
 #
 
+calculate(count_data_response, nsim = 1)
 
 
+lloc_list <- calculate(
+  log_lambda_obs_count,
+  nsim = 1#,
+  #values = draws
+)
 
-# lloc_list <- calculate(
-#   log_lambda_obs_count,
-#   nsim = 1,
-#   values = draws
-# )
-#
-# pred_lambda_count <- lloc_list$log_lambda_obs_count |>
-#   as.numeric()
-#
-# pred_count <- sapply(
-#   pred_lambda_count,
-#   FUN = function(x){
-#     rpois(n = 1, lambda = exp(x))
-#   }
-# )
-#
-# hist(pred_count, breaks = 50)
-#
-# plot(pred_count, count_data_response)
+pred_lambda_count <- lloc_list$log_lambda_obs_count |>
+  as.numeric()
 
+pred_count <- sapply(
+  pred_lambda_count,
+  FUN = function(x){
+    rpois(n = 1, lambda = exp(x))
+  }
+)
+
+plot(pred_count, count_data_response)
+
+par(mfrow = c(1, 1))
+predmax <- 1000
+length(pred_count[which(pred_count <= predmax)])
+hist(pred_count[which(pred_count <= predmax)], breaks = 50, xlim = c(0, predmax))
+
+
+par(mfrow = c(3, 1))
+hist(pred_count, breaks = 50)
+hist(count_data_response, breaks = 1000, xlim = c(0, 50))
+hist(count_data_response, breaks = 50)
 
 # converged estimates for alpha beta gamma model
 # count, po/bg, pa
@@ -592,3 +622,4 @@ mcmc_trace(draws)
 # plot(arvpa, add = TRUE, col = "grey80")
 # plot(agbin)
 # plot(arvct, add = TRUE, col = "grey80")
+`

@@ -326,7 +326,8 @@ list(
      bg_kmeans_df |>
        mutate(
          data_type = "bg",
-         presence = 0
+         presence = 0,
+         n = 0
        )
    )
  ),
@@ -353,17 +354,17 @@ list(
    )
  ),
 
- tar_target(
-   covs_plots_all,
-   make_covariate_plots(
-     record_data_spatial_all,
-     target_species,
-     target_covariate_names, # this needs tweaking as it
-     # won't currently get the non-target covs which is the whole point - need to extract from covariate rasters
-     offset_names,
-     bias_names
-   )
- ),
+ # tar_target(
+ #   covs_plots_all,
+ #   make_covariate_plots(
+ #     record_data_spatial_all,
+ #     target_species,
+ #     target_covariate_names, # this needs tweaking as it
+ #     # won't currently get the non-target covs which is the whole point - need to extract from covariate rasters
+ #     offset_names,
+ #     bias_names
+ #   )
+ # ),
 
 
  tar_target(
@@ -395,6 +396,27 @@ list(
    )
  ),
 
+ tar_target(
+   model_data_spatial_pca,
+   get_spatial_values(
+     pca_covariate_layers,
+     model_data_spatial,
+     project_mask
+   ) |>
+     select(
+       - all_of(target_covariate_names),
+     )
+ ),
+
+ tar_target(
+   covs_plots_pca,
+   make_covariate_plots(
+     model_data_spatial_pca,
+     cvnames = names(pca_covariate_layers),
+     fname = "outputs/figures/cov_violins_pca.png"
+   )
+ ),
+
  ################
  ## models
  ################
@@ -403,87 +425,87 @@ list(
  ## multispecies pp with biophysical offset count
  ##
 
- tar_target(
-   model_fit_image_multisp_pp_with_offset_count,
-   fit_model_multisp_pp_with_offset_count_new(
-     model_data_ragged,
-     spatial_values,
-     model_notna_idx_pa,
-     model_notna_idx_po,
-     image_name = "outputs/images/multisp_pp_with_offset_count.RData",
-     n_burnin = 1000,
-     n_samples = 1000,
-     n_chains = 4
-   )
- ),
-
- tar_target(
-   pred_file_multisp_pp_with_offset_count,
-   predict_greta_mspp_with_offset_count(
-     image_filename = model_fit_image_multisp_pp_with_offset_count,
-     prediction_layer = static_vars_agg_mech_nonzero,
-     target_species,
-     output_file = "outputs/rasters/multisp_pp_with_offset_count.tif"
-   )
- ),
-
- tar_terra_rast(
-   pred_multisp_pp_with_offset_count,
-   rast(pred_file_multisp_pp_with_offset_count)
- ),
-
- tar_terra_rast(
-   pred_multisp_pp_with_offset_count_p_presence,
-   poisson_to_prob(
-     pred_multisp_pp_with_offset_count,
-     filename = "outputs/rasters/multisp_pp_with_offset_count_p_presence.tif"
-   )
- ),
-
- #####
-
- # distribution plots
-
- # this is the temporary thang until the above are tidied
- tar_terra_rast(
-   pred_dist,
-   rast("outputs/rasters/va_plots_20250718/expert_offset_preds_mspp.tif")[[target_species]]
- ),
-
- tar_target(
-   distribution_plots,
-   make_distribution_plots(
-     pred_dist,
-     model_data_spatial,
-     plot_dir = "outputs/figures/distribution_plots/distn_20250804"
-   )
- ),
-
- ## relative abundance
-
- # this is the temporary thang until the above are tidied
- tar_terra_rast(
-   pred_dist_rgb,
-   rast("outputs/rasters/va_plots_20250718/expert_offset_preds_mspp.tif")
- ),
-
- tar_terra_rast(
-   rel_abund_rgb,
-   make_rel_abund_rgb(
-     x = pred_dist_rgb,
-     threshold = 0.05
-   ),
-   datatype = "INT1U"
- ),
-
- tar_target(
-   rel_abund_plots,
-   make_rel_abund_rgb_plot(
-     rel_abund_rgb,
-     project_mask,
-     filename = "outputs/figures/rgb_relative_abundance.png"
-   )
- ),
+ # tar_target(
+ #   model_fit_image_multisp_pp_with_offset_count,
+ #   fit_model_multisp_pp_with_offset_count_new(
+ #     model_data_ragged,
+ #     spatial_values,
+ #     model_notna_idx_pa,
+ #     model_notna_idx_po,
+ #     image_name = "outputs/images/multisp_pp_with_offset_count.RData",
+ #     n_burnin = 1000,
+ #     n_samples = 1000,
+ #     n_chains = 4
+ #   )
+ # ),
+ #
+ # tar_target(
+ #   pred_file_multisp_pp_with_offset_count,
+ #   predict_greta_mspp_with_offset_count(
+ #     image_filename = model_fit_image_multisp_pp_with_offset_count,
+ #     prediction_layer = static_vars_agg_mech_nonzero,
+ #     target_species,
+ #     output_file = "outputs/rasters/multisp_pp_with_offset_count.tif"
+ #   )
+ # ),
+ #
+ # tar_terra_rast(
+ #   pred_multisp_pp_with_offset_count,
+ #   rast(pred_file_multisp_pp_with_offset_count)
+ # ),
+ #
+ # tar_terra_rast(
+ #   pred_multisp_pp_with_offset_count_p_presence,
+ #   poisson_to_prob(
+ #     pred_multisp_pp_with_offset_count,
+ #     filename = "outputs/rasters/multisp_pp_with_offset_count_p_presence.tif"
+ #   )
+ # ),
+ #
+ # #####
+ #
+ # # distribution plots
+ #
+ # # this is the temporary thang until the above are tidied
+ # tar_terra_rast(
+ #   pred_dist,
+ #   rast("outputs/rasters/va_plots_20250718/expert_offset_preds_mspp.tif")[[target_species]]
+ # ),
+ #
+ # tar_target(
+ #   distribution_plots,
+ #   make_distribution_plots(
+ #     pred_dist,
+ #     model_data_spatial,
+ #     plot_dir = "outputs/figures/distribution_plots/distn_20250804"
+ #   )
+ # ),
+ #
+ # ## relative abundance
+ #
+ # # this is the temporary thang until the above are tidied
+ # tar_terra_rast(
+ #   pred_dist_rgb,
+ #   rast("outputs/rasters/va_plots_20250718/expert_offset_preds_mspp.tif")
+ # ),
+ #
+ # tar_terra_rast(
+ #   rel_abund_rgb,
+ #   make_rel_abund_rgb(
+ #     x = pred_dist_rgb,
+ #     threshold = 0.05
+ #   ),
+ #   datatype = "INT1U"
+ # ),
+ #
+ # tar_target(
+ #   rel_abund_plots,
+ #   make_rel_abund_rgb_plot(
+ #     rel_abund_rgb,
+ #     project_mask,
+ #     filename = "outputs/figures/rgb_relative_abundance.png"
+ #   )
+ # ),
 
 
  #####################

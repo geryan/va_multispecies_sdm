@@ -137,15 +137,15 @@ inits <- function(
           mean = ina,
           sd = sda
         ),
-        beta = matrix(
-          data = rnorm(
-            n = n_b,
-            mean = inb,
-            sd = sdb
-          ),
-          ncol = ,
-          nrow = ncv
-        ),
+        # beta = matrix(
+        #   data = rnorm(
+        #     n = n_b,
+        #     mean = inb,
+        #     sd = sdb
+        #   ),
+        #   ncol = ,
+        #   nrow = ncv
+        # ),
         gamma = rnorm(
           n = n_g,
           mean = ing,

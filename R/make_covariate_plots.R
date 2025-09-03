@@ -2,11 +2,12 @@ make_covariate_plots <- function(
     model_data_spatial,
     cvnames,
     w = 3200,
-    h = 2000
+    h = 2000,
+    fname = "outputs/figures/cov_violins.png"
 ){
 
 
-  pdat <- model_data_spatial |>
+  model_data_spatial |>
     filter(data_type == "bg") |>
     select(-species) |>
     expand_grid(
@@ -35,11 +36,8 @@ make_covariate_plots <- function(
         presence == 1 ~ "present",
         presence == 0 ~ "absent"
       )
-    )
-
-
-
-  ggplot(pdat) +
+    ) |>
+    ggplot() +
     geom_violinhalf(
       aes(
         x = dtype,
@@ -63,7 +61,6 @@ make_covariate_plots <- function(
         vjust = 0.5
       )
     ) +
-
     labs(
       x = "Data type",
       y = "Standardised value",
@@ -73,8 +70,8 @@ make_covariate_plots <- function(
     )
 
     ggsave(
-      filename = "outputs/figures/cov_violins.png",
-      plot = p,
+      filename = fname,
+      #plot = p,
       width = w,
       height = h,
       units = "px"
