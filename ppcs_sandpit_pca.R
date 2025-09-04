@@ -179,7 +179,7 @@ beta_sd  <- 1
 gamma_sd <- 1
 delta_sd <- 1
 
-alpha_mean <- -1
+alpha_mean <- 0
 beta_mean  <- 0
 delta_mean <- 0
 gamma_mean <- 0
@@ -329,21 +329,21 @@ log_bias_obs_pobg <- log_bias[pobg_data_loc_sp_idx]
 log_lambda_obs_pobg <-log_lambda[pobg_data_loc_sp_idx] #+
 #sampling_re[pobg_data_index$sampling_method_id]
 
-# distribution(po_data_response) <- poisson(
-#   exp(
-#     log_lambda_obs_pobg +
-#       log_bias_obs_pobg +
-#       log(area_pobg)
-#   )
-# )
-
-distribution(pa_data_response) <- bernoilli(
-  icloglog(
+distribution(po_data_response) <- poisson(
+  exp(
     log_lambda_obs_pobg +
       log_bias_obs_pobg +
       log(area_pobg)
   )
 )
+
+# distribution(po_data_response) <- bernoulli(
+#   icloglog(
+#     log_lambda_obs_pobg +
+#       log_bias_obs_pobg +
+#       log(area_pobg)
+#   )
+# )
 
 
 #######################
@@ -415,17 +415,17 @@ ppc_stat(
 
 # these are mostly pointless for PO because of the long extended upper tail
 # but would be worthwhile once prior is a little better
-# ppc_bars(
-#   y = pa_dat,
-#   yrep = pa_pred
-# )
-#
-# ppc_rootogram(
-#   y = pa_dat,
-#   yrep = pa_pred,
-#   prob = 0.9,
-#   style = "standing"
-# )
+ppc_bars(
+  y = pa_dat,
+  yrep = pa_pred
+)
+
+ppc_rootogram(
+  y = pa_dat,
+  yrep = pa_pred,
+  prob = 0.9,
+  style = "standing"
+)
 
 
 ###### PA checks ########
@@ -493,15 +493,19 @@ ppc_stat(
 #   style = "standing"
 # )
 
-## model
-#
-# n_burnin <- 500
-# n_samples <- 100
-# n_chains <- 50
-#
-# draws <- mcmc(
-#   m,
-#   warmup = n_burnin,
-#   n_samples = n_samples,
-#   chains = n_chains
-# )
+# model
+
+n_burnin <- 500
+n_samples <- 100
+n_chains <- 50
+
+draws <- mcmc(
+  m,
+  warmup = n_burnin,
+  n_samples = n_samples,
+  chains = n_chains
+)
+
+
+
+

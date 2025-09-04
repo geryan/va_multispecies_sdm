@@ -152,12 +152,12 @@ n_bg <- model_data_spatial_bg |>
 # define parameters with normal priors, matching the ridge regression setup in
 # multispeciesPP defaults
 # originals
-#penalty.l2.intercept <- 1e-4
-#penalty.l2.sdm <- penalty.l2.bias <- 0.1
+penalty.l2.intercept <- 1e-4
+penalty.l2.sdm <- penalty.l2.bias <- 0.1
 
 # trying others
-penalty.l2.intercept <- 1e-4
-penalty.l2.sdm <- penalty.l2.bias <- 0.5
+# penalty.l2.intercept <- 1e-4
+# penalty.l2.sdm <- penalty.l2.bias <- 0.5
 
 intercept_sd <- sqrt(1 / penalty.l2.intercept)
 beta_sd <- sqrt(1 / penalty.l2.sdm)
@@ -166,7 +166,8 @@ delta_sd <- 1 # will need to alter if >1 sources of bias
 
 # intercept and shared slope for selection bias
 gamma <- normal(0, intercept_sd, dim = n_species)
-delta <- normal(0, delta_sd, dim = c(n_cov_bias), truncation = c(0, Inf)) # constrain to be positive
+#delta <- normal(0, delta_sd, dim = c(n_cov_bias), truncation = c(0, Inf)) # constrain to be positive
+delta <- normal(0, delta_sd, dim = c(n_cov_bias)) # constrain to be positive
 
 # intercept and slopes for abundance rate
 alpha <- normal(0, intercept_sd, dim = n_species)
@@ -421,17 +422,17 @@ init_vals <- inits(
   #inresd = optim$par$sampling_re_sd
 )
 
-
-init_vals <- inits(
-  n_chains = n_chains,
-  ncv = dim(x)[2],
-  ina = optim$par$alpha,
-  inb = optim$par$beta,
-  ing = optim$par$gamma,
-  ind = optim$par$delta
-)
-
-# beta back in - tried footprint and EVI - fuct.
+#
+# init_vals <- inits(
+#   n_chains = n_chains,
+#   ncv = dim(x)[2],
+#   ina = optim$par$alpha,
+#   inb = optim$par$beta,
+#   ing = optim$par$gamma,
+#   ind = optim$par$delta
+# )
+#
+# # beta back in - tried footprint and EVI - fuct.
 # species-specific offsets from expert maps
 # check points outside expert area / offset buffer
 # send back to MS/AW
