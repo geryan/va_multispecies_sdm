@@ -162,17 +162,19 @@ penalty.l2.sdm <- penalty.l2.bias <- 0.1
 intercept_sd <- sqrt(1 / penalty.l2.intercept)
 beta_sd <- sqrt(1 / penalty.l2.sdm)
 #delta_sd <- sqrt(1 / penalty.l2.bias)
-#delta_sd <- 1 # will need to alter if >1 sources of bias
-delta_sd <- 0.3
-
+#delta <- normal(0, delta_sd, dim = c(n_cov_bias), truncation = c(0, Inf)) # constrain to be positive
+#
 # intercept and shared slope for selection bias
-gamma <- normal(0, intercept_sd, dim = n_species)
+#gamma <- normal(0, intercept_sd, dim = n_species)
 
-# gamma_sd <- 0.1
-# gamma <- normal(-3.6, gamma_sd, dim = n_species)
+# informative priors on gamma and delta so exp(log_bias), i.e., bias,
+# has range around (0, 1) for z in (0, 1)
+delta_sd <- 0.3
+gamma_sd <- 0.1
 
-delta <- normal(0, delta_sd, dim = c(n_cov_bias), truncation = c(0, Inf)) # constrain to be positive
-#delta <- normal(3.8, delta_sd, dim = c(n_cov_bias), truncation = c(0, Inf))
+gamma <- normal(-3.6, gamma_sd, dim = n_species)
+
+delta <- normal(3.8, delta_sd, dim = c(n_cov_bias), truncation = c(0, Inf))
 
 
 # intercept and slopes for abundance rate
