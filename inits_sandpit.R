@@ -1,3 +1,7 @@
+#############
+
+###########
+
 
 rm(list = ls())
 
@@ -7,14 +11,15 @@ tar_load_everything()
 
 ## get data in order for model
 
-# model_data_spatial <- model_data_spatial |>
-#   select(
-#     - evi_mean,
-#     - lst_day_mean
-#     - footprint
-#   )
-# target_covariate_names <- target_covariate_names[1:2]
-
+model_data_spatial <- model_data_spatial |>
+  # select(
+  #   - evi_mean,
+  #   - lst_day_mean
+  #   - footprint
+  # )
+  filter(count < 1000)
+#target_covariate_names <- target_covariate_names[c(1,3)] # works
+#target_covariate_names
 
 
 # index of distinct locations
@@ -45,6 +50,7 @@ x <- model_data_spatial[distinct_idx,] |>
   as_tibble() |>
   select(
     all_of(target_covariate_names)
+    #"footprint"
   ) |>
   as.matrix()
 
