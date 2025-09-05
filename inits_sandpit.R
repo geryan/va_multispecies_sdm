@@ -146,21 +146,28 @@ n_bg <- model_data_spatial_bg |>
 # define parameters with normal priors, matching the ridge regression setup in
 # multispeciesPP defaults
 # originals
-#penalty.l2.intercept <- 1e-4
-#penalty.l2.sdm <- penalty.l2.bias <- 0.1
+penalty.l2.intercept <- 1e-4
+penalty.l2.sdm <- penalty.l2.bias <- 0.1
 
 # trying others
-penalty.l2.intercept <- 1e-4
-penalty.l2.sdm <- penalty.l2.bias <- 100
+# penalty.l2.intercept <- 1e-4
+# penalty.l2.sdm <- penalty.l2.bias <- 100
 
 intercept_sd <- sqrt(1 / penalty.l2.intercept)
 beta_sd <- sqrt(1 / penalty.l2.sdm)
 #delta_sd <- sqrt(1 / penalty.l2.bias)
-delta_sd <- 1 # will need to alter if >1 sources of bias
+#delta_sd <- 1 # will need to alter if >1 sources of bias
+delta_sd <- 0.3
 
 # intercept and shared slope for selection bias
 gamma <- normal(0, intercept_sd, dim = n_species)
+
+# gamma_sd <- 0.1
+# gamma <- normal(-3.6, gamma_sd, dim = n_species)
+
 delta <- normal(0, delta_sd, dim = c(n_cov_bias), truncation = c(0, Inf)) # constrain to be positive
+#delta <- normal(3.8, delta_sd, dim = c(n_cov_bias), truncation = c(0, Inf))
+
 
 # intercept and slopes for abundance rate
 alpha <- normal(0, intercept_sd, dim = n_species)
@@ -382,8 +389,8 @@ plot(m)
 # plot(log(count_data_response), log(pred_count))
 
 # fit model
-n_burnin <- 500
-n_samples <- 100
+n_burnin <- 2000
+n_samples <- 1000
 n_chains <- 50
 
 # init_vals <- generate_valid_inits(
@@ -420,8 +427,8 @@ draws <- mcmc(
   m,
   warmup = n_burnin,
   n_samples = n_samples,
-  chains = n_chains,
-  initial_values = init_vals#,
+  chains = n_chains#,
+  #initial_values = init_vals#,
   #sampler = adaptive_hmc(diag_sd = 1)
 )
 
