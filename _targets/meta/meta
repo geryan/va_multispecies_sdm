@@ -2,7 +2,6 @@ name|type|data|command|depend|seed|path|time|size|bytes|format|repository|iterat
 expert_maps|stem|24839404b04d2ed7|957dc9859317a19a|47930c03b94d8bc1|1393525444||t20273.1812565162s|s2547712b|2547712|format_custom&read=ewogICAgaWYgKCJHUEtHIiA9PSAiRVNSSSBTaGFwZWZpbGUiKSB7CiAgICAgICAgdGVycmE6OnZlY3QocGFzdGUwKCIvdnNpemlwL3siLCBwYXRoLCAifSIpKQogICAgfQogICAgZWxzZSB7CiAgICAgICAgdGVycmE6OnZlY3QocGF0aCkKICAgIH0KfQ&write=ewogICAgZG8uY2FsbCh0ZXJyYTo6d3JpdGVWZWN0b3IsIGMobGlzdCh4ID0gb2JqZWN0LCBmaWxlbmFtZSA9IGlmZWxzZSgiR1BLRyIgPT0gCiAgICAgICAgIkVTUkkgU2hhcGVmaWxlIiwgeWVzID0gcGFzdGUwKHBhdGgsICIuc2h6IiksIG5vID0gcGF0aCksIAogICAgICAgIGZpbGV0eXBlID0gIkdQS0ciLCBvdmVyd3JpdGUgPSBUUlVFLCBvcHRpb25zID0gIkVOQ09ESU5HPVVURi04IiksIAogICAgICAgIGxpc3QoKSkpCiAgICBpZiAoIkdQS0ciID09ICJFU1JJIFNoYXBlZmlsZSIpIHsKICAgICAgICBmaWxlLnJlbmFtZShwYXN0ZTAocGF0aCwgIi5zaHoiKSwgcGF0aCkKICAgIH0KfQ&marshal=dGVycmE6OndyYXAob2JqZWN0KQ&unmarshal=dGVycmE6OnVud3JhcChvYmplY3Qp&convert=&copy=&repository=|local|list|||2.689|package ‘greta’ was built under R version 4.5.1|
 raw_data_file|stem|a1bad57b4ded7d8e|65652e5f214edcc2|2c530c1562a7fbd1|-669943514|data/tabular/VA_FULL_DATA_20250716.csv|t20287.0274560279s|s101121768b|101121768|file|local|vector|||2.585||
 raw_data|stem|564af7aa1ecafcc1|4ed02d5bcc9d7627|ac9455e20be64389|-1101284392||t20289.946024265s|s2286459b|2286459|rds|local|vector|||4.195|One or more parsing issues, call `problems()` on your data frame for details, e.g.:   dat <- vroom(...)   problems(dat)|
-target_species|stem|39357fe8564c4631|965df5580888fab2|8aff70bcae2748b3|1280782395||t20290.2096108995s|s91b|91|rds|local|vector|||2.239||
 full_data_records|stem|3bb8a0cdb90cd152|4b1d500c11120fd3|076708bdff7c04fa|784196675||t20294.0678650921s|s403010b|403010|rds|local|vector|||1.734|There were 2 warnings in `mutate()`. The first warning was: ℹ In argument: `start_date = ym(start_date)`. Caused by warning: !  6741 failed to parse. ℹ Run `dplyr::last_dplyr_warnings()` to see the 1 remaining warning.|
 covariate_rast_all|stem|1ba48c9fd5688259|d5efd03000ef8d8e|2c530c1562a7fbd1|-2000862957||t20297.0731554149s|s37636481b|37636481|format_custom&read=dGVycmE6OnJhc3QocGF0aCk&write=ewogICAgZG8uY2FsbCh0ZXJyYTo6d3JpdGVSYXN0ZXIsIGMobGlzdChvYmplY3QsIGZpbGVuYW1lID0gcGF0aCwgCiAgICAgICAgZmlsZXR5cGUgPSAiR1RpZmYiLCBvdmVyd3JpdGUgPSBUUlVFLCBnZGFsID0gTlVMTCksIGxpc3QoKSkpCn0&marshal=dGVycmE6OndyYXAob2JqZWN0KQ&unmarshal=dGVycmE6OnVud3JhcChvYmplY3Qp&convert=&copy=&repository=|local|list|||2.314||
 offset_names|stem|a2fedabe4f7cdd0b|c808b8e224d918b8|2c530c1562a7fbd1|2906735||t20297.0775968184s|s65b|65|rds|local|vector|||2.202||
@@ -15,18 +14,12 @@ n_bg|stem|08a7c9db6a276fa9|002f55d84e724561|2c530c1562a7fbd1|1960745550||t20319.
 target_covariate_names|stem|477d5a64ca4129ef|aad58bf43714e587|2c530c1562a7fbd1|1989916434||t20319.2040235759s|s114b|114|rds|local|vector|||1.798||
 covariate_rast|stem|e8a696c3eceb3933|5c48a312b97cb994|3432d4c5c52a70f7|1540146594||t20319.2040275281s|s13186054b|13186054|format_custom&read=dGVycmE6OnJhc3QocGF0aCk&write=ewogICAgZG8uY2FsbCh0ZXJyYTo6d3JpdGVSYXN0ZXIsIGMobGlzdChvYmplY3QsIGZpbGVuYW1lID0gcGF0aCwgCiAgICAgICAgZmlsZXR5cGUgPSAiR1RpZmYiLCBvdmVyd3JpdGUgPSBUUlVFLCBnZGFsID0gTlVMTCksIGxpc3QoKSkpCn0&marshal=dGVycmE6OndyYXAob2JqZWN0KQ&unmarshal=dGVycmE6OnVud3JhcChvYmplY3Qp&convert=&copy=&repository=|local|list|||0.002||
 project_mask|stem|54de9fd189fb2670|6385e5f6ca73fdc9|088f4db25fa51a95|-1366798709||t20319.2040305862s|s167393b|167393|format_custom&read=dGVycmE6OnJhc3QocGF0aCk&write=ewogICAgZG8uY2FsbCh0ZXJyYTo6d3JpdGVSYXN0ZXIsIGMobGlzdChvYmplY3QsIGZpbGVuYW1lID0gcGF0aCwgCiAgICAgICAgZmlsZXR5cGUgPSAiR1RpZmYiLCBvdmVyd3JpdGUgPSBUUlVFLCBnZGFsID0gTlVMTCksIGxpc3QoKSkpCn0&marshal=dGVycmE6OndyYXAob2JqZWN0KQ&unmarshal=dGVycmE6OnVud3JhcChvYmplY3Qp&convert=&copy=&repository=|local|list|||0.208||
-model_data_records|stem|1614bc82a93274fb|45d71e76908ccac5|4aa98467cde232d6|1335289901||t20320.2729916666s|s124795b|124795|rds|local|vector|||2.149||
-record_data_spatial_all|stem|4dfe0b7cd76314be|ca720bcf0a5677f8|7afb8f3c9c4820ad|359892372||t20320.2729957535s|s580628b|580628|rds|local|vector|||0.198||
-record_data_spatial|stem|c4e62a80c2db5b7f|b3dce82304afc246|cf9716f7fd33f864|-165702811||t20320.2729969534s|s266753b|266753|rds|local|vector|||0.001||
 bg_kmeans_list_spatial|stem|ca4b23d82092fe0d|0f9f9888b54b034f|adddc89dd01e6338|1232858644||t20321.2304681585s|s14883b|14883|rds|local|vector|||24.485|did not converge in 10 iterations|
 bg_kmeans_df|stem|d592857d88b69ca8|8ffe7a0260c8c62b|1ddc491107b02bb1|-366115926||t20321.2439158164s|s15488b|15488|rds|local|vector|||0.007||
 so_i_dont_have_to_go_backward_and_add_commas|stem|ffe9aec2d8ad28fa|64cb33bdb1091e31|2c530c1562a7fbd1|-1744058678||t20038.2220631471s|s107b|107|rds|local|vector|||1.92||
 bg_points|stem|6098c9452cf67f30|5ab3f349852ce216|7da45c4d61801ce8|1048788436||t20322.0698772795s|s3312b|3312|rds|local|vector|||0.458||
 exploration_full_data_records|stem|e83a1276e13561d6|f729582455382d5c|b01cad7898a8d72b|254722414||t20322.0698792606s|s44b|44|rds|local|vector|||0.117||
 expert_offset_maps|stem|acc547d0c2d94ff5|d206cd85b160f1e1|caa119b1b74fe780|-894870899||t20322.0698988931s|s58850b|58850|format_custom&read=dGVycmE6OnJhc3QocGF0aCk&write=ewogICAgZG8uY2FsbCh0ZXJyYTo6d3JpdGVSYXN0ZXIsIGMobGlzdChvYmplY3QsIGZpbGVuYW1lID0gcGF0aCwgCiAgICAgICAgZmlsZXR5cGUgPSAiR1RpZmYiLCBvdmVyd3JpdGUgPSBUUlVFLCBnZGFsID0gTlVMTCksIGxpc3QoKSkpCn0&marshal=dGVycmE6OndyYXAob2JqZWN0KQ&unmarshal=dGVycmE6OnVud3JhcChvYmplY3Qp&convert=&copy=&repository=|local|list|||1.612||
-model_data_spatial|stem|946f3fffcc2ecbc7|d94a15faf7f469c2|581f6c925b1743cc|-139668007||t20322.1425183473s|s287887b|287887|rds|local|vector|||0.01||
-pca_covariate_layers|stem|e07dc5a87ea05f27|b6972b6623e6e195|a9c4feb6ac01bb21|2025745045||t20322.1425301845s|s7253924b|7253924|format_custom&read=dGVycmE6OnJhc3QocGF0aCk&write=ewogICAgZG8uY2FsbCh0ZXJyYTo6d3JpdGVSYXN0ZXIsIGMobGlzdChvYmplY3QsIGZpbGVuYW1lID0gcGF0aCwgCiAgICAgICAgZmlsZXR5cGUgPSAiR1RpZmYiLCBvdmVyd3JpdGUgPSBUUlVFLCBnZGFsID0gTlVMTCksIGxpc3QoKSkpCn0&marshal=dGVycmE6OndyYXAob2JqZWN0KQ&unmarshal=dGVycmE6OnVud3JhcChvYmplY3Qp&convert=&copy=&repository=|local|list|||0.89||
-model_data_spatial_pca|stem|5e22f9c3903b316b|674ac0f695c2b2b5|e213f17a9e98e521|-188136187||t20322.1425319105s|s247713b|247713|rds|local|vector|||0.04||
 enforce_dim|function|be52a9a8502be978
 saveplotlist|function|aec56f0f0ef1303c
 inits_are_deterministic|function|d5908bfa293df673
@@ -108,7 +101,14 @@ prob_sample_free_states|function|8aee19652ec83167
 make_distribution_plots|function|06ebd4f860ea0c9f
 prior_sample_free_states|function|77a3bc33b89a5729
 generate_valid_inits|function|1ff55a87fc86fe12
-simple_point_plots|stem|788ff3bdd7fc7871|31133d8026bbb730|6701baa8853c0366|-795398659||t20322.1434972243s|s97b|97|rds|local|vector|||11.63||
-bias_offset_plots|stem|e83a1276e13561d6|7144f05e9d360755|5ce2dcd3402e061e|-480246258||t20322.1435061271s|s44b|44|rds|local|vector|||0.733||
-covs_plots|stem|e83a1276e13561d6|d9879cab87bfc8f8|f60251decd6c551a|265237349||t20322.1435217975s|s44b|44|rds|local|vector|||1.287||
-covs_plots_pca|stem|e83a1276e13561d6|19f1922bcdb21ecd|e717347765788012|-1819041689||t20322.1435349444s|s44b|44|rds|local|vector|||1.092||
+target_species|stem|39357fe8564c4631|965df5580888fab2|8aff70bcae2748b3|1280782395||t20338.070780832s|s91b|91|rds|local|vector|||1.461||
+model_data_records|stem|1614bc82a93274fb|45d71e76908ccac5|4aa98467cde232d6|1335289901||t20338.070806653s|s124795b|124795|rds|local|vector|||2.146||
+record_data_spatial_all|stem|4dfe0b7cd76314be|ca720bcf0a5677f8|7afb8f3c9c4820ad|359892372||t20338.0708097358s|s580628b|580628|rds|local|vector|||0.12||
+record_data_spatial|stem|c4e62a80c2db5b7f|b3dce82304afc246|cf9716f7fd33f864|-165702811||t20338.0708118221s|s266753b|266753|rds|local|vector|||0.001||
+model_data_spatial|stem|946f3fffcc2ecbc7|d94a15faf7f469c2|581f6c925b1743cc|-139668007||t20338.07081315s|s287887b|287887|rds|local|vector|||0.002||
+pca_covariate_layers|stem|e07dc5a87ea05f27|b6972b6623e6e195|a9c4feb6ac01bb21|2025745045||t20338.0708240663s|s7253924b|7253924|format_custom&read=dGVycmE6OnJhc3QocGF0aCk&write=ewogICAgZG8uY2FsbCh0ZXJyYTo6d3JpdGVSYXN0ZXIsIGMobGlzdChvYmplY3QsIGZpbGVuYW1lID0gcGF0aCwgCiAgICAgICAgZmlsZXR5cGUgPSAiR1RpZmYiLCBvdmVyd3JpdGUgPSBUUlVFLCBnZGFsID0gTlVMTCksIGxpc3QoKSkpCn0&marshal=dGVycmE6OndyYXAob2JqZWN0KQ&unmarshal=dGVycmE6OnVud3JhcChvYmplY3Qp&convert=&copy=&repository=|local|list|||0.843||
+simple_point_plots|stem|788ff3bdd7fc7871|31133d8026bbb730|6701baa8853c0366|-795398659||t20338.0709419192s|s97b|97|rds|local|vector|||10.129||
+bias_offset_plots|stem|e83a1276e13561d6|7144f05e9d360755|5ce2dcd3402e061e|-480246258||t20338.0709488696s|s44b|44|rds|local|vector|||0.569||
+covs_plots|stem|e83a1276e13561d6|d9879cab87bfc8f8|f60251decd6c551a|265237349||t20338.0709665224s|s44b|44|rds|local|vector|||1.353||
+model_data_spatial_pca|stem|5e22f9c3903b316b|674ac0f695c2b2b5|e213f17a9e98e521|-188136187||t20338.070967885s|s247713b|247713|rds|local|vector|||0.041||
+covs_plots_pca|stem|e83a1276e13561d6|19f1922bcdb21ecd|e717347765788012|-1819041689||t20338.0709809046s|s44b|44|rds|local|vector|||1.078||

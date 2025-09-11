@@ -8,6 +8,7 @@ tar_load_everything()
 ## get data in order for model
 
 # model_data_spatial <- model_data_spatial |>
+#   filter(count != 1000)
 #   select(
 #     - evi_mean,
 #     - lst_day_mean
@@ -16,9 +17,10 @@ tar_load_everything()
 # target_covariate_names <- target_covariate_names[1:2]
 
 model_data_spatial_pca <- model_data_spatial_pca |>
-  select(
-    - names(pca_covariate_layers)[2:4]
-  )
+  filter(count != 1000)
+  # select(
+  #   - names(pca_covariate_layers)[2:4]
+  # )
 
 # index of distinct locations
 distinct_idx <- model_data_spatial_pca |>
@@ -400,8 +402,8 @@ plot(m)
 # plot(log(count_data_response), log(pred_count))
 
 # fit model
-n_burnin  <- 500
-n_samples <- 100
+n_burnin  <- 2000
+n_samples <- 1000
 n_chains  <- 50
 
 # init_vals <- generate_valid_inits(
@@ -492,6 +494,37 @@ par(mfrow = c(3, 1))
 hist(pred_count, breaks = 50)
 hist(count_data_response, breaks = 1000, xlim = c(0, 50))
 hist(count_data_response, breaks = 50)
+
+
+# converged estimates for alpha beta gamma delta model
+# no inits provided
+# strong prior on bias
+# cluster of counts of 1000 removed
+# alpha[1,1]  3.40611  3.41242  3.41570  3.418924  3.42526
+# alpha[2,1]  1.39915  1.41899  1.42926  1.439344  1.45823
+# alpha[3,1]  3.42171  3.42738  3.43038  3.433417  3.43910
+# alpha[4,1]  2.40966  2.42130  2.42721  2.433265  2.44444
+# beta[1,1]  -0.07801 -0.07418 -0.07218 -0.070175 -0.06638
+# beta[2,1]  -0.10735 -0.10102 -0.09775 -0.094484 -0.08830
+# beta[3,1]  -0.05648 -0.05108 -0.04827 -0.045421 -0.04001
+# beta[4,1]  -0.37034 -0.36372 -0.36025 -0.356802 -0.35016
+# beta[1,2]  -0.65613 -0.64075 -0.63284 -0.624974 -0.61021
+# beta[2,2]   0.58823  0.60610  0.61573  0.625183  0.64352
+# beta[3,2]  -0.07281 -0.05539 -0.04708 -0.038090 -0.01960
+# beta[4,2]   0.24444  0.26760  0.27968  0.291696  0.31460
+# beta[1,3]  -0.03808 -0.03384 -0.03167 -0.029479 -0.02529
+# beta[2,3]   0.29843  0.30478  0.30808  0.311382  0.31776
+# beta[3,3]  -0.22689 -0.22145 -0.21853 -0.215587 -0.21007
+# beta[4,3]  -0.25138 -0.24415 -0.24041 -0.236628 -0.22937
+# beta[1,4]  -0.49067 -0.48146 -0.47661 -0.471821 -0.46276
+# beta[2,4]   0.68124  0.69263  0.69869  0.704824  0.71641
+# beta[3,4]   0.03693  0.04891  0.05536  0.061716  0.07320
+# beta[4,4]  -0.02327 -0.01006 -0.00254  0.004828  0.01802
+# gamma[1,1] -3.79233 -3.66492 -3.59921 -3.531280 -3.40034
+# gamma[2,1] -3.79707 -3.66811 -3.60160 -3.533671 -3.40852
+# gamma[3,1] -3.79607 -3.66620 -3.59870 -3.531371 -3.40243
+# gamma[4,1] -3.79635 -3.66817 -3.59948 -3.532761 -3.40104
+# delta       3.22335  3.60163  3.80453  4.005674  4.39069
 
 # converged estimates for alpha beta gamma model
 # count, po/bg, pa

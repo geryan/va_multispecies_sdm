@@ -167,20 +167,17 @@ beta_sd <- sqrt(1 / penalty.l2.sdm)
 # intercept and shared slope for selection bias
 #gamma <- normal(0, intercept_sd, dim = n_species)
 
+# intercept and slopes for abundance rate
+alpha <- normal(0, intercept_sd, dim = n_species)
+beta <- normal(0, beta_sd, dim = c(n_cov_abund, n_species))
+
 # informative priors on gamma and delta so exp(log_bias), i.e., bias,
 # has range around (0, 1) for z in (0, 1)
 delta_sd <- 0.3
 gamma_sd <- 0.1
 
 gamma <- normal(-3.6, gamma_sd, dim = n_species)
-
 delta <- normal(3.8, delta_sd, dim = c(n_cov_bias), truncation = c(0, Inf))
-
-
-# intercept and slopes for abundance rate
-alpha <- normal(0, intercept_sd, dim = n_species)
-beta <- normal(0, beta_sd, dim = c(n_cov_abund, n_species))
-
 
 # log rates across all sites
 # larval habitat based on env covariates
@@ -407,22 +404,22 @@ n_chains <- 50
 # )
 #
 #
-optim <- opt(m)
-optim$par
-
-init_vals <- inits(
-  n_chains = n_chains,
-  ncv = dim(x)[2],
-  ina = c(3.1, 0.58, 2.8, 1.8),
-  #ina = optim$par$alpha,
-  #inb = optim$par$beta,
-  #ing = optim$par$gamma,
-  ing = c(-10.5, -10.8, -10.0, -11.7),
-  #ind = optim$par$delta#,
-  ind = 30.9#,
-  #inre = optim$par$sampling_re,
-  #inresd = optim$par$sampling_re_sd
-)
+# optim <- opt(m)
+# optim$par
+#
+# init_vals <- inits(
+#   n_chains = n_chains,
+#   ncv = dim(x)[2],
+#   ina = c(3.1, 0.58, 2.8, 1.8),
+#   #ina = optim$par$alpha,
+#   #inb = optim$par$beta,
+#   #ing = optim$par$gamma,
+#   ing = c(-10.5, -10.8, -10.0, -11.7),
+#   #ind = optim$par$delta#,
+#   ind = 30.9#,
+#   #inre = optim$par$sampling_re,
+#   #inresd = optim$par$sampling_re_sd
+# )
 # beta back in - tried footprint and EVI - fuct.
 # species-specific offsets from expert maps
 # check points outside expert area / offset buffer
