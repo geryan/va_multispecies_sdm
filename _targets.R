@@ -1,5 +1,6 @@
 library(targets)
 library(geotargets)
+library(targets.utils) # remotes::install_github("geryan/targets.utils")
 
 tar_option_set(
   packages = c(
@@ -262,10 +263,9 @@ list(
  # need to refine this list
  tar_target(
    target_species,
-   # target_spp(),
-   target_spp_test_only()
+   target_spp()
+   #target_spp_test_only()
  ),
-
 
  tar_target(
    model_data_records,
@@ -332,6 +332,28 @@ list(
    )
  ),
 
+
+ tar_target(
+   pa_data_table,
+   model_data_spatial |>
+     group_by(
+       species,
+       presence
+     ) |>
+     summarise(
+       n = n(),
+       .groups = "drop"
+     ) |>
+     pivot_wider(
+       names_from = presence,
+       names_prefix = "p",
+       values_from = n
+     ) |>
+     rename(
+       detected = p1,
+       undetected = p0
+     )
+ ),
 
  ## plots before modelling
 
