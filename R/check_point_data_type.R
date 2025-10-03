@@ -11,17 +11,17 @@ check_point_data_type <- function(x) {
 
   case_when(
     x == "admin unit centroid" ~ FALSE,
-    x == "gps coords" ~ TRUE,
-    x == "large polygon" ~ FALSE,
-    x == "large polyon" ~ FALSE,
-    x == "multi-point" ~ TRUE,
-    x == "multiple points" ~ TRUE,
-    x == "multiple-points" ~ TRUE,
-    x == "point" ~ TRUE,
-    x == "Point" ~ TRUE,
-    x == "small polygon" ~ FALSE,
-    x == "wide area" ~ TRUE,
-    x == "within 5km" ~ FALSE,
+    x == "gps coords"           ~ TRUE,
+    x == "large polygon"       ~ FALSE,
+    x == "large polyon"        ~ FALSE,
+    x == "multi-point"         ~ FALSE,
+    x == "multiple points"     ~ FALSE,
+    x == "multiple-points"     ~ FALSE,
+    x == "point"                ~ TRUE,
+    x == "Point"                ~ TRUE,
+    x == "small polygon"       ~ FALSE,
+    x == "wide area"           ~ FALSE,
+    x == "within 5km"          ~ FALSE,
     .default = TRUE
   )
 
