@@ -17,6 +17,7 @@ tar_option_set(
     #"rasterVis",
     "tidyterra",
     "geodata",
+    "coda",
     "greta",
     "DHARMa",
     "lubridate",

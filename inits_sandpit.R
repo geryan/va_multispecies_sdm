@@ -152,11 +152,11 @@ n_bg <- model_data_spatial_bg |>
 # define parameters with normal priors, matching the ridge regression setup in
 # multispeciesPP defaults
 # originals
-penalty.l2.intercept <- 1e-4
+#penalty.l2.intercept <- 1e-4
 penalty.l2.sdm <- penalty.l2.bias <- 0.1
 
 # trying others
-# penalty.l2.intercept <- 1e-4
+penalty.l2.intercept <- 1e-2
 # penalty.l2.sdm <- penalty.l2.bias <- 100
 
 intercept_sd <- sqrt(1 / penalty.l2.intercept)
@@ -173,8 +173,13 @@ beta <- normal(0, beta_sd, dim = c(n_cov_abund, n_species))
 
 # informative priors on gamma and delta so exp(log_bias), i.e., bias,
 # has range around (0, 1) for z in (0, 1)
+# these work really well
 delta_sd <- 0.3
 gamma_sd <- 0.1
+
+# delta_sd <- 0.5
+# gamma_sd <- 0.5
+
 
 gamma <- normal(-3.6, gamma_sd, dim = n_species)
 delta <- normal(3.8, delta_sd, dim = c(n_cov_bias), truncation = c(0, Inf))
@@ -394,8 +399,8 @@ plot(m)
 # plot(log(count_data_response), log(pred_count))
 
 # fit model
-n_burnin <- 2000
-n_samples <- 1000
+n_burnin <- 5000
+n_samples <- 2000
 n_chains <- 50
 
 # init_vals <- generate_valid_inits(
@@ -428,17 +433,28 @@ n_chains <- 50
 # prior sampling / ppcs using prior simulations
 # try to manually shove into right space
 
+optim <- opt(m)
+optim$par
+
+init_vals <- inits_from_opt(
+  m,
+  n_chains = n_chains
+)
+
 draws <- mcmc(
   m,
   warmup = n_burnin,
   n_samples = n_samples,
-  chains = n_chains#,
-  #initial_values = init_vals#,
+  chains = n_chains,
+  initial_values = init_vals#,
   #sampler = adaptive_hmc(diag_sd = 1)
 )
 
 
-mcmc_trace(draws)
+#mcmc_trace(draws)
+coda::gelman.diag(draws, autoburnin = FALSE)
+
+
 
 # plots of data vs each covariate
 # swap env space to space-space clustering for bg
