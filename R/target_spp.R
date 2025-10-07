@@ -52,7 +52,7 @@ target_spp <- function(){
     # "marshallii",
     # "marshallii_complex",
     # "mascarensis",
-    "melas",
+    ## "melas",  # melas looks like it should have enough points but it's really not fitting well, just tankingh and going south
     "merus",
     "moucheti",
     # "multicolor",
