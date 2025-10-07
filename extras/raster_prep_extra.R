@@ -1,3 +1,5 @@
+library("targets.utils")
+tl()
 # alt layer with low values for mechanistic replaced with exp(-30)
 # this also is aggregated by a factor of 10 for speed
 static_vars <- rast("~/Documents/tki_work/vector_atlas/africa_spatial_data/outputs/raster/africa_static_vars_std.tif")
@@ -16,11 +18,12 @@ lowidx <- which(mechvals <= exp(-30))
 
 mechvals[lowidx] <- exp(-30)
 
-mmv[["ag_microclim"]] <- mechvals
+ag_microclim <- mmv[["ag_microclim"]]
+ag_microclim[] <-mechvals
 
-aridvals <- values(mmv[["arid"]])
-
-mmv[["arid"]] <- round(aridvals, digits = 0)
+# aridvals <- values(mmv[["arid"]])
+#
+# mmv[["arid"]] <- round(aridvals, digits = 0)
 
 r <- mmv[[3]]
 idx <- is.na(values(r))
@@ -80,7 +83,8 @@ z <- c(
 
 
 static_vars_agg_mech_nonzero_dist_from_sea <- c(
-  mmv,
+  ag_microclim,
+  mmv[[2:25]],
   dist_from_sea
 )
 
