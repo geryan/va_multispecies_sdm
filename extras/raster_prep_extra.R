@@ -82,8 +82,15 @@ z <- c(
 static_vars_agg_mech_nonzero_dist_from_sea <- c(
   mmv,
   dist_from_sea
-) |>
-  writereadrast(
-  "data/raster/static_vars_agg_mech_nonzero_dist_from_sea.tif",
+)
+
+writeRaster(
+  x = static_vars_agg_mech_nonzero_dist_from_sea,
+  filename = "data/raster/static_vars_agg_mech_nonzero_dist_from_sea.tif",
   overwrite = TRUE
 )
+
+static_vars_agg_mech_nonzero_dist_from_sea <- rast("data/raster/static_vars_agg_mech_nonzero_dist_from_sea.tif")
+
+
+static_vars_agg_mech_nonzero_dist_from_sea
