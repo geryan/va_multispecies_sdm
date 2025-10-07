@@ -45,9 +45,15 @@ list(
   # aggregated predictor variables, i.e., lower resolution images for quicker processing
   # but use the high res ones for final product
   # # mech layer is set to the minimum value above zero
+  tar_target(
+    covrastfile,
+    "data/raster/static_vars_agg_mech_nonzero_dist_from_sea.tif",
+    format = "file"
+  ),
+
   tar_terra_rast(
     covariate_rast_all,
-    rast("data/raster/static_vars_agg_mech_nonzero.tif")
+    rast(covrastfile)
   ),
 
   tar_target(
@@ -68,11 +74,12 @@ list(
       "soil_clay",
       # # solrad_mean,
       # # surface_water, remove and replace with distance to surface water
-      "tcb_mean" #, # strongly correlates with tcw
+      "tcb_mean", #, # strongly correlates with tcw
       # # tcw_mean,
       # windspeed_mean,
       #easting,
-      #northing
+      #northing,
+      "distance_from_sea"
     )
   ),
 
