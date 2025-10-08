@@ -1,147 +1,206 @@
 fit_model_multisp_pp_count <- function(
-    model_data_ragged,
-    spatial_values,
-    model_notna_idx_pa,
-    model_notna_idx_po,
-    image_name = "outputs/images/multisp_pp.RData",
+    model_data_spatial,
+    target_covariate_names,
+    target_species,
+    project_mask,
+    image_name = "outputs/images/multisp_pp_count.RData",
     n_burnin = 50,
     n_samples = 100,
     n_chains = 4
 ){
 
+  model_data_spatial <- model_data_spatial |>
+    # select(
+    #   - evi_mean,
+    #   - lst_day_mean
+    #   - footprint
+    # )
+    filter(count < 1000)
+  #target_covariate_names <- target_covariate_names[c(1,3)] # works
+  #target_covariate_names
 
-  ## get data in order for model
 
-  #for all points (pa, po, bg):
+  # index of distinct locations
+  distinct_idx <- model_data_spatial |>
+    mutate(
+      rn = row_number(),
+      .before = species
+    ) |>
+    group_by(latitude, longitude) |>
+    mutate(
+      rnsp = row_number(),
+      .before = species
+    ) |>
+    ungroup() |>
+    filter(rnsp == 1) |>
+    pull(rn)
 
-  # # get offset values from gambiae mechanistic model
-  # log_offset <- log(spatial_values$ag_microclim)
+  distinct_coords <- model_data_spatial[distinct_idx, c("latitude", "longitude")]
+
+
+  # get offset values from gambiae mechanistic model
+  log_offset <- log(model_data_spatial[distinct_idx,"ag_microclim"])|>
+    as.matrix()
+
 
   # get covariate values
-  x <- spatial_values |>
+  x <- model_data_spatial[distinct_idx,] |>
     as_tibble() |>
     select(
-      #ag_microclim,
-      #research_tt_by_country,
-      #arid,
-      # built_volume,
-      # cropland,
-      elevation,
-      evi_mean, # correlates with pressure_mean rainfall_mean and solrad_mean
-      footprint, # correlates with built_volume and cropland
-      lst_day_mean,
-      # lst_night_mean,
-      # # pressure_mean,
-      # # rainfall_mean,
-      # soil_clay,
-      # # solrad_mean,
-      # # surface_water, remove and replace with distance to surface water
-      tcb_mean, # strongly correlates with tcw
-      # # tcw_mean,
-      # windspeed_mean,
-      easting,
-      northing
+      all_of(target_covariate_names)
+      #"footprint"
     ) |>
     as.matrix()
 
   # get bias values
-  z <- spatial_values[,"research_tt_by_country"]
-
-
-  # get pa data matrix and infill NAs with zeroes
-  # these will be ignored in model because of indexing with
-  # model_notna_idx_pa and model_notna_idx_po
-  pa_infilled <- model_data_ragged |>
-    #filter(type == "pa") |>
-    select(
-      -lon,
-      -lat,
-      -type
-    ) |>
-    mutate(
-      # across(
-      #   everything(),
-      #   function(x){ifelse(x > 0, 1, 0)}
-      # ),
-      across(
-        everything(),
-        function(x){ifelse(is.na(x), 0, x)}
-      )
-    ) |>
+  z <- model_data_spatial[distinct_idx,"research_tt_by_country"] |>
     as.matrix()
 
+
   # number of cells in analysis data per Fithian model (not in raster)
-  n.pixel <- nrow(x)
+  n_pixel <- nrow(x)
 
   # numbers of covariates in use
   n_cov_abund <- ncol(x)
   n_cov_bias <- ncol(z)
 
   # number of species
-  n_species <- ncol(pa_infilled)
+  n_species_with_bg <- unique(model_data_spatial$species) # includes NA
 
-  # index of background data in x
-  bg_idx <- (nrow(model_data_ragged) + 1):nrow(spatial_values)
-  # number of background data points
-  nbg <- length(bg_idx)
-  # create infilled bg matrix of zeroes for bg data
-  bg_infilled <- matrix(
-    data = 0,
-    nrow = nbg,
-    ncol = n_species
-  )
+  n_species <- length(n_species_with_bg[!is.na(n_species_with_bg)])
+
+
+  ## sampling methods
+  sm_freq <- table(
+    na.omit(model_data_spatial$sampling_method)
+  ) |>
+    as.matrix()
+
+  sm_prop <- sm_freq/sum(sm_freq)
+
+  sampling_methods <- row.names(sm_prop)
+
+  n_sampling_methods <- length(sampling_methods)
+
+
+  ## impute bg sampling methods and species
+
+  model_data_spatial_bg <- model_data_spatial |>
+    mutate(
+      sampling_method = case_when(
+        data_type == "bg" ~ sample(
+          x = sampling_methods,
+          size = n(),
+          replace = TRUE,
+          prob = sm_prop
+        ),
+        .default = sampling_method
+      ),
+      sampling_method_id = match(
+        sampling_method,
+        sampling_methods
+      )
+    )
+
+  bg_data <- model_data_spatial_bg |>
+    filter(data_type == "bg") |>
+    select(-species) |>
+    expand_grid(species = target_species) |>
+    select(species, everything())
+
+  unique_locatenate <- distinct_coords |>
+    mutate(locatenate = paste(latitude, longitude)) %>%
+    pull(locatenate)
+
+  model_data <- bind_rows(
+    model_data_spatial_bg |>
+      filter(data_type != "bg"),
+    bg_data
+  ) |>
+    mutate(
+      locatenate = paste(latitude, longitude),
+      location_id = match(
+        x = locatenate,
+        table = unique_locatenate
+      ),
+      species_id = match(
+        x = species,
+        table = target_species
+      )
+    ) |>
+    select(-locatenate)
 
   # area of background cells
-  area_bg <- 825.1676 # this is with 30k bg points
 
-  # create orthogonal dataset of ones and zeroes
-  # again, unsampled sites will be ignored by indexing in model
-  data_infilled <- rbind(
-    pa_infilled,
-    bg_infilled
-  )
+  total_area <- expanse(
+    project_mask,
+    unit = "km"
+  )$area
 
+
+  n_bg <- model_data_spatial_bg |>
+    filter(data_type == "bg") |>
+    nrow()
+
+  # don't need this with weight
+  #area_bg <- total_area/n_bg
+
+  ########### priors
 
   # define parameters with normal priors, matching the ridge regression setup in
   # multispeciesPP defaults
+  # originals
+  #penalty.l2.intercept <- 1e-4
   penalty.l2.sdm <- penalty.l2.bias <- 0.1
-  penalty.l2.intercept <- 1e-4
 
   # trying others
-  # penalty.l2.sdm <- penalty.l2.bias <- 0.2
-  # penalty.l2.intercept <- 1e-2
-
+  penalty.l2.intercept <- 1e-2
+  # penalty.l2.sdm <- penalty.l2.bias <- 100
 
   intercept_sd <- sqrt(1 / penalty.l2.intercept)
   beta_sd <- sqrt(1 / penalty.l2.sdm)
   #delta_sd <- sqrt(1 / penalty.l2.bias)
-  delta_sd <- 1 # will need to alter if >1 sources of bias
-
+  #delta <- normal(0, delta_sd, dim = c(n_cov_bias), truncation = c(0, Inf)) # constrain to be positive
+  #
   # intercept and shared slope for selection bias
-  gamma <- normal(0, intercept_sd, dim = n_species)
-  delta <- normal(0, delta_sd, dim = c(n_cov_bias), truncation = c(0, Inf)) # constrain to be positive
+  #gamma <- normal(0, intercept_sd, dim = n_species)
 
   # intercept and slopes for abundance rate
   alpha <- normal(0, intercept_sd, dim = n_species)
   beta <- normal(0, beta_sd, dim = c(n_cov_abund, n_species))
 
+  # informative priors on gamma and delta so exp(log_bias), i.e., bias,
+  # has range around (0, 1) for z in (0, 1)
+  # these work really well
+  delta_sd <- 0.3
+  gamma_sd <- 0.1
+
+  # delta_sd <- 0.5
+  # gamma_sd <- 0.5
+
+
+  gamma <- normal(-3.6, gamma_sd, dim = n_species)
+  delta <- normal(3.8, delta_sd, dim = c(n_cov_bias), truncation = c(0, Inf))
 
   # log rates across all sites
   # larval habitat based on env covariates
   log_lambda_larval_habitat <- sweep(x %*% beta, 2, alpha, FUN = "+")
+  # log_lambda_larval_habitat <- sweep(zeros(n_pixel, n_species), 2, alpha, FUN = "+")
 
-  # # offset from calculated gambiae adult survival given habitat
-  # log_lambda_adults <- log_offset
-  #
-  # # combine larval habitat and adult life cycle offset
-  # log_lambda <- sweep(log_lambda_larval_habitat, 1, log_lambda_adults, "+")
-  log_lambda <- log_lambda_larval_habitat
+
+  # offset from calculated gambiae adult survival given habitat
+  #log_lambda_adults <- log_offset
+  log_lambda_adults <- rep(0, times = dim(log_offset)[[1]])
+
+  # combine larval habitat and adult life cycle offset
+  log_lambda <- sweep(log_lambda_larval_habitat, 1, log_lambda_adults, "+")
 
   # can easily replace this model with something more interesting, like a low-rank
   # GP on covariate space or something mechanistic
 
   # bias across pixels (shared coefficient) and species (different intercepts)
-  log_bias_coef <- sweep(zeros(n.pixel, n_species), 1, z %*% delta, FUN = "+")
+  log_bias_coef <- sweep(zeros(n_pixel, n_species), 1, log(z) %*% delta, FUN = "+")
+  # log_bias_coef <- zeros(n_pixel, n_species)
   log_bias <- sweep(log_bias_coef, 2, gamma, FUN = "+")
 
   # rates across all sites and species
@@ -150,59 +209,183 @@ fit_model_multisp_pp_count <- function(
   # offset stuff
   bias <- exp(log_bias)
 
-  # define likelihoods
+  # sampling random effects
+  # hierarchical decentering
+  sampling_re_sd <- normal(0, 1, truncation = c(0, Inf))
+  sampling_re_raw <- normal(0, 1, dim = n_sampling_methods)
+  sampling_re <- sampling_re_raw * sampling_re_sd
 
-  # compute probability of presence (and detection) at the PA sites, assuming
-  # area/effort of 1 in all these sites, for identifiability
 
-  ### can compute separately for each PA PO and RELABUND
-  area_pa <- 1
-  #area_pa <- uniform(0,1)
+  ########## indices
+  # count data index
 
-  # for relabund
-  # log_lambda ~ unscaled abundance
-  # need in scaling factor plus random effect of trap type
-  # per covid model to get size and prob for negbin
-  # expected_abundance <- exp(log_lambda[abund,] + trap_effect + species_scaling_factor)
+  count_data_index <- model_data |>
+    filter(data_type == "count") |>
+    select(
+      location_id,
+      species_id,
+      sampling_method_id
+    )
+
+  count_data_loc_sp_idx <- count_data_index |>
+    select(
+      location_id,
+      species_id
+    ) |>
+    as.matrix()
+
+
+  # pa index
+  pa_data_index <- model_data |>
+    filter(data_type == "pa") |>
+    select(
+      location_id,
+      species_id,
+      sampling_method_id
+    )
+
+  pa_data_loc_sp_idx <- pa_data_index |>
+    select(
+      location_id,
+      species_id
+    ) |>
+    as.matrix()
+
+  # po / bg index
+  pobg_data_index <- model_data |>
+    filter(data_type %in% c("po", "bg")) |>
+    select(
+      location_id,
+      species_id,
+      sampling_method_id
+    )
+
+  pobg_data_loc_sp_idx <- pobg_data_index |>
+    select(location_id, species_id) |>
+    as.matrix()
+
+
+  ##### likelihood
+
+  ######################
+  # count data likelihood
+
+  log_lambda_obs_count <-log_lambda[count_data_loc_sp_idx] #+
+  #sampling_re[count_data_index$sampling_method_id]
+
+  count_data_response <- model_data |>
+    filter(data_type == "count") |>
+    pull(n)
+
+  distribution(count_data_response) <- poisson(exp(log_lambda_obs_count))
+
+  # PA likelihood
+
+  log_lambda_obs_pa <-log_lambda[pa_data_loc_sp_idx] #+
+  #sampling_re[pa_data_index$sampling_method_id]
+
+  pa_data_response <- model_data |>
+    filter(data_type == "pa") |>
+    pull(n)
+
+  distribution(pa_data_response) <- bernoulli(icloglog(log_lambda_obs_pa))
+
+
+  ## PO likelihood
+
+  #area_po <- 1 # very small
+
+  # get weights from either set as 1 for po or weight from k-means clustering for bg
+  area_pobg <- model_data |>
+    filter(data_type %in% c("po", "bg")) |>
+    pull(weight)
+
+
+  po_data_response <- model_data |>
+    filter(data_type %in% c("po", "bg")) |>
+    pull(n)
+
+  log_bias_obs_pobg <- log_bias[pobg_data_loc_sp_idx]
   #
-  # sqrt_inv_size <- normal(0, 0.5, truncation = c(0, Inf), dim = 1)
-  # size <- 1 / sqrt(sqrt_inv_size)
-  # prob <- 1 / (1 + expected_abundance / size)
-  # distribution(abundance) <- negative_binomial(size = size, prob = prob)
+  # pp_log_bias_obs_pobg <- calculate(log_bias_obs_pobg, nsim = 1000)
 
-  # predict for each species lambda + species_scaling_factor
-  # mod to per relative abundance paper also for output
-  # i.e. lambda / rowsums(lambda)
+  # pp_log_bias_obs_pobg <- calculate(log_bias_obs_pobg, nsim = 1000, values = list(gamma = rep(0, times = 4), delta = 1e-4))
 
-  # p <- icloglog(log_lambda[pa.samp, ] + log(area_pa))
-  # distribution(pa) <- bernoulli(p)
+  log_lambda_obs_pobg <-log_lambda[pobg_data_loc_sp_idx] #+
+  #sampling_re[pobg_data_index$sampling_method_id]
 
-  # p <- icloglog(log_lambda[model_notna_idx_pa] + log(area_pa))
-  # distribution(data_infilled[model_notna_idx_pa]) <- bernoulli(p)
-  pa_rate <- exp(log_lambda[model_notna_idx_pa] + log(area_pa))
-  distribution(data_infilled[model_notna_idx_pa]) <- poisson(pa_rate)
-
-
-  ## compute (biased) expected numbers of presence-only observations across all
-  ## presence and background sites, assuming presence-only count aggregation area
-  ## of 1 (as in multispeciesPP definition). Not that when these are all the same,
-  ## this value only changes all the gamma parameters by a fixed amount, and these
-  ## are not the parameters of interest
-
-
-  area_po <- 1/nbg # very small
-  po_rate_po <- exp(log_lambda[model_notna_idx_po] + log_bias[model_notna_idx_po] + log(area_po))
-  distribution(data_infilled[model_notna_idx_po]) <- poisson(po_rate_po)
-
-  # area_bg <- 3654.515 <- whole area / nnbg
-  po_rate_bg <- exp(log_lambda[bg_idx, ] + log_bias[bg_idx,] + log(area_bg))
-  distribution(data_infilled[bg_idx, ]) <- poisson(po_rate_bg)
-
+  distribution(po_data_response) <- poisson(
+    exp(
+      log_lambda_obs_pobg +
+        log_bias_obs_pobg +
+        log(area_pobg)
+    )
+  )
+  #######################
 
   # define and fit the model by MAP and MCMC
-  m <- model(alpha, beta, gamma, delta)
+  #m <- model(alpha, beta, gamma, delta, sampling_re_raw, sampling_re_sd)
+  # m <- model(alpha, beta, gamma)
+  # plot(m)
 
-  draws <- mcmc(
+  # ############## simulate from priors and calculate probabilities
+  # mod <- m
+  # nsims <- 2000
+  # nsamples <- 50
+
+  # # 1. simulate n times from priors for all parameters (as in calculate)
+  # variable_nodes <- mod$dag$node_list[mod$dag$node_types == "variable"]
+  # variable_greta_arrays <- lapply(variable_nodes, greta:::as.greta_array)
+  # sims <- do.call(greta::calculate, c(variable_greta_arrays, list(nsim = nsims)))
+  #
+  # # 2. convert these back to free state values
+  # inits_list <- lapply(seq_len(nsims),
+  #                      make_inits,
+  #                      sims,
+  #                      variable_greta_arrays)
+  #
+  # free_states <- get_free_states(inits_list,
+  #                                variable_greta_arrays,
+  #                                mod)
+  #
+  #
+  # library(tensorflow)
+  # # compute densities and their gradients
+  # # tf_free_states <- tf$constant(free_states[1, , drop = FALSE])
+  # tf_free_states <- greta:::tf$constant(free_states)
+  # log_probs <- mod$dag$tf_log_prob_function_adjusted(tf_free_states)
+  #
+  # # determine validity (finite density and grads) and return only the valid free states
+  # log_probs_np <- log_probs$numpy()
+  #
+  # log_probs_np
+  #
+  # probs <- exp(log_probs_np)
+  #
+  # probs
+  # probs[which(probs != 0)]
+
+  #init_index <- 1:nsims
+
+  #sample(init_index, size = nsamples, replace = FALSE, prob = exp(log_probs_np))
+
+  m <- model(alpha, beta, gamma, delta)#, sampling_re_raw, sampling_re_sd)
+  # plot(m)
+
+
+
+  # fit model
+
+  optim <- opt(m)
+  optim$par
+
+  init_vals <- inits_from_opt(
+    optim,
+    n_chains = n_chains
+  )
+
+
+  draws <- greta::mcmc(
     m,
     warmup = n_burnin,
     n_samples = n_samples,
@@ -214,14 +397,18 @@ fit_model_multisp_pp_count <- function(
     )
   )
 
-  # can't use save.image inside function inside targets because it only saves
-  # global environment not function env.
+  # can't use save.image inside function inside targets
+  # because it only saves the global environment not
+  # function env.
+
   save(
     list = ls(all.names = TRUE),
     file = image_name
   )
 
-  print(image_name)
+  summary(draws)
+
+  coda::gelman.diag(draws)
 
   return(image_name)
 

@@ -451,6 +451,23 @@ list(
  ## models
  ################
 
+ ## multispecies pp with biophysical offset count
+ ##
+
+ tar_target(
+   model_fit_image_multisp_pp_count,
+   fit_model_multisp_pp_count(
+     model_data_spatial,
+     target_covariate_names,
+     target_species,
+     project_mask,
+     image_name = "outputs/images/multisp_pp_count.RData",
+     n_burnin = 100,
+     n_samples = 100,
+     n_chains = 4
+   )
+ ),
+
  ##
  ## multispecies pp with biophysical offset count
  ##
