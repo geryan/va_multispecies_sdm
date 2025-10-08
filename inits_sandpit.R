@@ -437,11 +437,11 @@ optim <- opt(m)
 optim$par
 
 init_vals <- inits_from_opt(
-  m,
+  optim,
   n_chains = n_chains
 )
 
-draws <- mcmc(
+draws <- greta::mcmc(
   m,
   warmup = n_burnin,
   n_samples = n_samples,
