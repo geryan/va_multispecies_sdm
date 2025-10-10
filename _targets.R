@@ -454,6 +454,11 @@ list(
  ## multispecies pp with biophysical offset count
  ##
 
+ # fit the model in greta
+ # save an image of the environment within function
+ # otherwise the greta model nodes become disconnected and buggered up
+ # because of some R6 nonsense with greta or whatever and the usual targets
+ # shenanigans
  tar_target(
    model_fit_image_multisp_pp_count,
    fit_model_multisp_pp_count(
@@ -462,11 +467,27 @@ list(
      target_species,
      project_mask,
      image_name = "outputs/images/multisp_pp_count.RData",
-     n_burnin = 100,
-     n_samples = 100,
-     n_chains = 4
+     n_burnin = 10000,
+     n_samples = 2000,
+     n_chains = 50
    )
  ),
+
+ # read in image and predict out raster as a tif
+ tar_target(
+   pred_file_multisp_pp_count,
+   predict_greta_mspp_count(
+     image_filename = model_fit_image_multisp_pp_count,
+     prediction_layer = covariate_rast,
+     target_species,
+     output_file_prefix = "outputs/rasters/multisp_pp_count"
+   )
+ ),
+
+ # read in tif to targets
+
+ # make some plots and spit them out
+ # again targets
 
  ##
  ## multispecies pp with biophysical offset count
