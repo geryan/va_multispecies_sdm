@@ -15,7 +15,10 @@ fit_model_multisp_pp_count <- function(
     #   - lst_day_mean
     #   - footprint
     # )
-    filter(count < 1000)
+    filter(
+      (data_type != "count") |
+        (data_type == "count" & count < 1000)
+    )
   #target_covariate_names <- target_covariate_names[c(1,3)] # works
   #target_covariate_names
 
@@ -40,7 +43,8 @@ fit_model_multisp_pp_count <- function(
 
   # get offset values from gambiae mechanistic model
   log_offset <- log(model_data_spatial[distinct_idx,"ag_microclim"])|>
-    as.matrix()
+    as.matrix() |>
+    as_data()
 
 
   # get covariate values
@@ -50,11 +54,13 @@ fit_model_multisp_pp_count <- function(
       all_of(target_covariate_names)
       #"footprint"
     ) |>
-    as.matrix()
+    as.matrix() |>
+    as_data()
 
   # get bias values
   z <- model_data_spatial[distinct_idx,"research_tt_by_country"] |>
-    as.matrix()
+    as.matrix() |>
+    as_data()
 
 
   # number of cells in analysis data per Fithian model (not in raster)
@@ -190,7 +196,8 @@ fit_model_multisp_pp_count <- function(
 
   # offset from calculated gambiae adult survival given habitat
   #log_lambda_adults <- log_offset
-  log_lambda_adults <- rep(0, times = dim(log_offset)[[1]])
+  log_lambda_adults <- rep(0, times = dim(log_offset)[[1]]) |>
+    as_data()
 
   # combine larval habitat and adult life cycle offset
   log_lambda <- sweep(log_lambda_larval_habitat, 1, log_lambda_adults, "+")
@@ -275,7 +282,8 @@ fit_model_multisp_pp_count <- function(
 
   count_data_response <- model_data |>
     filter(data_type == "count") |>
-    pull(n)
+    pull(n) |>
+    as_data()
 
   distribution(count_data_response) <- poisson(exp(log_lambda_obs_count))
 
@@ -286,7 +294,8 @@ fit_model_multisp_pp_count <- function(
 
   pa_data_response <- model_data |>
     filter(data_type == "pa") |>
-    pull(n)
+    pull(n) |>
+    as_data()
 
   distribution(pa_data_response) <- bernoulli(icloglog(log_lambda_obs_pa))
 
@@ -298,12 +307,14 @@ fit_model_multisp_pp_count <- function(
   # get weights from either set as 1 for po or weight from k-means clustering for bg
   area_pobg <- model_data |>
     filter(data_type %in% c("po", "bg")) |>
-    pull(weight)
+    pull(weight) |>
+    as_data()
 
 
   po_data_response <- model_data |>
     filter(data_type %in% c("po", "bg")) |>
-    pull(n)
+    pull(n) |>
+    as_data()
 
   log_bias_obs_pobg <- log_bias[pobg_data_loc_sp_idx]
   #
@@ -370,11 +381,62 @@ fit_model_multisp_pp_count <- function(
   #sample(init_index, size = nsamples, replace = FALSE, prob = exp(log_probs_np))
 
   m <- model(alpha, beta, gamma, delta)#, sampling_re_raw, sampling_re_sd)
-  # plot(m)
+   plot(m)
+
+
+  ############
+  # prior predictive checks
+  ############
+
+
+  # simulate data from prior
+  prior_preds <- calculate(
+    po_data_response,
+    pa_data_response,
+    count_data_response,
+    nsim = 100
+  )
+
+  # convert list to vectors / matrices
+  po_dat <- po_data_response |>
+    as.numeric()
+
+  po_pred <- prior_preds$po_data_response[,,1] |>
+    as.matrix()
+
+  pa_dat <- pa_data_response |>
+    as.numeric()
+
+  pa_pred <- prior_preds$pa_data_response[,,1] |>
+    as.matrix()
+
+  count_dat <- count_data_response |>
+    as.numeric()
+
+  count_pred <- prior_preds$count_data_response[,,1] |>
+    as.matrix()
+
+  preds_prior <- list(
+    pa_pred = pa_pred |>
+      as.matrix(),
+    po_pred = po_pred |>
+      as.matrix(),
+    count_pred = count_pred |>
+      as.matrix()
+  )
+
+  dat <- list(
+    pa_dat = pa_dat,
+    po_dat = po_dat,
+    count_dat = count_dat
+  )
 
 
 
+
+  ###################
   # fit model
+  ###################
 
   optim <- opt(m)
   optim$par
@@ -397,6 +459,23 @@ fit_model_multisp_pp_count <- function(
     )
   )
 
+
+  summary(draws)
+
+  coda::gelman.diag(draws)
+
+  ############
+  # posterior predictive checks
+  ############
+
+
+
+
+  ############
+  # Save image
+  ############
+
+
   # can't use save.image inside function inside targets
   # because it only saves the global environment not
   # function env.
@@ -405,10 +484,6 @@ fit_model_multisp_pp_count <- function(
     list = ls(all.names = TRUE),
     file = image_name
   )
-
-  summary(draws)
-
-  coda::gelman.diag(draws)
 
   return(image_name)
 

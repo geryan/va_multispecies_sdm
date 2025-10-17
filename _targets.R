@@ -467,8 +467,8 @@ list(
      target_species,
      project_mask,
      image_name = "outputs/images/multisp_pp_count.RData",
-     n_burnin = 10000,
-     n_samples = 2000,
+     n_burnin = 1000,
+     n_samples = 500,
      n_chains = 50
    )
  ),

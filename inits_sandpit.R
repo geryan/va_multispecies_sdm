@@ -42,8 +42,8 @@ distinct_coords <- model_data_spatial[distinct_idx, c("latitude", "longitude")]
 
 # get offset values from gambiae mechanistic model
 log_offset <- log(model_data_spatial[distinct_idx,"ag_microclim"])|>
-  as.matrix()
-
+  as.matrix() |>
+  as_data()
 
 # get covariate values
 x <- model_data_spatial[distinct_idx,] |>
@@ -52,11 +52,13 @@ x <- model_data_spatial[distinct_idx,] |>
     all_of(target_covariate_names)
     #"footprint"
   ) |>
-  as.matrix()
+  as.matrix() |>
+  as_data()
 
 # get bias values
 z <- model_data_spatial[distinct_idx,"research_tt_by_country"] |>
-  as.matrix()
+  as.matrix() |>
+  as_data()
 
 
 # number of cells in analysis data per Fithian model (not in raster)
@@ -192,7 +194,8 @@ log_lambda_larval_habitat <- sweep(x %*% beta, 2, alpha, FUN = "+")
 
 # offset from calculated gambiae adult survival given habitat
 #log_lambda_adults <- log_offset
-log_lambda_adults <- rep(0, times = dim(log_offset)[[1]])
+log_lambda_adults <- rep(0, times = dim(log_offset)[[1]]) |>
+  as_data()
 
 # combine larval habitat and adult life cycle offset
 log_lambda <- sweep(log_lambda_larval_habitat, 1, log_lambda_adults, "+")
@@ -277,7 +280,8 @@ log_lambda_obs_count <-log_lambda[count_data_loc_sp_idx] #+
 
 count_data_response <- model_data |>
   filter(data_type == "count") |>
-  pull(n)
+  pull(n) |>
+  as_data()
 
 distribution(count_data_response) <- poisson(exp(log_lambda_obs_count))
 
@@ -288,7 +292,8 @@ log_lambda_obs_pa <-log_lambda[pa_data_loc_sp_idx] #+
 
 pa_data_response <- model_data |>
   filter(data_type == "pa") |>
-  pull(n)
+  pull(n) |>
+  as_data()
 
 distribution(pa_data_response) <- bernoulli(icloglog(log_lambda_obs_pa))
 
@@ -300,12 +305,14 @@ distribution(pa_data_response) <- bernoulli(icloglog(log_lambda_obs_pa))
 # get weights from either set as 1 for po or weight from k-means clustering for bg
 area_pobg <- model_data |>
   filter(data_type %in% c("po", "bg")) |>
-  pull(weight)
+  pull(weight) |>
+  as_data()
 
 
 po_data_response <- model_data |>
   filter(data_type %in% c("po", "bg")) |>
-  pull(n)
+  pull(n) |>
+  as_data()
 
 log_bias_obs_pobg <- log_bias[pobg_data_loc_sp_idx]
 #
