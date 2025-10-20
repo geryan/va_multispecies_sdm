@@ -14,10 +14,7 @@ count_counts <- function(
       by = "value"
     ) |>
     arrange(value) |>
-    mutate(count = ifelse(is.na(n), 0, n))
-
-}
-
-count_counts_matrix <- function(x){
+    mutate(count = ifelse(is.na(n), 0, n)) |>
+    select(-n)
 
 }
