@@ -17,6 +17,22 @@ rootgram_data <- function(
     yrep_data <- yrep_matrix[, 1:ncol_yrep]
   } else if(xlen == "yrep"){
 
+    y_data <- full_join(
+      x = y_tab,
+      y = tibble(value = 0:max(yrep)),
+      by = "value"
+    ) |>
+      mutate(
+        count = ifelse(
+          is.na(count),
+          0,
+          count
+        )
+      ) |>
+      pull(count)
+
+    yrep_data <- yrep_matrix
+
   }
 
   list(
