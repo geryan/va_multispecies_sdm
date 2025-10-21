@@ -7,7 +7,7 @@ predict_greta_mspp_count <- function(
 
   load(image_filename)
 
-  prednames <- colnames(x)
+  prednames <- target_covariate_names
 
   r <- prediction_layer
 
