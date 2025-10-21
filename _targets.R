@@ -271,8 +271,8 @@ list(
  # need to refine this list
  tar_target(
    target_species,
-   target_spp()
-   #target_spp_test_only()
+   #target_spp()
+   target_spp_test_only()
  ),
 
  tar_target(
@@ -446,6 +446,12 @@ list(
      fname = "outputs/figures/cov_violins_pca.png"
    )
  ),
+
+
+ # one sp add at a time
+ # add absence vs presence at a time
+ # consider various weighting of the expert layers and
+ #  distance of buffer from edge (linear weighting drop off)
 
  ################
  ## models
