@@ -9,6 +9,9 @@ fit_model_multisp_pp_count <- function(
     n_chains = 4
 ){
 
+  library(targets.utils)
+  tl()
+
   model_data_spatial <- model_data_spatial |>
     # select(
     #   - evi_mean,
@@ -388,6 +391,22 @@ fit_model_multisp_pp_count <- function(
   # prior predictive checks
   ############
 
+  # prepare data - it's in greta format so get it out
+
+  # convert list to vectors / matrices
+  po_dat <- po_data_response |>
+    as.numeric()
+  pa_dat <- pa_data_response |>
+    as.numeric()
+  count_dat <- count_data_response |>
+    as.numeric()
+
+  # make list for passing to checks
+  dat <- list(
+    pa_dat = pa_dat,
+    po_dat = po_dat,
+    count_dat = count_dat
+  )
 
   # simulate data from prior
   prior_preds <- calculate(
@@ -397,25 +416,18 @@ fit_model_multisp_pp_count <- function(
     nsim = 100
   )
 
-  # convert list to vectors / matrices
-  po_dat <- po_data_response |>
-    as.numeric()
-
+  # convert into matrices
   po_pred <- prior_preds$po_data_response[,,1] |>
     as.matrix()
-
-  pa_dat <- pa_data_response |>
-    as.numeric()
-
   pa_pred <- prior_preds$pa_data_response[,,1] |>
     as.matrix()
-
-  count_dat <- count_data_response |>
-    as.numeric()
-
   count_pred <- prior_preds$count_data_response[,,1] |>
     as.matrix()
 
+  # make list for passing to checks
+
+  # this name is confusingly similar to prior preds but it is effing different
+  # so pay attencion no?
   preds_prior <- list(
     pa_pred = pa_pred |>
       as.matrix(),
@@ -425,10 +437,10 @@ fit_model_multisp_pp_count <- function(
       as.matrix()
   )
 
-  dat <- list(
-    pa_dat = pa_dat,
-    po_dat = po_dat,
-    count_dat = count_dat
+  # pass data to checks
+  predictive_checks(
+    preds = preds_prior,
+    dat = dat
   )
 
 

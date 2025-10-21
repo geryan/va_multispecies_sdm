@@ -1,12 +1,15 @@
 rootgram_data <- function(
     y,
     yrep,
-    xlen = c("y", "yrep")
+    xlen = c("y", "yrep"),
+    truncate = NULL
 ){
+
+  xlen <- match.arg(xlen)
 
   y_tab <- count_counts(x = y)
 
-  yrep_matrix <- count_counts_matrix(x = yrep)
+  yrep_matrix <- count_counts_matrix(x = yrep, xmax = truncate)
 
   if(xlen == "y"){
 

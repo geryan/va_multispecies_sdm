@@ -13,106 +13,163 @@ predictive_checks <- function(
 
 
   ###### PO checks ########
-  ppc_dens_overlay(
-    y = po_dat,
-    yrep = po_pred
-  )
 
-  ppc_dens_overlay(
-    y = po_dat,
-    yrep = po_pred
-  ) +
-    xlim(0, 10)
+  # count of zeroes and ones vs predicted
+  # ppc_bars(
+  #   y = po_dat,
+  #   yrep = po_pred
+  # ) # really effing slow for this
+  # seems to be throwing up horrendously high simulations
 
-  ppc_ecdf_overlay(
-    y = po_dat,
-    yrep = po_pred
-  ) +
-    xlim(0, 10)
-
-
+  # check the mean number of zeroes vs the predicted mean in each sim
   ppc_stat(
     y = po_dat,
     yrep = po_pred,
     stat = function(x){mean(x == 0)},
     bins = 50
   ) +
-    xlim(0, 1)
+    xlim(0, 1) +
+    labs(
+      title = "PO data mean v predicted proportion of zeroes"
+    )
 
+  # check the mean number of ones vs the predicted mean in each sim
+  ppc_stat(
+    y = po_dat,
+    yrep = po_pred,
+    stat = function(x){mean(x == 1)},
+    bins = 50
+  )  +
+    xlim(0, 1) +
+    labs(title = "PO data mean v predicted proportion of ones")
 
+  # check the mean number of values greater than one vs the predicted mean in each sim
+  # they both should be zero
+  ppc_stat(
+    y = po_dat,
+    yrep = po_pred,
+    stat = function(x){mean(x > 1)},
+    bins = 50
+  )  +
+    xlim(0, 1) +
+    labs(title = "PO data mean v predicted proportion greater than one")
 
   ###### PA checks ########
 
-  ppc_bars(
-    y = pa_dat,
-    yrep = pa_pred
-  )
-
-  ppc_rootogram(
+  # check the mean number of ones vs the predicted mean in each sim
+  ppc_stat(
     y = pa_dat,
     yrep = pa_pred,
-    prob = 0.9,
-    style = "standing"
-  )
+    stat = function(x){mean(x == 1)},
+    bins = 50
+  )  +
+    xlim(0, 1) +
+    labs(title = "PA data mean v predicted proportion of ones")
 
+  # check the mean number of zeroes vs the predicted mean in each sim
   ppc_stat(
     y = pa_dat,
     yrep = pa_pred,
     stat = function(x){mean(x == 0)},
     bins = 50
   ) +
-    xlim(0, 1)
-
-
+    xlim(0, 1) +
+    labs(title = "PA data mean v predicted proportion of zeroes")
 
   ###### Count checks ########
-  ppc_dens_overlay(
-    y = count_dat,
-    yrep = count_pred
-  )
 
-  ppc_dens_overlay(
-    y = count_dat,
-    yrep = count_pred
-  ) +
-    xlim(0, 20)
-
-  ppc_ecdf_overlay(
-    y = count_dat,
-    yrep = count_pred
-  ) +
-    xlim(0, 20)
-
-
+  # check the mean number of zeroes vs the predicted mean in each sim
   ppc_stat(
     y = count_dat,
     yrep = count_pred,
     stat = function(x){mean(x == 0)},
     bins = 50
   ) +
-    xlim(0, 1)
+    xlim(0, 1) +
+    labs(
+      title = "count data mean v predicted propotrtion of zeroes"
+    )
+
+  # check the mean number of ones vs the predicted mean in each sim
+  ppc_stat(
+    y = count_dat,
+    yrep = count_pred,
+    stat = function(x){mean(x == 1)},
+    bins = 50
+  )  +
+    xlim(0, 1) +
+    labs(title = "count data mean v predicted proportion of ones")
+
+  # check the mean number of values greater than one vs the predicted mean in each sim
+  ppc_stat(
+    y = count_dat,
+    yrep = count_pred,
+    stat = function(x){mean(x > 1)},
+    bins = 50
+  )  +
+    xlim(0, 1) +
+    labs(title = "count data mean v predicted proportion greater than one")
 
 
-  ppc_bars(
+  # check the mean number of values greater than 1000 vs the predicted mean in each sim
+  ppc_stat(
+    y = count_dat,
+    yrep = count_pred,
+    stat = function(x){mean(x > 1000)},
+    bins = 50
+  )  +
+    xlim(0, 1) +
+    labs(title = "count data mean v predicted proportion greater than 1000")
+
+  # count data density all of it
+  ppc_dens_overlay(
     y = count_dat,
     yrep = count_pred
-  )
+  ) +
+    labs(title = "count data density all")
+
+  # count data density truncated
+  ppc_dens_overlay(
+    y = count_dat,
+    yrep = count_pred
+  ) +
+    xlim(0, 20) +
+    labs(title = "count data density truncated")
+
+  # count data ecdf truncated
+  ppc_ecdf_overlay(
+    y = count_dat,
+    yrep = count_pred
+  ) +
+    xlim(0, 20) +
+    labs(title = "count data ecdf truncated")
 
 
-  rg_sample <- sample(
-    x = length(count_dat),
-    size = 100,
-    replace = FALSE
+ # prepare count data for rootgrams
+  count_rg_data <- rootgram_data(
+    y = count_dat,
+    yrep = count_pred,
+    truncate = 1000
   )
 
   ppc_rootogram(
-    y = count_dat[rg_sample],
-    yrep = count_pred[1:10,rg_sample],
-    prob = 0.9,
-    style = "hanging"
-  )
-  # Error in 0L:ymax : result would be too long a vector
+    y = count_rg_data$y,
+    yrep = count_rg_data$yrep,
+    style = "hanging",
+    prob = 0.95,
+    size = 1
+  ) +
+    xlim(0, 1000) +
+    labs(title = "count data rootgram, prediction data truncated to 1000")
 
-
+  ppc_rootogram(
+    y = count_rg_data$y,
+    yrep = count_rg_data$yrep,
+    style = "hanging",
+    prob = 0.95,
+    size = 1
+  ) +
+    xlim(0, 20) +
+    labs(title = "count data rootgram, prediction data truncated to 100, axis truncated")
 
 }
