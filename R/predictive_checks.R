@@ -1,6 +1,7 @@
 predictive_checks <- function(
     preds,
-    dat
+    dat,
+    output_prefix
 ){
 
   pa_dat <- dat$pa_dat
@@ -33,6 +34,13 @@ predictive_checks <- function(
       title = "PO data mean v predicted proportion of zeroes"
     )
 
+  ppcsave(
+    x = output_prefix,
+    y = "po",
+    z = "prop0"
+  )
+
+
   # check the mean number of ones vs the predicted mean in each sim
   ppc_stat(
     y = po_dat,
@@ -42,6 +50,13 @@ predictive_checks <- function(
   )  +
     xlim(0, 1) +
     labs(title = "PO data mean v predicted proportion of ones")
+
+  ppcsave(
+    x = output_prefix,
+    y = "po",
+    z = "prop1"
+  )
+
 
   # check the mean number of values greater than one vs the predicted mean in each sim
   # they both should be zero
@@ -54,7 +69,31 @@ predictive_checks <- function(
     xlim(0, 1) +
     labs(title = "PO data mean v predicted proportion greater than one")
 
+  ppcsave(
+    x = output_prefix,
+    y = "po",
+    z = "propgt1"
+  )
+
+
   ###### PA checks ########
+
+  # check the mean number of zeroes vs the predicted mean in each sim
+  ppc_stat(
+    y = pa_dat,
+    yrep = pa_pred,
+    stat = function(x){mean(x == 0)},
+    bins = 50
+  ) +
+    xlim(0, 1) +
+    labs(title = "PA data mean v predicted proportion of zeroes")
+
+  ppcsave(
+    x = output_prefix,
+    y = "pa",
+    z = "prop0"
+  )
+
 
   # check the mean number of ones vs the predicted mean in each sim
   ppc_stat(
@@ -66,15 +105,12 @@ predictive_checks <- function(
     xlim(0, 1) +
     labs(title = "PA data mean v predicted proportion of ones")
 
-  # check the mean number of zeroes vs the predicted mean in each sim
-  ppc_stat(
-    y = pa_dat,
-    yrep = pa_pred,
-    stat = function(x){mean(x == 0)},
-    bins = 50
-  ) +
-    xlim(0, 1) +
-    labs(title = "PA data mean v predicted proportion of zeroes")
+  ppcsave(
+    x = output_prefix,
+    y = "pa",
+    z = "prop1"
+  )
+
 
   ###### Count checks ########
 
@@ -90,6 +126,12 @@ predictive_checks <- function(
       title = "count data mean v predicted propotrtion of zeroes"
     )
 
+  ppcsave(
+    x = output_prefix,
+    y = "count",
+    z = "prop0"
+  )
+
   # check the mean number of ones vs the predicted mean in each sim
   ppc_stat(
     y = count_dat,
@@ -100,6 +142,12 @@ predictive_checks <- function(
     xlim(0, 1) +
     labs(title = "count data mean v predicted proportion of ones")
 
+  ppcsave(
+    x = output_prefix,
+    y = "count",
+    z = "prop1"
+  )
+
   # check the mean number of values greater than one vs the predicted mean in each sim
   ppc_stat(
     y = count_dat,
@@ -109,6 +157,12 @@ predictive_checks <- function(
   )  +
     xlim(0, 1) +
     labs(title = "count data mean v predicted proportion greater than one")
+
+  ppcsave(
+    x = output_prefix,
+    y = "count",
+    z = "propgt1"
+  )
 
 
   # check the mean number of values greater than 1000 vs the predicted mean in each sim
@@ -121,12 +175,24 @@ predictive_checks <- function(
     xlim(0, 1) +
     labs(title = "count data mean v predicted proportion greater than 1000")
 
+  ppcsave(
+    x = output_prefix,
+    y = "count",
+    z = "propgt1000"
+  )
+
   # count data density all of it
   ppc_dens_overlay(
     y = count_dat,
     yrep = count_pred
   ) +
     labs(title = "count data density all")
+
+  ppcsave(
+    x = output_prefix,
+    y = "count",
+    z = "dens_all"
+  )
 
   # count data density truncated
   ppc_dens_overlay(
@@ -136,6 +202,12 @@ predictive_checks <- function(
     xlim(0, 20) +
     labs(title = "count data density truncated")
 
+  ppcsave(
+    x = output_prefix,
+    y = "count",
+    z = "dens_trunc"
+  )
+
   # count data ecdf truncated
   ppc_ecdf_overlay(
     y = count_dat,
@@ -144,6 +216,11 @@ predictive_checks <- function(
     xlim(0, 20) +
     labs(title = "count data ecdf truncated")
 
+  ppcsave(
+    x = output_prefix,
+    y = "count",
+    z = "ecdf_trunc"
+  )
 
  # prepare count data for rootgrams
   count_rg_data <- rootgram_data(
@@ -162,6 +239,12 @@ predictive_checks <- function(
     xlim(0, 1000) +
     labs(title = "count data rootgram, prediction data truncated to 1000")
 
+  ppcsave(
+    x = output_prefix,
+    y = "count",
+    z = "rg_trunc1000"
+  )
+
   ppc_rootogram(
     y = count_rg_data$y,
     yrep = count_rg_data$yrep,
@@ -171,5 +254,11 @@ predictive_checks <- function(
   ) +
     xlim(0, 20) +
     labs(title = "count data rootgram, prediction data truncated to 100, axis truncated")
+
+  ppcsave(
+    x = output_prefix,
+    y = "count",
+    z = "rg_trunc100"
+  )
 
 }
