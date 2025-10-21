@@ -409,7 +409,7 @@ fit_model_multisp_pp_count <- function(
   )
 
   # simulate data from prior
-  prior_preds <- calculate(
+  prior_preds_calc <- calculate(
     po_data_response,
     pa_data_response,
     count_data_response,
@@ -417,30 +417,28 @@ fit_model_multisp_pp_count <- function(
   )
 
   # convert into matrices
-  po_pred <- prior_preds$po_data_response[,,1] |>
+  po_pred_prior <- prior_preds_calc$po_data_response[,,1] |>
     as.matrix()
-  pa_pred <- prior_preds$pa_data_response[,,1] |>
+  pa_pred_prior <- prior_preds_calc$pa_data_response[,,1] |>
     as.matrix()
-  count_pred <- prior_preds$count_data_response[,,1] |>
+  count_pred_prior <- prior_preds_calc$count_data_response[,,1] |>
     as.matrix()
 
   # make list for passing to checks
-
-  # this name is confusingly similar to prior preds but it is effing different
-  # so pay attencion no?
   preds_prior <- list(
-    pa_pred = pa_pred |>
+    po_pred = po_pred_prior |>
       as.matrix(),
-    po_pred = po_pred |>
+    pa_pred = pa_pred_prior |>
       as.matrix(),
-    count_pred = count_pred |>
+    count_pred = count_pred_prior |>
       as.matrix()
   )
 
   # pass data to checks
   predictive_checks(
     preds = preds_prior,
-    dat = dat
+    dat = dat,
+    output_prefix = "outputs/figures/ppc/prior"
   )
 
 
@@ -479,6 +477,40 @@ fit_model_multisp_pp_count <- function(
   ############
   # posterior predictive checks
   ############
+
+  # simulate data from posterior
+  posterior_calc <- calculate(
+    po_data_response,
+    pa_data_response,
+    count_data_response,
+    values = draws,
+    nsim = 100
+  )
+
+  # convert into matrices
+  po_pred_post <- posterior_calc$po_data_response[,,1] |>
+    as.matrix()
+  pa_pred_post <- posterior_calc$pa_data_response[,,1] |>
+    as.matrix()
+  count_pred_post <- posterior_calc$count_data_response[,,1] |>
+    as.matrix()
+
+  # make list for passing to checks
+  preds_posterior <- list(
+    po_pred = po_pred_post |>
+      as.matrix(),
+    pa_pred = pa_pred_post |>
+      as.matrix(),
+    count_pred = count_pred_post |>
+      as.matrix()
+  )
+
+  # pass data to checks
+  predictive_checks(
+    preds = preds_posterior,
+    dat = dat,
+    output_prefix = "outputs/figures/ppc/posterior"
+  )
 
 
 
