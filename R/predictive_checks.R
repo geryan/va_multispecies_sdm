@@ -123,7 +123,7 @@ predictive_checks <- function(
   ) +
     xlim(0, 1) +
     labs(
-      title = "count data mean v predicted propotrtion of zeroes"
+      title = "count data mean v predicted proportion of zeroes"
     )
 
   ppcsave(
