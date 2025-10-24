@@ -17,7 +17,14 @@ model_data_spatial <- model_data_spatial |>
   #   - lst_day_mean
   #   - footprint
   # )
-  filter(count < 1000)
+  # this old version was kicking out all data but count data
+  # it converged but it was fuct.
+  # filter(count < 1000)
+  # this version is not converging at all
+filter(
+  (data_type != "count") |
+    (data_type == "count" & count < 1000)
+)
 #target_covariate_names <- target_covariate_names[c(1,3)] # works
 #target_covariate_names
 
@@ -154,7 +161,7 @@ n_bg <- model_data_spatial_bg |>
 # define parameters with normal priors, matching the ridge regression setup in
 # multispeciesPP defaults
 # originals
-#penalty.l2.intercept <- 1e-4
+penalty.l2.intercept <- 1e-4
 penalty.l2.sdm <- penalty.l2.bias <- 0.1
 
 # trying others
@@ -176,15 +183,15 @@ beta <- normal(0, beta_sd, dim = c(n_cov_abund, n_species))
 # informative priors on gamma and delta so exp(log_bias), i.e., bias,
 # has range around (0, 1) for z in (0, 1)
 # these work really well
-delta_sd <- 0.3
+# delta_sd <- 0.3
+# gamma_sd <- 0.1
+
+delta_sd <- 0.5
 gamma_sd <- 0.1
 
-# delta_sd <- 0.5
-# gamma_sd <- 0.5
 
-
-gamma <- normal(-3.6, gamma_sd, dim = n_species)
-delta <- normal(3.8, delta_sd, dim = c(n_cov_bias), truncation = c(0, Inf))
+gamma <- normal(0, gamma_sd, dim = n_species)
+delta <- normal(1, delta_sd, dim = c(n_cov_bias), truncation = c(0, Inf))
 
 # log rates across all sites
 # larval habitat based on env covariates
@@ -406,8 +413,8 @@ plot(m)
 # plot(log(count_data_response), log(pred_count))
 
 # fit model
-n_burnin <- 5000
-n_samples <- 2000
+n_burnin <- 2000
+n_samples <- 1000
 n_chains <- 50
 
 # init_vals <- generate_valid_inits(
@@ -452,13 +459,14 @@ draws <- greta::mcmc(
   m,
   warmup = n_burnin,
   n_samples = n_samples,
-  chains = n_chains,
-  initial_values = init_vals#,
+  chains = n_chains#,
+  #initial_values = init_vals#,
+  # model fits much faster with adaptive hmc but doesn't
   #sampler = adaptive_hmc(diag_sd = 1)
 )
 
 
-#mcmc_trace(draws)
+mcmc_trace(draws, regex_pars = "alpha")
 coda::gelman.diag(draws, autoburnin = FALSE)
 
 

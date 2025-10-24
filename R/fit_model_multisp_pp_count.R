@@ -159,20 +159,21 @@ fit_model_multisp_pp_count <- function(
   # define parameters with normal priors, matching the ridge regression setup in
   # multispeciesPP defaults
   # originals
-  #penalty.l2.intercept <- 1e-4
+  penalty.l2.intercept <- 1e-4
   penalty.l2.sdm <- penalty.l2.bias <- 0.1
 
   # trying others
-  penalty.l2.intercept <- 1e-2
+  #penalty.l2.intercept <- 1e-2
   # penalty.l2.sdm <- penalty.l2.bias <- 100
 
   intercept_sd <- sqrt(1 / penalty.l2.intercept)
   beta_sd <- sqrt(1 / penalty.l2.sdm)
-  #delta_sd <- sqrt(1 / penalty.l2.bias)
-  #delta <- normal(0, delta_sd, dim = c(n_cov_bias), truncation = c(0, Inf)) # constrain to be positive
+
+  # delta_sd <- sqrt(1 / penalty.l2.bias)
+  # delta <- normal(0, delta_sd, dim = c(n_cov_bias), truncation = c(0, Inf)) # constrain to be positive
   #
-  # intercept and shared slope for selection bias
-  #gamma <- normal(0, intercept_sd, dim = n_species)
+  # # intercept and shared slope for selection bias
+  # gamma <- normal(0, intercept_sd, dim = n_species)
 
   # intercept and slopes for abundance rate
   alpha <- normal(0, intercept_sd, dim = n_species)
@@ -181,15 +182,15 @@ fit_model_multisp_pp_count <- function(
   # informative priors on gamma and delta so exp(log_bias), i.e., bias,
   # has range around (0, 1) for z in (0, 1)
   # these work really well
-  delta_sd <- 0.3
-  gamma_sd <- 0.1
+  # delta_sd <- 0.3
+  # gamma_sd <- 0.1
 
-  # delta_sd <- 0.5
-  # gamma_sd <- 0.5
+  delta_sd <- 0.5
+  gamma_sd <- 0.5
 
 
-  gamma <- normal(-3.6, gamma_sd, dim = n_species)
-  delta <- normal(3.8, delta_sd, dim = c(n_cov_bias), truncation = c(0, Inf))
+  gamma <- normal(0, gamma_sd, dim = n_species)
+  delta <- normal(0, delta_sd, dim = c(n_cov_bias), truncation = c(0, Inf))
 
   # log rates across all sites
   # larval habitat based on env covariates
@@ -278,7 +279,8 @@ fit_model_multisp_pp_count <- function(
   ##### likelihood
 
   ######################
-  # count data likelihood
+
+  #### count data likelihood
 
   log_lambda_obs_count <-log_lambda[count_data_loc_sp_idx] #+
   #sampling_re[count_data_index$sampling_method_id]
@@ -290,7 +292,7 @@ fit_model_multisp_pp_count <- function(
 
   distribution(count_data_response) <- poisson(exp(log_lambda_obs_count))
 
-  # PA likelihood
+  #### PA likelihood
 
   log_lambda_obs_pa <-log_lambda[pa_data_loc_sp_idx] #+
   #sampling_re[pa_data_index$sampling_method_id]
@@ -303,7 +305,7 @@ fit_model_multisp_pp_count <- function(
   distribution(pa_data_response) <- bernoulli(icloglog(log_lambda_obs_pa))
 
 
-  ## PO likelihood
+  #### PO likelihood
 
   #area_po <- 1 # very small
 
@@ -462,17 +464,28 @@ fit_model_multisp_pp_count <- function(
     warmup = n_burnin,
     n_samples = n_samples,
     chains = n_chains,
-    initial_values = inits(
-      n_chains = n_chains,
-      nsp = n_species,
-      ncv = n_cov_abund
-    )
+    initial_values = init_vals
   )
-
 
   summary(draws)
 
-  coda::gelman.diag(draws)
+  mcmc_trace(
+    x = draws,
+    regex_pars = "alpha"
+  )
+  ggsave(
+    "outputs/figures/traceplots/alpha.png"
+  )
+
+  mcmc_trace(
+    x = draws,
+    regex_pars = c("delta", "gamma")
+  )
+  ggsave(
+    "outputs/figures/traceplots/delta_gamma.png"
+  )
+
+  coda::gelman.diag(draws, autoburnin = FALSE)
 
   ############
   # posterior predictive checks
