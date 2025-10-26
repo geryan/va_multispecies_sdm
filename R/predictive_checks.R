@@ -208,6 +208,19 @@ predictive_checks <- function(
     z = "dens_trunc"
   )
 
+  # count data ecdf
+  ppc_ecdf_overlay(
+    y = count_dat,
+    yrep = count_pred
+  ) +
+    labs(title = "count data ecdf")
+
+  ppcsave(
+    x = output_prefix,
+    y = "count",
+    z = "ecdf_trunc"
+  )
+
   # count data ecdf truncated
   ppc_ecdf_overlay(
     y = count_dat,
