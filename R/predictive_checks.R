@@ -218,7 +218,7 @@ predictive_checks <- function(
   ppcsave(
     x = output_prefix,
     y = "count",
-    z = "ecdf_trunc"
+    z = "ecdf"
   )
 
   # count data ecdf truncated
