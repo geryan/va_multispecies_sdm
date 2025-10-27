@@ -588,13 +588,22 @@ n_burnin <- 2000
 n_samples <- 1000
 n_chains <- 50
 
+optim <- opt(m)
+optim$par
 
+# initialising on optimum drops initial % bad samples
+init_vals <- inits_from_opt(
+  optim,
+  n_chains = n_chains
+)
 
 draws <- greta::mcmc(
   m,
   warmup = n_burnin,
   n_samples = n_samples,
-  chains = n_chains
+  chains = n_chains,
+  initial_values = init_vals,
+  #sampler = adaptive_hmc(diag_sd = 1)
 )
 
 coda::gelman.diag(draws, autoburnin = FALSE)
@@ -651,8 +660,87 @@ predictive_checks(
 )
 
 
+####### spatial predictions
+prednames <- target_covariate_names
+
+r <- covariate_rast
+
+layer_values <- values(r)
+naidx <- is.na(layer_values[,1])
+
+x_predict <- layer_values[!naidx, prednames]
+
+# offset_pred <- layer_values[!naidx, "ag_microclim"]
+#
+# log_offset_pred <- log(offset_pred)
+#
+# log_lambda_adults_predict <- log_offset_pred
+
+log_lambda_larval_habitat_predict <- sweep(x_predict %*% beta, 2, alpha, FUN = "+")
 
 
+#log_lambda_predict <- sweep(log_lambda_larval_habitat_predict, 1, log_lambda_adults_predict, "+")
+log_lambda_predict <-log_lambda_larval_habitat_predict
+
+pa_rate_predict <- icloglog(log_lambda_predict)
+
+count_rate_predict <- exp(log_lambda_predict)
+
+# run sims for each cell and take the median
+
+
+# pa
+preds_pa <- calculate(
+  pa_rate_predict,
+  values = draws,
+  nsim = 50
+)
+
+preds_mean_pa <- apply(
+  preds_pa$pa_rate_predict,
+  MARGIN = c(2,3),
+  median,
+  na.rm = TRUE
+)
+
+# rasterise predictions and save them
+# pa
+preds_rast_pa <- rep(r[[1]], times = n_species)
+names(preds_rast_pa) <- c("sp1", "sp2", "sp3")
+for(i in 1:n_species) {
+  preds_rast_pa[[i]][!naidx] <- preds_mean_pa[,i]
+}
+
+plot(preds_rast_pa)
+
+
+
+# count
+preds_count <- calculate(
+  count_rate_predict,
+  values = draws,
+  nsim = 50
+)
+
+preds_mean_count <- apply(
+  preds_count$count_rate_predict,
+  MARGIN = c(2,3),
+  median,
+  na.rm = TRUE
+)
+
+# rasterise predictions and save them
+# count
+preds_rast_count <- rep(r[[1]], times = n_species)
+names(preds_rast_count) <- c("sp1", "sp2", "sp3")
+for(i in 1:n_species) {
+  preds_rast_count[[i]][!naidx] <- preds_mean_count[,i]
+}
+
+plot(preds_rast_count)
+
+
+plot()
 
 
 
