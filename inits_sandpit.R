@@ -577,8 +577,8 @@ plot(m)
 # plot(log(count_data_response), log(pred_count))
 
 # fit model
-n_burnin <- 2000
-n_samples <- 1000
+n_burnin <- 500
+n_samples <- 100
 n_chains <- 10
 
 # init_vals <- generate_valid_inits(
@@ -625,26 +625,17 @@ optim$convergence
 # if it still doesn't converge, increase the number of iterations
 optim$iterations
 
-
 init_vals <- inits_from_opt(
   optim,
   n_chains = n_chains
 )
-
-# Lmax <- 10
-Lmax <- 10
-Lmin <- round(Lmax / 2)
 
 draws <- greta::mcmc(
   m,
   warmup = n_burnin,
   n_samples = n_samples,
   chains = n_chains,
-  sampler = hmc(Lmin = Lmin,
-                Lmax = Lmax),
-  initial_values = init_vals#,
-  # model fits much faster with adaptive hmc but doesn't
-  #sampler = adaptive_hmc(diag_sd = 1)
+  initial_values = init_vals
 )
 
 coda::gelman.diag(draws, autoburnin = FALSE)
