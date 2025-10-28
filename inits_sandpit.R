@@ -251,6 +251,21 @@ beta_sd <- sqrt(1 / penalty.l2.sdm)
 
 # intercept and slopes for abundance rate
 alpha <- normal(0, intercept_sd, dim = n_species)
+
+#
+# # try explicitly modelling the correlation in beta (shared across species)
+#
+# # model the correlation (with a uniform prior on correlations)
+# cor <- greta::lkj_correlation(eta = 100, dim = n_cov_abund)
+# # uncorrelated parameters (hopefully easier to sample)
+# beta_raw <- normal(0, 1, dim = c(n_species, n_cov_abund))
+#
+# # transform to get beta
+# L_cor <- chol(cor)
+# L <- L_cor * beta_sd
+# beta <- t(beta_raw %*% L)
+
+# old uncorrelated version
 beta <- normal(0, beta_sd, dim = c(n_cov_abund, n_species))
 
 # informative priors on gamma and delta so exp(log_bias), i.e., bias,
@@ -294,11 +309,11 @@ lambda <- exp(log_lambda)
 # offset stuff
 bias <- exp(log_bias)
 
-# sampling random effects
-# hierarchical decentering
-sampling_re_sd <- normal(0, 1, truncation = c(0, Inf))
-sampling_re_raw <- normal(0, 1, dim = n_sampling_methods)
-sampling_re <- sampling_re_raw * sampling_re_sd
+# # sampling random effects
+# # hierarchical decentering
+# sampling_re_sd <- normal(0, 1, truncation = c(0, Inf))
+# sampling_re_raw <- normal(0, 1, dim = n_sampling_methods)
+# sampling_re <- sampling_re_raw * sampling_re_sd
 
 
 ########## indices
@@ -367,7 +382,12 @@ distribution(count_data_response) <- poisson(exp(log_lambda_obs_count))
 
 # PA likelihood
 
-log_lambda_obs_pa <-log_lambda[pa_data_loc_sp_idx] #+
+# ADD AN EXTRA INTERCEPT PER SPECIES TO ACCOUNT FOR REPORTING AND SAMPLING
+# BIASES
+# pa_intercept <- normal(0, 1, dim = n_species)
+
+log_lambda_obs_pa <- log_lambda[pa_data_loc_sp_idx] #+
+  # pa_intercept[pa_data_index$species_id] #+
   #sampling_re[pa_data_index$sampling_method_id]
 
 pa_data_response <- model_data |>
@@ -458,8 +478,13 @@ distribution(po_data_response) <- poisson(
 
 #sample(init_index, size = nsamples, replace = FALSE, prob = exp(log_probs_np))
 
-m <- model(alpha, beta, gamma, delta)#, sampling_re_raw, sampling_re_sd)
+m <- model(alpha,
+           beta,
+           gamma,
+           delta)#, sampling_re_raw, sampling_re_sd)
 plot(m)
+
+
 
 
 ######## Prior predictive checks
