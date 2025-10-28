@@ -60,7 +60,7 @@ model_data_spatial <- bind_rows(
 )
 
 # # ditch footprint from the covariate list
-target_covariate_names <- target_covariate_names[target_covariate_names != "footprint"]
+# target_covariate_names <- target_covariate_names[target_covariate_names != "footprint"]
 
 # PCA and re-extract the remaining environmental covariates
 covariate_rast_env <- covariate_rast[[target_covariate_names]]
@@ -94,7 +94,7 @@ prop_var <- eigvals / sum(eigvals)
 cum_prop_var <- cumsum(prop_var)
 
 # number of PCs to use:
-n_pcs <- 5
+n_pcs <- 6
 
 # variance in covariates explained by these
 cum_prop_var[n_pcs]
@@ -378,7 +378,8 @@ count_data_response <- model_data |>
   pull(n) |>
   as_data()
 
-distribution(count_data_response) <- poisson(exp(log_lambda_obs_count))
+count_data_response_expected <- exp(log_lambda_obs_count)
+distribution(count_data_response) <- poisson(count_data_response_expected)
 
 # PA likelihood
 
@@ -395,7 +396,19 @@ pa_data_response <- model_data |>
   pull(n) |>
   as_data()
 
-distribution(pa_data_response) <- bernoulli(icloglog(log_lambda_obs_pa))
+# convert log lambda into a logit probability, to evaluate the pa likelihood in
+# a more numerically stable way (see ilogit_stable.R for definition and
+# explanation)
+logit_icloglog <- function(eta) {
+  exp_eta <- exp(eta)
+  log1p(-exp(-exp_eta)) + exp_eta
+}
+
+# don't do this, this results in invalid samples for log_lambda_obs_pa >= 3.7
+# # pa_data_response_expected <- icloglog(log_lambda_obs_pa)
+logit_prob_pa <- logit_icloglog(log_lambda_obs_pa)
+pa_data_response_expected <- ilogit(logit_prob_pa)
+distribution(pa_data_response) <- bernoulli(pa_data_response_expected)
 
 
 ## PO likelihood
@@ -423,13 +436,13 @@ log_bias_obs_pobg <- log_bias[pobg_data_loc_sp_idx]
 log_lambda_obs_pobg <-log_lambda[pobg_data_loc_sp_idx] #+
   #sampling_re[pobg_data_index$sampling_method_id]
 
-distribution(po_data_response) <- poisson(
-  exp(
-    log_lambda_obs_pobg +
-      log_bias_obs_pobg +
-      log(area_pobg)
-  )
+
+po_data_response_expected <-   exp(
+  log_lambda_obs_pobg +
+    log_bias_obs_pobg +
+    log(area_pobg)
 )
+distribution(po_data_response) <- poisson(po_data_response_expected)
 #######################
 
 # define and fit the model by MAP and MCMC
@@ -484,7 +497,58 @@ m <- model(alpha,
            delta)#, sampling_re_raw, sampling_re_sd)
 plot(m)
 
-
+#
+#
+# # Evaluate likelihoods when simulating from priors, under what prior conditions
+# # do the likelihood calculations overflow?
+#
+# n_sims <- 10
+# sims <- calculate(
+#   # parameters
+#   alpha,
+#   beta,
+#   gamma,
+#   delta,
+#
+#   # predictions
+#   count_data_response_expected,
+#   pa_data_response_expected,
+#   po_data_response_expected,
+#
+#   # debugging pa
+#   log_lambda_obs_pa,
+#
+#   nsim = n_sims
+# )
+#
+# # compute likelihoods for these
+# for (i in 1:n_sims) {
+#   lp_count <- sum(dpois(as.numeric(count_data_response),
+#             sims$count_data_response_expected[i, , 1],
+#             log = TRUE))
+#   lp_pa <- sum(dbinom(as.numeric(pa_data_response),
+#              size = 1,
+#              prob = sims$pa_data_response_expected[i, , 1],
+#              log = TRUE))
+#   lp_po <- sum(dpois(as.numeric(po_data_response),
+#             sims$po_data_response_expected[i, , 1],
+#             log = TRUE))
+#   print(
+#     sprintf("sim %i: count: %s, pa: %s, po: %s",
+#       i,
+#       lp_count,
+#       lp_pa,
+#       lp_po)
+#   )
+#
+#   print(
+#     sprintf("sim %i: log lambda max: %s at element %s",
+#             i,
+#             max(sims$log_lambda_obs_pa[i, , 1]),
+#             which.max(sims$log_lambda_obs_pa[i, , 1])
+#             )
+#   )
+# }
 
 
 ######## Prior predictive checks
@@ -548,7 +612,7 @@ n_chains <- 10
 
 # tweak optimiser to converge and so better initialise MCMC
 optim <- opt(m,
-             optimiser = adam(learning_rate = 3e-4),
+             optimiser = adam(),
              initial_values = initials(
                beta = matrix(0, n_cov_abund, n_species)
              ),
