@@ -32,75 +32,77 @@ filter(
 
 # target_covariate_names <- target_covariate_names[c(2, 4)]
 
-# randomly subsample the data, but not bg points
-model_data_spatial_bg <- model_data_spatial |>
-  filter(
-    data_type == "bg"
-  )
-
-model_data_spatial_nobg_sub <- model_data_spatial |>
-  filter(
-    data_type != "bg"
-  ) |>
-  slice_sample(
-    prop = 0.1
-  )
-
-# model_data_spatial_nobg_sub |>
-#   group_by(
-#     data_type, species
-#   ) |>
-#   summarise(
-#     n()
+# # randomly subsample the data, but not bg points
+# model_data_spatial_bg <- model_data_spatial |>
+#   filter(
+#     data_type == "bg"
 #   )
+#
+# model_data_spatial_nobg_sub <- model_data_spatial |>
+#   filter(
+#     data_type != "bg"
+#   ) |>
+#   slice_sample(
+#     prop = 0.1
+#   )
+#
+# # model_data_spatial_nobg_sub |>
+# #   group_by(
+# #     data_type, species
+# #   ) |>
+# #   summarise(
+# #     n()
+# #   )
+#
+# model_data_spatial <- bind_rows(
+#   model_data_spatial_nobg_sub,
+#   model_data_spatial_bg
+# )
 
-model_data_spatial <- bind_rows(
-  model_data_spatial_nobg_sub,
-  model_data_spatial_bg
-)
+
 
 # # ditch footprint from the covariate list
 # target_covariate_names <- target_covariate_names[target_covariate_names != "footprint"]
 
-# PCA and re-extract the remaining environmental covariates
-covariate_rast_env <- covariate_rast[[target_covariate_names]]
-env_pca <- terra::princomp(covariate_rast_env)
-covariate_rast_env_pca <- predict(covariate_rast_env, env_pca)
-names(covariate_rast_env_pca) <- paste0("pc", seq_len(nlyr(covariate_rast_env_pca)))
-
-coords <- model_data_spatial |>
-  select(
-    longitude,
-    latitude
-  ) |>
-  as.matrix()
-
-new_env_mat <- terra::extract(
-    covariate_rast_env_pca,
-    coords
-  )
-
-model_data_spatial <- model_data_spatial |>
-  select(
-    -all_of(target_covariate_names)
-  ) |>
-  bind_cols(
-    new_env_mat
-  )
-
-# subset the PCs to those that explain the most variance
-eigvals <- env_pca$sdev ^ 2
-prop_var <- eigvals / sum(eigvals)
-cum_prop_var <- cumsum(prop_var)
-
-# number of PCs to use:
-n_pcs <- 6
-
-# variance in covariates explained by these
-cum_prop_var[n_pcs]
-
-# overwrite the covariate names with the pcs
-target_covariate_names <- names(covariate_rast_env_pca)[seq_len(n_pcs)]
+# # PCA and re-extract the remaining environmental covariates
+# covariate_rast_env <- covariate_rast[[target_covariate_names]]
+# env_pca <- terra::princomp(covariate_rast_env)
+# covariate_rast_env_pca <- predict(covariate_rast_env, env_pca)
+# names(covariate_rast_env_pca) <- paste0("pc", seq_len(nlyr(covariate_rast_env_pca)))
+#
+# coords <- model_data_spatial |>
+#   select(
+#     longitude,
+#     latitude
+#   ) |>
+#   as.matrix()
+#
+# new_env_mat <- terra::extract(
+#     covariate_rast_env_pca,
+#     coords
+#   )
+#
+# model_data_spatial <- model_data_spatial |>
+#   select(
+#     -all_of(target_covariate_names)
+#   ) |>
+#   bind_cols(
+#     new_env_mat
+#   )
+#
+# # subset the PCs to those that explain the most variance
+# eigvals <- env_pca$sdev ^ 2
+# prop_var <- eigvals / sum(eigvals)
+# cum_prop_var <- cumsum(prop_var)
+#
+# # number of PCs to use:
+# n_pcs <- 6
+#
+# # variance in covariates explained by these
+# cum_prop_var[n_pcs]
+#
+# # overwrite the covariate names with the pcs
+# target_covariate_names <- names(covariate_rast_env_pca)[seq_len(n_pcs)]
 
 # index of distinct locations
 distinct_idx <- model_data_spatial |>
@@ -610,22 +612,17 @@ n_chains <- 10
 # try to manually shove into right space
 
 
-# tweak optimiser to converge and so better initialise MCMC
+# tweak optimiser to converge rapidly and well, to initialise MCMC
 optim <- opt(m,
-             optimiser = adam(),
-             initial_values = initials(
-               beta = matrix(0, n_cov_abund, n_species)
-             ),
+             optimiser = adam(learning_rate = 0.5),
              max_iterations = 1e5)
 
-# numerical overflow during optimisation, even with ADAM ?! gradient isues with
-# reasonable parameter values?
-
 # should be 0 if converged
-# if it gives a numerical error try reducing the learning rate
-# if it still doesn't converge, increase the number of iterations
 optim$convergence
-optim$par
+
+# if it gives a numerical error try reducing the learning rate (or just run it
+# again)
+# if it still doesn't converge, increase the number of iterations
 optim$iterations
 
 
