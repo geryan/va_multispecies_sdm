@@ -7,7 +7,7 @@
 
 x <- 3.7
 identical(
-  calculate(icloglog(x))[[1]][1, 1],
+  greta::calculate(greta::icloglog(x))[[1]][1, 1],
   1
 )
 identical(
