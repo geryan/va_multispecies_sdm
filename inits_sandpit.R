@@ -11,6 +11,8 @@ tar_load_everything()
 
 ## get data in order for model
 
+set.seed(1)
+
 model_data_spatial <- model_data_spatial |>
   # select(
   #   - evi_mean,
@@ -28,6 +30,79 @@ filter(
 #target_covariate_names <- target_covariate_names[c(1,3)] # works
 #target_covariate_names
 
+# target_covariate_names <- target_covariate_names[c(2, 4)]
+
+# # randomly subsample the data, but not bg points
+# model_data_spatial_bg <- model_data_spatial |>
+#   filter(
+#     data_type == "bg"
+#   )
+#
+# model_data_spatial_nobg_sub <- model_data_spatial |>
+#   filter(
+#     data_type != "bg"
+#   ) |>
+#   slice_sample(
+#     prop = 0.1
+#   )
+#
+# # model_data_spatial_nobg_sub |>
+# #   group_by(
+# #     data_type, species
+# #   ) |>
+# #   summarise(
+# #     n()
+# #   )
+#
+# model_data_spatial <- bind_rows(
+#   model_data_spatial_nobg_sub,
+#   model_data_spatial_bg
+# )
+
+
+
+# # ditch footprint from the covariate list
+# target_covariate_names <- target_covariate_names[target_covariate_names != "footprint"]
+
+# # PCA and re-extract the remaining environmental covariates
+# covariate_rast_env <- covariate_rast[[target_covariate_names]]
+# env_pca <- terra::princomp(covariate_rast_env)
+# covariate_rast_env_pca <- predict(covariate_rast_env, env_pca)
+# names(covariate_rast_env_pca) <- paste0("pc", seq_len(nlyr(covariate_rast_env_pca)))
+#
+# coords <- model_data_spatial |>
+#   select(
+#     longitude,
+#     latitude
+#   ) |>
+#   as.matrix()
+#
+# new_env_mat <- terra::extract(
+#     covariate_rast_env_pca,
+#     coords
+#   )
+#
+# model_data_spatial <- model_data_spatial |>
+#   select(
+#     -all_of(target_covariate_names)
+#   ) |>
+#   bind_cols(
+#     new_env_mat
+#   )
+#
+# # subset the PCs to those that explain the most variance
+# eigvals <- env_pca$sdev ^ 2
+# prop_var <- eigvals / sum(eigvals)
+# cum_prop_var <- cumsum(prop_var)
+#
+# # number of PCs to use:
+# n_pcs <- 6
+#
+# # variance in covariates explained by these
+# cum_prop_var[n_pcs]
+#
+# # overwrite the covariate names with the pcs
+# target_covariate_names <- names(covariate_rast_env_pca)[seq_len(n_pcs)]
 
 # index of distinct locations
 distinct_idx <- model_data_spatial |>
@@ -178,6 +253,21 @@ beta_sd <- sqrt(1 / penalty.l2.sdm)
 
 # intercept and slopes for abundance rate
 alpha <- normal(0, intercept_sd, dim = n_species)
+
+#
+# # try explicitly modelling the correlation in beta (shared across species)
+#
+# # model the correlation (with a uniform prior on correlations)
+# cor <- greta::lkj_correlation(eta = 100, dim = n_cov_abund)
+# # uncorrelated parameters (hopefully easier to sample)
+# beta_raw <- normal(0, 1, dim = c(n_species, n_cov_abund))
+#
+# # transform to get beta
+# L_cor <- chol(cor)
+# L <- L_cor * beta_sd
+# beta <- t(beta_raw %*% L)
+
+# old uncorrelated version
 beta <- normal(0, beta_sd, dim = c(n_cov_abund, n_species))
 
 # informative priors on gamma and delta so exp(log_bias), i.e., bias,
@@ -221,11 +311,11 @@ lambda <- exp(log_lambda)
 # offset stuff
 bias <- exp(log_bias)
 
-# sampling random effects
-# hierarchical decentering
-sampling_re_sd <- normal(0, 1, truncation = c(0, Inf))
-sampling_re_raw <- normal(0, 1, dim = n_sampling_methods)
-sampling_re <- sampling_re_raw * sampling_re_sd
+# # sampling random effects
+# # hierarchical decentering
+# sampling_re_sd <- normal(0, 1, truncation = c(0, Inf))
+# sampling_re_raw <- normal(0, 1, dim = n_sampling_methods)
+# sampling_re <- sampling_re_raw * sampling_re_sd
 
 
 ########## indices
@@ -290,11 +380,17 @@ count_data_response <- model_data |>
   pull(n) |>
   as_data()
 
-distribution(count_data_response) <- poisson(exp(log_lambda_obs_count))
+count_data_response_expected <- exp(log_lambda_obs_count)
+distribution(count_data_response) <- poisson(count_data_response_expected)
 
 # PA likelihood
 
-log_lambda_obs_pa <-log_lambda[pa_data_loc_sp_idx] #+
+# ADD AN EXTRA INTERCEPT PER SPECIES TO ACCOUNT FOR REPORTING AND SAMPLING
+# BIASES
+# pa_intercept <- normal(0, 1, dim = n_species)
+
+log_lambda_obs_pa <- log_lambda[pa_data_loc_sp_idx] #+
+  # pa_intercept[pa_data_index$species_id] #+
   #sampling_re[pa_data_index$sampling_method_id]
 
 pa_data_response <- model_data |>
@@ -302,7 +398,19 @@ pa_data_response <- model_data |>
   pull(n) |>
   as_data()
 
-distribution(pa_data_response) <- bernoulli(icloglog(log_lambda_obs_pa))
+# convert log lambda into a logit probability, to evaluate the pa likelihood in
+# a more numerically stable way (see ilogit_stable.R for definition and
+# explanation)
+logit_icloglog <- function(eta) {
+  exp_eta <- exp(eta)
+  log1p(-exp(-exp_eta)) + exp_eta
+}
+
+# don't do this, this results in invalid samples for log_lambda_obs_pa >= 3.7
+# # pa_data_response_expected <- icloglog(log_lambda_obs_pa)
+logit_prob_pa <- logit_icloglog(log_lambda_obs_pa)
+pa_data_response_expected <- ilogit(logit_prob_pa)
+distribution(pa_data_response) <- bernoulli(pa_data_response_expected)
 
 
 ## PO likelihood
@@ -330,13 +438,13 @@ log_bias_obs_pobg <- log_bias[pobg_data_loc_sp_idx]
 log_lambda_obs_pobg <-log_lambda[pobg_data_loc_sp_idx] #+
   #sampling_re[pobg_data_index$sampling_method_id]
 
-distribution(po_data_response) <- poisson(
-  exp(
-    log_lambda_obs_pobg +
-      log_bias_obs_pobg +
-      log(area_pobg)
-  )
+
+po_data_response_expected <-   exp(
+  log_lambda_obs_pobg +
+    log_bias_obs_pobg +
+    log(area_pobg)
 )
+distribution(po_data_response) <- poisson(po_data_response_expected)
 #######################
 
 # define and fit the model by MAP and MCMC
@@ -385,8 +493,64 @@ distribution(po_data_response) <- poisson(
 
 #sample(init_index, size = nsamples, replace = FALSE, prob = exp(log_probs_np))
 
-m <- model(alpha, beta, gamma, delta)#, sampling_re_raw, sampling_re_sd)
+m <- model(alpha,
+           beta,
+           gamma,
+           delta)#, sampling_re_raw, sampling_re_sd)
 plot(m)
+
+#
+#
+# # Evaluate likelihoods when simulating from priors, under what prior conditions
+# # do the likelihood calculations overflow?
+#
+# n_sims <- 10
+# sims <- calculate(
+#   # parameters
+#   alpha,
+#   beta,
+#   gamma,
+#   delta,
+#
+#   # predictions
+#   count_data_response_expected,
+#   pa_data_response_expected,
+#   po_data_response_expected,
+#
+#   # debugging pa
+#   log_lambda_obs_pa,
+#
+#   nsim = n_sims
+# )
+#
+# # compute likelihoods for these
+# for (i in 1:n_sims) {
+#   lp_count <- sum(dpois(as.numeric(count_data_response),
+#             sims$count_data_response_expected[i, , 1],
+#             log = TRUE))
+#   lp_pa <- sum(dbinom(as.numeric(pa_data_response),
+#              size = 1,
+#              prob = sims$pa_data_response_expected[i, , 1],
+#              log = TRUE))
+#   lp_po <- sum(dpois(as.numeric(po_data_response),
+#             sims$po_data_response_expected[i, , 1],
+#             log = TRUE))
+#   print(
+#     sprintf("sim %i: count: %s, pa: %s, po: %s",
+#       i,
+#       lp_count,
+#       lp_pa,
+#       lp_po)
+#   )
+#
+#   print(
+#     sprintf("sim %i: log lambda max: %s at element %s",
+#             i,
+#             max(sims$log_lambda_obs_pa[i, , 1]),
+#             which.max(sims$log_lambda_obs_pa[i, , 1])
+#             )
+#   )
+# }
 
 
 ######## Prior predictive checks
@@ -413,9 +577,9 @@ plot(m)
 # plot(log(count_data_response), log(pred_count))
 
 # fit model
-n_burnin <- 2000
-n_samples <- 1000
-n_chains <- 50
+n_burnin <- 500
+n_samples <- 100
+n_chains <- 10
 
 # init_vals <- generate_valid_inits(
 #   mod = m,
@@ -447,8 +611,19 @@ n_chains <- 50
 # prior sampling / ppcs using prior simulations
 # try to manually shove into right space
 
-optim <- opt(m)
-optim$par
+
+# tweak optimiser to converge rapidly and well, to initialise MCMC
+optim <- opt(m,
+             optimiser = adam(learning_rate = 0.5),
+             max_iterations = 1e5)
+
+# should be 0 if converged
+optim$convergence
+
+# if it gives a numerical error try reducing the learning rate (or just run it
+# again)
+# if it still doesn't converge, increase the number of iterations
+optim$iterations
 
 init_vals <- inits_from_opt(
   optim,
@@ -459,16 +634,13 @@ draws <- greta::mcmc(
   m,
   warmup = n_burnin,
   n_samples = n_samples,
-  chains = n_chains#,
-  #initial_values = init_vals#,
-  # model fits much faster with adaptive hmc but doesn't
-  #sampler = adaptive_hmc(diag_sd = 1)
+  chains = n_chains,
+  initial_values = init_vals
 )
 
-
-mcmc_trace(draws, regex_pars = "alpha")
 coda::gelman.diag(draws, autoburnin = FALSE)
-
+mcmc_trace(draws, regex_pars = "alpha")
+mcmc_trace(draws, regex_pars = "beta")
 
 
 # plots of data vs each covariate
