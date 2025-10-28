@@ -186,11 +186,11 @@ fit_model_multisp_pp_count <- function(
   # gamma_sd <- 0.1
 
   delta_sd <- 0.5
-  gamma_sd <- 0.5
+  gamma_sd <- 0.1
 
 
   gamma <- normal(0, gamma_sd, dim = n_species)
-  delta <- normal(0, delta_sd, dim = c(n_cov_bias), truncation = c(0, Inf))
+  delta <- normal(1, delta_sd, dim = c(n_cov_bias), truncation = c(0, Inf))
 
   # log rates across all sites
   # larval habitat based on env covariates
@@ -222,9 +222,9 @@ fit_model_multisp_pp_count <- function(
 
   # sampling random effects
   # hierarchical decentering
-  sampling_re_sd <- normal(0, 1, truncation = c(0, Inf))
-  sampling_re_raw <- normal(0, 1, dim = n_sampling_methods)
-  sampling_re <- sampling_re_raw * sampling_re_sd
+  # sampling_re_sd <- normal(0, 1, truncation = c(0, Inf))
+  # sampling_re_raw <- normal(0, 1, dim = n_sampling_methods)
+  # sampling_re <- sampling_re_raw * sampling_re_sd
 
 
   ########## indices
@@ -290,11 +290,17 @@ fit_model_multisp_pp_count <- function(
     pull(n) |>
     as_data()
 
-  distribution(count_data_response) <- poisson(exp(log_lambda_obs_count))
+  count_data_response_expected <- exp(log_lambda_obs_count)
+  distribution(count_data_response) <- poisson(count_data_response_expected)
 
   #### PA likelihood
 
-  log_lambda_obs_pa <-log_lambda[pa_data_loc_sp_idx] #+
+  # ADD AN EXTRA INTERCEPT PER SPECIES TO ACCOUNT FOR REPORTING AND SAMPLING
+  # BIASES
+  # pa_intercept <- normal(0, 1, dim = n_species)
+
+  log_lambda_obs_pa <- log_lambda[pa_data_loc_sp_idx] #+
+  # pa_intercept[pa_data_index$species_id] #+
   #sampling_re[pa_data_index$sampling_method_id]
 
   pa_data_response <- model_data |>
@@ -302,8 +308,21 @@ fit_model_multisp_pp_count <- function(
     pull(n) |>
     as_data()
 
-  distribution(pa_data_response) <- bernoulli(icloglog(log_lambda_obs_pa))
+  # convert log lambda into a logit probability, to evaluate the pa likelihood in
+  # a more numerically stable way (see ilogit_stable.R for definition and
+  # explanation)
+  # logit_icloglog <- function(eta) {
+  #   exp_eta <- exp(eta)
+  #   log1p(-exp(-exp_eta)) + exp_eta
+  # }
 
+  # don't do this, this results in invalid samples for log_lambda_obs_pa >= 3.7
+  # # pa_data_response_expected <- icloglog(log_lambda_obs_pa)
+
+  # do this instead via logit_icloglog
+  logit_prob_pa <- logit_icloglog(log_lambda_obs_pa)
+  pa_data_response_expected <- ilogit(logit_prob_pa)
+  distribution(pa_data_response) <- bernoulli(pa_data_response_expected)
 
   #### PO likelihood
 
@@ -330,13 +349,14 @@ fit_model_multisp_pp_count <- function(
   log_lambda_obs_pobg <-log_lambda[pobg_data_loc_sp_idx] #+
   #sampling_re[pobg_data_index$sampling_method_id]
 
-  distribution(po_data_response) <- poisson(
-    exp(
-      log_lambda_obs_pobg +
-        log_bias_obs_pobg +
-        log(area_pobg)
-    )
+  po_data_response_expected <-   exp(
+    log_lambda_obs_pobg +
+      log_bias_obs_pobg +
+      log(area_pobg)
   )
+  distribution(po_data_response) <- poisson(po_data_response_expected)
+
+
   #######################
 
   # define and fit the model by MAP and MCMC
@@ -450,7 +470,26 @@ fit_model_multisp_pp_count <- function(
   # fit model
   ###################
 
-  optim <- opt(m)
+  optim <- opt(
+    m,
+    optimiser = adam(learning_rate = 0.5),
+    max_iterations = 1e5
+  )
+
+  # should be 0 if converged
+  optim$convergence
+  print(
+    paste(
+      "optimiser value is",
+      optim$convergence,
+      "\nshould be 0 if optimiser converged"
+    )
+  )
+
+  # if it gives a numerical error try reducing the learning rate (or just run it
+  # again)
+  # if it still doesn't converge, increase the number of iterations
+
   optim$par
 
   init_vals <- inits_from_opt(
