@@ -513,7 +513,7 @@ plot(m)
 # fit model
 n_burnin <- 2000
 n_samples <- 1000
-n_chains <- 50
+n_chains <- 10
 
 # init_vals <- generate_valid_inits(
 #   mod = m,
@@ -545,28 +545,50 @@ n_chains <- 50
 # prior sampling / ppcs using prior simulations
 # try to manually shove into right space
 
-optim <- opt(m)
+
+# tweak optimiser to converge and so better initialise MCMC
+optim <- opt(m,
+             optimiser = adam(learning_rate = 3e-4),
+             initial_values = initials(
+               beta = matrix(0, n_cov_abund, n_species)
+             ),
+             max_iterations = 1e5)
+
+# numerical overflow during optimisation, even with ADAM ?! gradient isues with
+# reasonable parameter values?
+
+# should be 0 if converged
+# if it gives a numerical error try reducing the learning rate
+# if it still doesn't converge, increase the number of iterations
+optim$convergence
 optim$par
+optim$iterations
+
 
 init_vals <- inits_from_opt(
   optim,
   n_chains = n_chains
 )
 
+# Lmax <- 10
+Lmax <- 10
+Lmin <- round(Lmax / 2)
+
 draws <- greta::mcmc(
   m,
   warmup = n_burnin,
   n_samples = n_samples,
-  chains = n_chains#,
-  #initial_values = init_vals#,
+  chains = n_chains,
+  sampler = hmc(Lmin = Lmin,
+                Lmax = Lmax),
+  initial_values = init_vals#,
   # model fits much faster with adaptive hmc but doesn't
   #sampler = adaptive_hmc(diag_sd = 1)
 )
 
-
-mcmc_trace(draws, regex_pars = "alpha")
 coda::gelman.diag(draws, autoburnin = FALSE)
-
+mcmc_trace(draws, regex_pars = "alpha")
+mcmc_trace(draws, regex_pars = "beta")
 
 
 # plots of data vs each covariate
