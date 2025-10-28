@@ -11,6 +11,8 @@ tar_load_everything()
 
 ## get data in order for model
 
+set.seed(1)
+
 model_data_spatial <- model_data_spatial |>
   # select(
   #   - evi_mean,
@@ -28,6 +30,77 @@ filter(
 #target_covariate_names <- target_covariate_names[c(1,3)] # works
 #target_covariate_names
 
+# target_covariate_names <- target_covariate_names[c(2, 4)]
+
+# randomly subsample the data, but not bg points
+model_data_spatial_bg <- model_data_spatial |>
+  filter(
+    data_type == "bg"
+  )
+
+model_data_spatial_nobg_sub <- model_data_spatial |>
+  filter(
+    data_type != "bg"
+  ) |>
+  slice_sample(
+    prop = 0.1
+  )
+
+# model_data_spatial_nobg_sub |>
+#   group_by(
+#     data_type, species
+#   ) |>
+#   summarise(
+#     n()
+#   )
+
+model_data_spatial <- bind_rows(
+  model_data_spatial_nobg_sub,
+  model_data_spatial_bg
+)
+
+# # ditch footprint from the covariate list
+target_covariate_names <- target_covariate_names[target_covariate_names != "footprint"]
+
+# PCA and re-extract the remaining environmental covariates
+covariate_rast_env <- covariate_rast[[target_covariate_names]]
+env_pca <- terra::princomp(covariate_rast_env)
+covariate_rast_env_pca <- predict(covariate_rast_env, env_pca)
+names(covariate_rast_env_pca) <- paste0("pc", seq_len(nlyr(covariate_rast_env_pca)))
+
+coords <- model_data_spatial |>
+  select(
+    longitude,
+    latitude
+  ) |>
+  as.matrix()
+
+new_env_mat <- terra::extract(
+    covariate_rast_env_pca,
+    coords
+  )
+
+model_data_spatial <- model_data_spatial |>
+  select(
+    -all_of(target_covariate_names)
+  ) |>
+  bind_cols(
+    new_env_mat
+  )
+
+# subset the PCs to those that explain the most variance
+eigvals <- env_pca$sdev ^ 2
+prop_var <- eigvals / sum(eigvals)
+cum_prop_var <- cumsum(prop_var)
+
+# number of PCs to use:
+n_pcs <- 5
+
+# variance in covariates explained by these
+cum_prop_var[n_pcs]
+
+# overwrite the covariate names with the pcs
+target_covariate_names <- names(covariate_rast_env_pca)[seq_len(n_pcs)]
 
 # index of distinct locations
 distinct_idx <- model_data_spatial |>
