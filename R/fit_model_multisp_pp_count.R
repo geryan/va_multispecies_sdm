@@ -470,11 +470,16 @@ fit_model_multisp_pp_count <- function(
   # fit model
   ###################
 
-  optim <- opt(
-    m,
-    optimiser = adam(learning_rate = 0.5),
-    max_iterations = 1e5
-  )
+  # optim <- opt(
+  #   m,
+  #   optimiser = adam(learning_rate = 0.001),
+  #   max_iterations = 1e6
+  # )
+  # if it gives a numerical error try reducing the learning rate (or just run it
+  # again)
+  # if it still doesn't converge, increase the number of iterations
+
+  optim <- opt(m, max_iterations = 1e5) # with sinka species plus coluzzii this converges
 
   # should be 0 if converged
   optim$convergence
@@ -482,13 +487,10 @@ fit_model_multisp_pp_count <- function(
     paste(
       "optimiser value is",
       optim$convergence,
-      "\nshould be 0 if optimiser converged"
+      "should be 0 if optimiser converged"
     )
   )
 
-  # if it gives a numerical error try reducing the learning rate (or just run it
-  # again)
-  # if it still doesn't converge, increase the number of iterations
 
   optim$par
 

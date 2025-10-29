@@ -4,7 +4,7 @@ target_spp <- function(){
 
   c(
     # "abscurus",
-    "arabiensis",
+    "arabiensis", # in sinka 2010
     # "ardensis",
     # "barberellus",
     # "brohieri",
@@ -18,7 +18,7 @@ target_spp <- function(){
     # "cinereus",
     # "claviger",
     "coluzzii",
-    "coustani",
+    ##"coustani",
     # "coustani_complex",
     # "cristipalpis",
     # "cydippis",
@@ -30,13 +30,13 @@ target_spp <- function(){
     # "flavicosta",
     # "fontenillei",
     # "freetownensis",
-    "funestus",
-    "funestus_complex",
+    "funestus", # in sinka 2010
+    ##"funestus_complex",
     # "funestus-like",
     # "gabonensis",
-    "gambiae",
-    "gambiae_coluzzii",
-    "gambiae_complex",
+    "gambiae",  # in sinka 2010
+    ##"gambiae_coluzzii",
+    ##"gambiae_complex",
     # "garnhami",
     # "gibbinsi",
     # "hancocki",
@@ -52,20 +52,20 @@ target_spp <- function(){
     # "marshallii",
     # "marshallii_complex",
     # "mascarensis",
-    ## "melas",  # melas looks like it should have enough points but it's really not fitting well, just tankingh and going south
-    "merus",
-    "moucheti",
+    "melas", # in sinka 2010
+    "merus", # in sinka 2010
+    "moucheti", # in sinka 2010
     # "multicolor",
     # "namibiensis",
     # "natalensis",
-    "nili",
+    "nili"#,  # in sinka 2010
     # "nili_complex",
     # "obscurus",
     # "ovengensis",
     # "paludis",
     # "parensis",
     # "pauliani",
-    "pharoensis",
+    ##"pharoensis",
     # "pretoriensis",
     # "pseudopunctipennis",
     # "quadriannulatus",
@@ -75,12 +75,12 @@ target_spp <- function(){
     # "rhodesiensis",
     # "rivulorum",
     # "rivulorum-like",
-    "rufipes",
+    ##"rufipes",
     # "rupicolus",
     # "salbaii",
     # "sergentii",
     # "smithii",
-    "squamosus",
+    ##"squamosus",
     # "stephensi",
     # "swahilicus",
     # "tenebrosus",
@@ -89,7 +89,7 @@ target_spp <- function(){
     # "vinckei",
     # "wellcomei",
     # "wilsoni",
-    "ziemanni"
+    ##"ziemanni"
   )
 
 

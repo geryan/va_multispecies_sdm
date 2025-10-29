@@ -271,8 +271,8 @@ list(
  # need to refine this list
  tar_target(
    target_species,
-   #target_spp()
-   target_spp_test_only()
+   target_spp()
+   #target_spp_test_only()
  ),
 
  tar_target(
@@ -473,13 +473,13 @@ list(
      target_species,
      project_mask,
      image_name = "outputs/images/multisp_pp_count.RData",
-     n_burnin = 5000,
-     n_samples = 1000,
+     n_burnin = 500,
+     n_samples = 100,
      n_chains = 50
    )
  ),
 
- # read in image and predict out raster as a tif
+ # # read in image and predict out raster as a tif
  tar_target(
    pred_file_multisp_pp_count,
    predict_greta_mspp_count(
@@ -489,6 +489,17 @@ list(
      output_file_prefix = "outputs/rasters/multisp_pp_count"
    )
  ),
+ #
+ # # with expert offset
+ # tar_target(
+ #   pred_file_multisp_pp_count,
+ #   predict_greta_mspp_count(
+ #     image_filename = model_fit_image_multisp_pp_count,
+ #     prediction_layer = covariate_rast,
+ #     target_species,
+ #     output_file_prefix = "outputs/rasters/multisp_pp_count"
+ #   )
+ # ),
 
  # read in tif to targets
 
