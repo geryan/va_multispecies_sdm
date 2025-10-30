@@ -15,6 +15,9 @@ add_expert_offset <- function(
 
   predraw <- rast(predfilelist$pa)
 
+
+  # it would be nice to do this is a more sophisticated programmatic way
+  # but for now hard-coding for the win
   # species_lookup <- list(
   #   arabiensis = "arabiensis",
   #   gambiae = c("coluzzii", "gambiae", "gambiae_coluzzii", "gambiae_complex"),
@@ -49,5 +52,7 @@ add_expert_offset <- function(
     filename = filename,
     overwrite = TRUE
   )
+
+  filename
 
 }
