@@ -4,8 +4,17 @@ make_rel_abund_rgb <- function(
 ){
 
   # subset to target species
-  rgb_target_species <- c("arabiensis", "gambiae_coluzzii", "funestus")
-  target_x <- x[[match(rgb_target_species, names(x))]]
+  # rgb_target_species <- c("arabiensis", "gambiae_coluzzii", "funestus")
+  # match(rgb_target_species, names(x))
+  # target_x <- x[[match(rgb_target_species, names(x))]]
+
+  # in the absence of the gambiae_coluzzii layer:
+  ga <- x$gambiae
+  co <- x$coluzzii
+  # p(aUb) = p(a)p(b`) + p(a`)p(b) + p(a)p(b)
+  gaco <- ga*(1-co) + (1-ga)*co + ga*co
+
+  target_x <- c(x$arabiensis, gaco, x$funestus)
 
   # convert to abundance by inverting cloglog link, then exponentiating
   # p = 1 - exp(-exp(x))

@@ -7,8 +7,9 @@ make_rel_abund_rgb_plot <- function(
     res = 300
 ) {
 
-  colz <- colorize(
-    rel_abund_rgb,
+  colz <- rel_abund_rgb |>
+    RGB(value = 1:3) |>
+    colorize(
     to = "col"
   )
 

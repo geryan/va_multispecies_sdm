@@ -35,6 +35,11 @@ pca_covariate_layers|stem|616190f4bc34e3b6|b6972b6623e6e195|04a64be4dfe91660|202
 pred_file_multisp_pp_count|stem|ea0c421604d895e0|8fb7218fc310e2c7|7c9c56a61cbddb7e|-110384953||t20390.2738148663s|s133b|133|rds|local|vector|||107.875||
 model_data_spatial_pca|stem|6fb564203d84d3eb|674ac0f695c2b2b5|122ca149ffcbcd77|-188136187||t20390.2738185416s|s293061b|293061|rds|local|vector|||0.154||
 covs_plots_pca|stem|e83a1276e13561d6|19f1922bcdb21ecd|8acf1a200cf70a80|-1819041689||t20390.2738505588s|s44b|44|rds|local|vector|||2.673||
+pred_file_multisp_pp_count_expoff|stem|8e7858a2e2f03ee9|a5abc708f3277abd|20c6d556da11942d|149914016||t20390.8167197025s|s99b|99|rds|local|vector|||0.802||
+pred_dist|stem|9ef9b63fee1000d2|559a6253b45c1d36|2c6f86fbd4aff6be|1458339920||t20390.8216849515s|s9283793b|9283793|format_custom&read=dGVycmE6OnJhc3QocGF0aCk&write=ewogICAgZG8uY2FsbCh0ZXJyYTo6d3JpdGVSYXN0ZXIsIGMobGlzdChvYmplY3QsIGZpbGVuYW1lID0gcGF0aCwgCiAgICAgICAgZmlsZXR5cGUgPSAiR1RpZmYiLCBvdmVyd3JpdGUgPSBUUlVFLCBnZGFsID0gTlVMTCksIGxpc3QoKSkpCn0&marshal=dGVycmE6OndyYXAob2JqZWN0KQ&unmarshal=dGVycmE6OnVud3JhcChvYmplY3Qp&convert=&copy=&repository=|local|list|||0.01||
+distribution_plots|stem|e83a1276e13561d6|6d93c42d3fb11738|e04bd0736fe01187|2117653253||t20390.8239939514s|s44b|44|rds|local|vector|||39.195||
+pred_dist_rgb|stem|5605f1b70ab053a2|775d00680175fd8e|2c530c1562a7fbd1|-2105567329||t20391.8816531746s|s14340775b|14340775|format_custom&read=dGVycmE6OnJhc3QocGF0aCk&write=ewogICAgZG8uY2FsbCh0ZXJyYTo6d3JpdGVSYXN0ZXIsIGMobGlzdChvYmplY3QsIGZpbGVuYW1lID0gcGF0aCwgCiAgICAgICAgZmlsZXR5cGUgPSAiR1RpZmYiLCBvdmVyd3JpdGUgPSBUUlVFLCBnZGFsID0gTlVMTCksIGxpc3QoKSkpCn0&marshal=dGVycmE6OndyYXAob2JqZWN0KQ&unmarshal=dGVycmE6OnVud3JhcChvYmplY3Qp&convert=&copy=&repository=|local|list|||1.949||
+rel_abund_rgb|stem|8f08826a592bfd7f|908da459e1e28953|2bed8af4bc9a7903|-397125480||t20391.927523303s|s1014467b|1014467|format_custom&read=dGVycmE6OnJhc3QocGF0aCk&write=ewogICAgZG8uY2FsbCh0ZXJyYTo6d3JpdGVSYXN0ZXIsIGMobGlzdChvYmplY3QsIGZpbGVuYW1lID0gcGF0aCwgCiAgICAgICAgZmlsZXR5cGUgPSAiR1RpZmYiLCBvdmVyd3JpdGUgPSBUUlVFLCBnZGFsID0gTlVMTCksIGxpc3QoCiAgICAgICAgZGF0YXR5cGUgPSAiSU5UMVUiKSkpCn0&marshal=dGVycmE6OndyYXAob2JqZWN0KQ&unmarshal=dGVycmE6OnVud3JhcChvYmplY3Qp&convert=&copy=&repository=|local|list|||6.254||
 count_counts|function|bbd950114352d673
 clean_sampling_method|function|a03e4217be186314
 check_point_data_type|function|b0555c1606d024b3
@@ -85,13 +90,13 @@ make_project_mask|function|243c2735aec74ca0
 bg_points_kmeans_spatial|function|cc52527c35e94398
 bg_points_kmeans_env|function|d9e19ef48a56de13
 plot_points_expert_map|function|c01a5726595732a3
-make_rel_abund_rgb_plot|function|7967debea5d933a2
+make_rel_abund_rgb_plot|function|160bd219c92b5206
 calculate_posterior_multisp_pp_with_offset|function|89b6e72efdf8d411
-make_rel_abund_rgb|function|55ba451c79db5801
+make_rel_abund_rgb|function|ec41c5e7964ca994
 get_spatial_values|function|10b6b39d2d390156
 plot_points_map|function|0feb584e8aa31cf2
 get_expert_maps|function|24ad975508022b97
-add_expert_offset|function|3decf39cf7f824dd
+add_expert_offset|function|a9e90d89dcdab6d2
 predict_greta_mspp|function|4508027015ed7b1f
 target_spp|function|ba3f8576d5f90bd1
 format_mpp_data|function|0ccf3a9c37d0fe52
@@ -123,4 +128,4 @@ predictive_checks|function|34000fe439631501
 prior_sample_free_states|function|77a3bc33b89a5729
 fit_model_multisp_pp_count|function|9a4978c3a550fe69
 generate_valid_inits|function|1ff55a87fc86fe12
-pred_file_multisp_pp_count_expoff|stem|24de58f4f336aa85|a5abc708f3277abd|b210203a35d06824|149914016||t20390.2827735533s|s960733b|960733|rds|local|vector|||0.786||
+rel_abund_plots|stem|e83a1276e13561d6|e2e63b3308edbf60|8b15b1b2e3635cec|-947497957||t20391.9367897367s|s44b|44|rds|local|vector|||1.313||

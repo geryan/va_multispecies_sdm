@@ -558,49 +558,50 @@ list(
  #
  # #####
  #
- # # distribution plots
- #
- # # this is the temporary thang until the above are tidied
- # tar_terra_rast(
- #   pred_dist,
- #   rast("outputs/rasters/va_plots_20250718/expert_offset_preds_mspp.tif")[[target_species]]
- # ),
- #
- # tar_target(
- #   distribution_plots,
- #   make_distribution_plots(
- #     pred_dist,
- #     model_data_spatial,
- #     plot_dir = "outputs/figures/distribution_plots/distn_20250804"
- #   )
- # ),
- #
- # ## relative abundance
- #
- # # this is the temporary thang until the above are tidied
+ # distribution plots
+
+ # this is the temporary thang until the above are tidied
+ tar_terra_rast(
+   pred_dist,
+   rast(x = pred_file_multisp_pp_count_expoff)
+ ),
+
+ tar_target(
+   distribution_plots,
+   make_distribution_plots(
+     pred_dist,
+     model_data_spatial,
+     plot_dir = "outputs/figures/distribution_plots/distn_20251030"
+   )
+ ),
+
+ ## relative abundance
+
+ #this is the temporary thang until the above are tidied
  # tar_terra_rast(
  #   pred_dist_rgb,
  #   rast("outputs/rasters/va_plots_20250718/expert_offset_preds_mspp.tif")
  # ),
- #
- # tar_terra_rast(
- #   rel_abund_rgb,
- #   make_rel_abund_rgb(
- #     x = pred_dist_rgb,
- #     threshold = 0.05
- #   ),
- #   datatype = "INT1U"
- # ),
- #
- # tar_target(
- #   rel_abund_plots,
- #   make_rel_abund_rgb_plot(
- #     rel_abund_rgb,
- #     project_mask,
- #     filename = "outputs/figures/rgb_relative_abundance.png"
- #   )
- # ),
 
+ # need to make a gambiae -coluzzii layer
+ tar_terra_rast(
+   rel_abund_rgb,
+   make_rel_abund_rgb(
+     #x = pred_dist_rgb,
+     x = pred_dist,
+     threshold = 0.05
+   ),
+   datatype = "INT1U"
+ ),
+
+ tar_target(
+   rel_abund_plots,
+   make_rel_abund_rgb_plot(
+     rel_abund_rgb,
+     project_mask,
+     filename = "outputs/figures/rgb_relative_abundance_20251030.png"
+   )
+ ),
 
  #####################
 
