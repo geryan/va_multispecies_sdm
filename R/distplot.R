@@ -5,7 +5,10 @@ distplot <- function(
       "mako",
       "rb",
       "magma",
-      "rocket"
+      "rocket",
+      "mono",
+      "orchid",
+      "brick"
     ),
     guide = c(
       "none",
@@ -56,6 +59,18 @@ distplot <- function(
         option = "F",
         direction = -1,
         na.value = "transparent"
+      ),
+    mono = p +
+      scale_id_continuous(
+        cols = c("grey97", "black")
+      ),
+    orchid = p +
+      scale_id_continuous(
+        cols = c("grey97", "darkorchid")
+      ),
+    brick = p +
+      scale_id_continuous(
+        cols = c("grey97", "firebrick")
       )
   )
 

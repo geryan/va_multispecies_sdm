@@ -14,7 +14,10 @@ distplotlist <- function(
       "mako",
       "rb",
       "magma",
-      "rocket"
+      "rocket",
+      "mono",
+      "orchid",
+      "brick"
     )
   ) {
 
