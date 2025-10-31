@@ -17,7 +17,8 @@ reduce_sampling_methods <- function(sampling_method) {
       "human_baited_net_ind",
       "animal_baited_net",
       "tent_trap",
-      "human_baited_net_out"
+      "human_baited_net_out",
+      "larvae"
     ),
     "other",
     sampling_method

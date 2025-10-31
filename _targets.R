@@ -473,7 +473,7 @@ list(
      target_species,
      project_mask,
      image_name = "outputs/images/multisp_pp_count.RData",
-     n_burnin = 2000,
+     n_burnin = 5000,
      n_samples = 1000,
      n_chains = 50
    )
@@ -556,7 +556,7 @@ list(
      target_species,
      project_mask,
      image_name = "outputs/images/multisp_pp_count_sm.RData",
-     n_burnin = 2000,
+     n_burnin = 5000,
      n_samples = 1000,
      n_chains = 50
    )
