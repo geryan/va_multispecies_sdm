@@ -457,7 +457,7 @@ list(
  ## models
  ################
 
- ## multispecies pp with biophysical offset count
+ ## multispecies pp count
  ##
 
  # fit the model in greta
@@ -499,63 +499,6 @@ list(
  ),
 
  #
- # # with expert offset
- # tar_target(
- #   pred_file_multisp_pp_count,
- #   predict_greta_mspp_count(
- #     image_filename = model_fit_image_multisp_pp_count,
- #     prediction_layer = covariate_rast,
- #     target_species,
- #     output_file_prefix = "outputs/rasters/multisp_pp_count"
- #   )
- # ),
-
- # read in tif to targets
-
- # make some plots and spit them out
- # again targets
-
- ##
- ## multispecies pp with biophysical offset count
- ##
-
- # tar_target(
- #   model_fit_image_multisp_pp_with_offset_count,
- #   fit_model_multisp_pp_with_offset_count_new(
- #     model_data_ragged,
- #     spatial_values,
- #     model_notna_idx_pa,
- #     model_notna_idx_po,
- #     image_name = "outputs/images/multisp_pp_with_offset_count.RData",
- #     n_burnin = 1000,
- #     n_samples = 1000,
- #     n_chains = 4
- #   )
- # ),
- #
- # tar_target(
- #   pred_file_multisp_pp_with_offset_count,
- #   predict_greta_mspp_with_offset_count(
- #     image_filename = model_fit_image_multisp_pp_with_offset_count,
- #     prediction_layer = static_vars_agg_mech_nonzero,
- #     target_species,
- #     output_file = "outputs/rasters/multisp_pp_with_offset_count.tif"
- #   )
- # ),
- #
- # tar_terra_rast(
- #   pred_multisp_pp_with_offset_count,
- #   rast(pred_file_multisp_pp_with_offset_count)
- # ),
- #
- # tar_terra_rast(
- #   pred_multisp_pp_with_offset_count_p_presence,
- #   poisson_to_prob(
- #     pred_multisp_pp_with_offset_count,
- #     filename = "outputs/rasters/multisp_pp_with_offset_count_p_presence.tif"
- #   )
- # ),
- #
  # #####
  #
  # distribution plots
@@ -577,13 +520,11 @@ list(
 
  ## relative abundance
 
- #this is the temporary thang until the above are tidied
- # tar_terra_rast(
- #   pred_dist_rgb,
- #   rast("outputs/rasters/va_plots_20250718/expert_offset_preds_mspp.tif")
- # ),
 
- # need to make a gambiae -coluzzii layer
+ # this is making the gambiae-coluzzii layer inside this function
+ # if we get the hierarchical species complex model in, be sure to still do this
+ # as the gam-col layer would (should :grimace:) only be the shared complex
+ # thingies, not the joint species level ones
  tar_terra_rast(
    rel_abund_rgb,
    make_rel_abund_rgb(
@@ -602,6 +543,90 @@ list(
      filename = "outputs/figures/rgb_relative_abundance_20251030.png"
    )
  ),
+
+ ###########
+ ## multispecies pp count with sampling method
+ ##
+
+  tar_target(
+   model_fit_image_multisp_pp_count_sm,
+   fit_model_multisp_pp_count_sm(
+     model_data_spatial,
+     target_covariate_names,
+     target_species,
+     project_mask,
+     image_name = "outputs/images/multisp_pp_count_sm.RData",
+     n_burnin = 2000,
+     n_samples = 1000,
+     n_chains = 50
+   )
+ ),
+
+ # # # read in image and predict out raster as a tif
+ tar_target(
+   pred_file_multisp_pp_count_sm,
+   predict_greta_mspp_count(
+     image_filename = model_fit_image_multisp_pp_count_sm,
+     prediction_layer = covariate_rast,
+     target_species,
+     output_file_prefix = "outputs/rasters/multisp_pp_count_sm"
+   )
+ ),
+
+ tar_target(
+   pred_file_multisp_pp_count_expoff_sm,
+   add_expert_offset(
+     predfilelist = pred_file_multisp_pp_count_sm,
+     expert_offset_maps = rast("outputs/rasters/va_plots_20250718/expert_offset_aggregated.tif")
+   )
+ ),
+
+ #
+ # #####
+ #
+ # distribution plots
+
+ # this is the temporary thang until the above are tidied
+ tar_terra_rast(
+   pred_dist_sm,
+   rast(x = pred_file_multisp_pp_count_expoff_sm)
+ ),
+
+ tar_target(
+   distribution_plots_sm,
+   make_distribution_plots(
+     pred_dist_sm,
+     model_data_spatial,
+     plot_dir = "outputs/figures/distribution_plots/distn_20251030_sm"
+   )
+ ),
+
+ ## relative abundance
+
+ tar_terra_rast(
+   rel_abund_rgb_sm,
+   make_rel_abund_rgb(
+     #x = pred_dist_rgb,
+     x = pred_dist_sm,
+     threshold = 0.05
+   ),
+   datatype = "INT1U"
+ ),
+
+ tar_target(
+   rel_abund_plots_sm,
+   make_rel_abund_rgb_plot(
+     rel_abund_rgb_sm,
+     project_mask,
+     filename = "outputs/figures/rgb_relative_abundance_20251030_sm.png"
+   )
+ ),
+
+
+
+ # sampling method model
+ # extra plots - colours, scaling
+ #
 
  #####################
 
