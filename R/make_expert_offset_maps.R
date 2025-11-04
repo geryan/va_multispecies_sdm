@@ -35,7 +35,7 @@ make_expert_offset_maps <- function(
   aggoffset <- sapply(
     aggdist,
     FUN = function(aggdist){
-      z <- 1 - aggdist/1000000
+      z <- 1 - aggdist/buffer_m
 
       z[which(values(z) < 0)] <- 0
 
@@ -43,8 +43,11 @@ make_expert_offset_maps <- function(
     }
   )
 
+  aggoffset <- rast(aggoffset) |>
+    resample(project_mask)
+
   writeRaster(
-    rast(aggoffset),
+    aggoffset,
     filename = filename,
     overwrite = TRUE
   )
