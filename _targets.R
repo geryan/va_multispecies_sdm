@@ -544,6 +544,25 @@ list(
    )
  ),
 
+ ## variance scaling
+
+ tar_terra_rast(
+   pred_dist_scale,
+   scale_predictions(
+     pred_file_multisp_pp_count_expoff
+   )
+ ),
+
+ tar_target(
+   distribution_plots_scale,
+   make_distribution_plots(
+     pred_dist_scale,
+     model_data_spatial,
+     plot_dir = "outputs/figures/distribution_plots/distn_20251030_scale"
+   )
+ ),
+
+
  ###########
  ## multispecies pp count with sampling method
  ##
@@ -622,11 +641,24 @@ list(
    )
  ),
 
+ ## variance scaling
 
+ tar_terra_rast(
+   pred_dist_scale_sm,
+   scale_predictions(
+     pred_file_multisp_pp_count_sm
+   )
+ ),
 
- # sampling method model
- # extra plots - colours, scaling
- #
+ tar_target(
+   distribution_plots_scale_sm,
+   make_distribution_plots(
+     pred_dist_scale_sm,
+     model_data_spatial,
+     plot_dir = "outputs/figures/distribution_plots/distn_20251030_sm_scale"
+   )
+ ),
+
 
  #####################
 
