@@ -58,7 +58,8 @@ scale_predictions <- function(
 
   writeRaster(
     scaled_rast,
-    filename = fn
+    filename = fn,
+    overwrite = TRUE
   )
 
   rast(fn)
