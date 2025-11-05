@@ -6,7 +6,9 @@ make_expert_offset_maps <- function(
   ){
 
   # make aggregated mask because the distance calculation takes effing ages
-  maskagg <- aggregate(project_mask, fact = 10)
+  # maskagg <- aggregate(project_mask, fact = 10)
+
+  maskagg <- project_mask
 
   # get species
   spp <- expert_maps$species
@@ -43,8 +45,8 @@ make_expert_offset_maps <- function(
     }
   )
 
-  aggoffset <- rast(aggoffset) |>
-    resample(project_mask)
+  aggoffset <- rast(aggoffset) #|>
+    #resample(project_mask)
 
   writeRaster(
     aggoffset,
