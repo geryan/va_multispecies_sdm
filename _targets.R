@@ -177,12 +177,22 @@ list(
     )
   ),
 
+  # extent of this is too small?
   tar_terra_rast(
     expert_offset_maps,
     make_expert_offset_maps(
       expert_maps,
       project_mask,
       buffer_km = 1000
+    )
+  ),
+
+  tar_terra_rast(
+    expert_offset_maps_500,
+    make_expert_offset_maps(
+      expert_maps,
+      project_mask,
+      buffer_km = 500
     )
   ),
 
@@ -473,7 +483,7 @@ list(
      target_species,
      project_mask,
      image_name = "outputs/images/multisp_pp_count.RData",
-     n_burnin = 5000,
+     n_burnin = 3000,
      n_samples = 1000,
      n_chains = 50
    )
@@ -491,12 +501,23 @@ list(
  ),
 
  tar_target(
-   pred_file_multisp_pp_count_expoff,
+   pred_file_multisp_pp_count_pa_expoff,
    add_expert_offset(
      predfilelist = pred_file_multisp_pp_count,
-     expert_offset_maps = rast("outputs/rasters/va_plots_20250718/expert_offset_aggregated.tif")
+     #expert_offset_maps = rast("outputs/rasters/va_plots_20250718/expert_offset_aggregated.tif")
+     expert_offset_maps = expert_offset_maps_500
    )
  ),
+
+ tar_target(
+   pred_file_multisp_pp_count_count_expoff,
+   add_expert_offset_count(
+     predfilelist = pred_file_multisp_pp_count,
+     #expert_offset_maps = rast("outputs/rasters/va_plots_20250718/expert_offset_aggregated.tif")
+     expert_offset_maps = expert_offset_maps_500
+   )
+ ),
+
 
  #
  # #####
@@ -506,7 +527,7 @@ list(
  # this is the temporary thang until the above are tidied
  tar_terra_rast(
    pred_dist,
-   rast(x = pred_file_multisp_pp_count_expoff)
+   rast(x = pred_file_multisp_pp_count_pa_expoff)
  ),
 
  tar_target(
@@ -549,7 +570,7 @@ list(
  tar_terra_rast(
    pred_dist_scale,
    scale_predictions(
-     pred_file_multisp_pp_count_expoff
+     lambda_file = pred_file_multisp_pp_count_count_expoff
    )
  ),
 
@@ -575,7 +596,7 @@ list(
      target_species,
      project_mask,
      image_name = "outputs/images/multisp_pp_count_sm.RData",
-     n_burnin = 5000,
+     n_burnin = 3000,
      n_samples = 1000,
      n_chains = 50
    )
@@ -596,9 +617,26 @@ list(
    pred_file_multisp_pp_count_expoff_sm,
    add_expert_offset(
      predfilelist = pred_file_multisp_pp_count_sm,
-     expert_offset_maps = rast("outputs/rasters/va_plots_20250718/expert_offset_aggregated.tif")
+     expert_offset_maps = expert_offset_maps_500
+     #expert_offset_maps = rast("outputs/rasters/va_plots_20250718/expert_offset_aggregated.tif")
    )
  ),
+
+ tar_target(
+   pred_file_multisp_pp_count_expoff_sm_count,
+   add_expert_offset_count(
+     predfilelist = pred_file_multisp_pp_count_sm,
+     expert_offset_maps = expert_offset_maps_500
+     #expert_offset_maps = rast("outputs/rasters/va_plots_20250718/expert_offset_aggregated.tif")
+   )
+ ),
+#
+#  tar_target(
+#    pred_file_multisp_pp_count_expoff_sm_500,
+#    add_expert_offset(
+#      predfilelist = pred_file_multisp_pp_count_sm,
+#    )
+#  ),
 
  #
  # #####
@@ -646,7 +684,7 @@ list(
  tar_terra_rast(
    pred_dist_scale_sm,
    scale_predictions(
-     pred_file_multisp_pp_count_sm
+     pred_file_multisp_pp_count_expoff_sm_count
    )
  ),
 
