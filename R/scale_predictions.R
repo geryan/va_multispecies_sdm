@@ -12,15 +12,26 @@ scale_predictions <- function(
     n_sample = 1000
   ) {
 
-  lambda <- rast(lambda_file$count)
+  lambda <- rast(lambda_file)
 
   log_lambda <- log(lambda)
+  log_lambda[is.infinite(log_lambda)] <- NA
 
-  sample_log_lambda <- terra::spatSample(
-    log_lambda,
-    n_sample,
-    na.rm = TRUE
-  )
+  # sample_log_lambda <- terra::spatSample(
+  #   log_lambda,
+  #   n_sample,
+  #   na.rm = TRUE
+  # )
+
+  sample_log_lambda <- sapply(
+    X = log_lambda,
+    FUN = terra::spatSample,
+    size = n_sample,
+    na.rm = TRUE,
+    simplify = TRUE
+  ) |>
+    as.data.frame()
+
 
   inv_cloglog <- function(x) {
     1 - exp(-exp(x))
@@ -50,14 +61,32 @@ scale_predictions <- function(
 
   scaled_rast <- inv_cloglog(log_lambda + log_scale)
 
+  scaled_result <- lapply(
+    X = scaled_rast,
+    FUN = function(x, y){
+
+      z <- x
+
+      naidx <- is.na(values(x))
+
+      z[naidx] <- 0
+
+      mask(z, y)
+
+    },
+    y = lambda[[1]]
+  ) |>
+    rast()
+
+
   fn <- sub(
     pattern = "\\.tif",
     replacement = "_scaled.tif",
-    x = lambda_file$pa
+    x = lambda_file
   )
 
   writeRaster(
-    scaled_rast,
+    scaled_result,
     filename = fn,
     overwrite = TRUE
   )
