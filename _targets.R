@@ -697,6 +697,117 @@ list(
    )
  ),
 
+ #############################################################################
+ #############################################################################
+ # 4 species only analysis
+# need to refine this list
+tar_target(
+  target_species_4,
+  target_spp_test_only()
+),
+
+tar_target(
+  model_data_records_4,
+  generate_model_data_records(
+    full_data_records,
+    target_species = target_species_4
+  )
+),
+
+
+tar_target(
+  record_data_spatial_all_4,
+  get_spatial_values(
+    lyrs = covariate_rast_all,
+    dat = model_data_records_4,
+    project_mask
+  )
+),
+
+tar_target(
+  record_data_spatial_4,
+  record_data_spatial_all_4 |>
+    select(
+      - all_of(
+        names(covariate_rast_all)[
+          !names(covariate_rast_all) %in%
+            c(
+              target_covariate_names,
+              offset_names,
+              bias_names
+            )
+        ]
+      ),
+    )
+),
+
+tar_target(
+  model_data_spatial_4,
+  bind_rows(
+    record_data_spatial_4 |>
+      mutate(weight = 1),
+    bg_kmeans_df |>
+      mutate(
+        data_type = "bg",
+        presence = 0,
+        n = 0
+      )
+  )
+),
+
+## multispecies pp count
+##
+
+# fit the model in greta
+# save an image of the environment within function
+# otherwise the greta model nodes become disconnected and buggered up
+# because of some R6 nonsense with greta or whatever and the usual targets
+# shenanigans
+tar_target(
+  model_fit_image_multisp_pp_count_4,
+  fit_model_multisp_pp_count(
+    model_data_spatial_4,
+    target_covariate_names,
+    target_species_4,
+    project_mask,
+    image_name = "outputs/images/4_multisp_pp_count.RData",
+    n_burnin = 2000,
+    n_samples = 1000,
+    n_chains = 50
+  )
+),
+
+# # read in image and predict out raster as a tif
+tar_target(
+  pred_file_multisp_pp_count_4,
+  predict_greta_mspp_count(
+    image_filename = model_fit_image_multisp_pp_count_4,
+    prediction_layer = covariate_rast,
+    target_species,
+    output_file_prefix = "outputs/rasters/4_multisp_pp_count"
+  )
+),
+
+tar_target(
+  pred_file_multisp_pp_count_pa_expoff_4,
+  add_expert_offset(
+    predfilelist = pred_file_multisp_pp_count_4,
+    #expert_offset_maps = rast("outputs/rasters/va_plots_20250718/expert_offset_aggregated.tif")
+    expert_offset_maps = expert_offset_maps_500
+  )
+),
+
+tar_target(
+  pred_file_multisp_pp_count_count_expoff_4,
+  add_expert_offset_count(
+    predfilelist = pred_file_multisp_pp_count_4,
+    #expert_offset_maps = rast("outputs/rasters/va_plots_20250718/expert_offset_aggregated.tif")
+    expert_offset_maps = expert_offset_maps_500
+  )
+),
+
+
+
 
  #####################
 
