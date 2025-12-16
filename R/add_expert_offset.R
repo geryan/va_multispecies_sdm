@@ -10,10 +10,13 @@
 #' @export
 add_expert_offset <- function(
     predfilelist,
-    expert_offset_maps
+    expert_offset_maps,
+    pred_type = c("pa", "count")
   ) {
 
-  predraw <- rast(predfilelist$pa)
+  pred_type <- match.arg(pred_type)
+
+  predraw <- rast(predfilelist[[pred_type]])
 
   r <- sapp(
     x = predraw,
@@ -34,7 +37,7 @@ add_expert_offset <- function(
   filename <- sub(
     pattern = "\\.tif",
     replacement = "_expoff.tif",
-    x = predfilelist$pa
+    x = predfilelist[[pred_type]]
   )
 
   writeRaster(
