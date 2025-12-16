@@ -15,30 +15,20 @@ add_expert_offset <- function(
 
   predraw <- rast(predfilelist$pa)
 
+  r <- sapp(
+    x = predraw,
+    fun = function(x, expert_offset_maps){
+      sp <- names(x)
 
-  # it would be nice to do this is a more sophisticated programmatic way
-  # but for now hard-coding for the win
-  # species_lookup <- list(
-  #   arabiensis = "arabiensis",
-  #   gambiae = c("coluzzii", "gambiae", "gambiae_coluzzii", "gambiae_complex"),
-  #   funestus = c("funestus", "funestus_complex"),
-  #   melas = "melas",
-  #   merus = "merus",
-  #   moucheti = "moucheti",
-  #   nili = "nili"
-  # )
-  #
-
-
-  r <- c(
-    terra::subset(predraw, "arabiensis") * expert_offset_maps$arabiensis,
-    terra::subset(predraw, "coluzzii") * expert_offset_maps$gambiae,
-    terra::subset(predraw, "funestus") * expert_offset_maps$funestus,
-    terra::subset(predraw, "gambiae") * expert_offset_maps$gambiae,
-    terra::subset(predraw, "melas") * expert_offset_maps$melas,
-    terra::subset(predraw, "merus") * expert_offset_maps$merus,
-    terra::subset(predraw, "moucheti") * expert_offset_maps$moucheti,
-    terra::subset(predraw, "nili") * expert_offset_maps$nili
+      if(sp %in% c("coluzzii", "gambiae", "gambiae_coluzzii", "gambiae_complex")){
+        terra::subset(x, sp) * terra::subset(expert_offset_maps, "gambiae")
+      } else if (sp %in% c("funestus", "funestus_complex")){
+        terra::subset(x, sp) * terra::subset(expert_offset_maps, "funestus")
+      } else {
+        terra::subset(x, sp) * terra::subset(expert_offset_maps, sp)
+      }
+    },
+    expert_offset_maps
   )
 
   filename <- sub(
