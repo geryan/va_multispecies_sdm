@@ -61,8 +61,8 @@ list(
     c(
       #ag_microclim,
       #research_tt_by_country,
-      "arid",
-      "built_volume",
+      #"arid",
+      #"built_volume",
       # cropland,
       "elevation",
       "evi_mean", # correlates with pressure_mean rainfall_mean and solrad_mean
@@ -74,12 +74,12 @@ list(
       "soil_clay",
       # # solrad_mean,
       # # surface_water, remove and replace with distance to surface water
-      "tcb_mean", #, # strongly correlates with tcw
+      "tcb_mean"#, # strongly correlates with tcw
       # # tcw_mean,
       # windspeed_mean,
       #"easting",
       #"northing",
-      "distance_from_sea"
+      # "distance_from_sea"
     )
   ),
 
@@ -765,10 +765,10 @@ tar_target(
 # shenanigans
 tar_target(
   model_fit_image_multisp_pp_count_4,
-  fit_model_multisp_pp_count(
-    model_data_spatial_4,
-    target_covariate_names,
-    target_species_4,
+  fit_model_multisp_pp_count_4spp(
+    model_data_spatial = model_data_spatial_4,
+    target_covariate_names = target_covariate_names,
+    target_species = target_species_4,
     project_mask,
     image_name = "outputs/images/4_multisp_pp_count.RData",
     n_burnin = 2000,
@@ -793,16 +793,18 @@ tar_target(
   add_expert_offset(
     predfilelist = pred_file_multisp_pp_count_4,
     #expert_offset_maps = rast("outputs/rasters/va_plots_20250718/expert_offset_aggregated.tif")
-    expert_offset_maps = expert_offset_maps_500
+    expert_offset_maps = expert_offset_maps_500,
+    pred_type = "pa"
   )
 ),
 
 tar_target(
   pred_file_multisp_pp_count_count_expoff_4,
-  add_expert_offset_count(
+  add_expert_offset(
     predfilelist = pred_file_multisp_pp_count_4,
     #expert_offset_maps = rast("outputs/rasters/va_plots_20250718/expert_offset_aggregated.tif")
-    expert_offset_maps = expert_offset_maps_500
+    expert_offset_maps = expert_offset_maps_500,
+    pred_type = "count"
   )
 ),
 
