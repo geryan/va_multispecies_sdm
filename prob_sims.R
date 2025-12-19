@@ -338,15 +338,12 @@ log_bias_obs_pobg <- log_bias[pobg_data_loc_sp_idx]
 log_lambda_obs_pobg <-log_lambda[pobg_data_loc_sp_idx] #+
 #sampling_re[pobg_data_index$sampling_method_id]
 
-# # bernoulli likelihood
-# logit_prob_po <- logit_icloglog(
-#   log_lambda_obs_pobg +
-#     log_bias_obs_pobg +
-#     log(area_pobg)
-# )
-# po_data_response_expected <- ilogit(logit_prob_po)
-# distribution(po_data_response) <- bernoulli(po_data_response_expected)
-#
+po_data_response_expected <-   exp(
+  log_lambda_obs_pobg +
+    log_bias_obs_pobg +
+    log(area_pobg)
+)
+distribution(po_data_response) <- poisson(po_data_response_expected)
 
 #######################
 
@@ -462,8 +459,15 @@ sims <- calculate(
   logit_prob_pa,
 
   values = list(
-    beta = matrix(data = 0, nrow = 8, ncol = 9),
-    alpha = rep(0, times = 8)
+    beta = matrix(
+      data = 0.1,
+      ncol = length(target_species),
+      nrow = length(target_covariate_names)
+    ),
+    alpha = rep(
+      0.1,
+      times = length(target_species)
+    )
   ),
 
   nsim = n_sims
@@ -570,29 +574,43 @@ n_chains <- 50
 
 
 # tweak optimiser to converge rapidly and well, to initialise MCMC
-# optim <- opt(m,
-#              optimiser = adam(learning_rate = 0.5),
-#              max_iterations = 1e5)
-#
-# # should be 0 if converged
-# optim$convergence
-#
-# # if it gives a numerical error try reducing the learning rate (or just run it
-# # again)
-# # if it still doesn't converge, increase the number of iterations
-# optim$iterations
-#
-# init_vals <- inits_from_opt(
-#   optim,
-#   n_chains = n_chains
-# )
+optim <- opt(
+  m,
+  optimiser = adam(learning_rate = 0.5),
+  initial_values = initials(
+    beta = matrix(
+      data = 0.1,
+      nrow = length(target_covariate_names),
+      ncol = length(target_species)
+    ),
+    alpha = rep(
+      0.1,
+      times = length(target_species)
+    )
+  ),
+  max_iterations = 1e5
+)
+
+# should be 0 if converged
+optim$convergence
+
+# if it gives a numerical error try reducing the learning rate (or just run it
+# again)
+# if it still doesn't converge, increase the number of iterations
+optim$iterations
+
+init_vals <- inits_from_opt(
+  optim,
+  n_chains = n_chains
+)
 
 init_vals <- inits(
   n_chains = n_chains,
   nsp = n_species,
   ncv = length(target_covariate_names),
   inb = 0,
-  ina = 0
+  ina = 0,
+  ing = 1e-6
 )
 
 draws <- greta::mcmc(
@@ -606,6 +624,7 @@ draws <- greta::mcmc(
 coda::gelman.diag(draws, autoburnin = FALSE)
 mcmc_trace(draws, regex_pars = "alpha")
 mcmc_trace(draws, regex_pars = "beta")
+mcmc_trace(draws, regex_pars = c("gamma", "delta"))
 
 
 
