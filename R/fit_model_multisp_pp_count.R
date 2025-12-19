@@ -163,8 +163,8 @@ fit_model_multisp_pp_count <- function(
   penalty.l2.sdm <- penalty.l2.bias <- 0.1
 
   # trying others
-  #penalty.l2.intercept <- 1e-2
-  # penalty.l2.sdm <- penalty.l2.bias <- 100
+  penalty.l2.intercept <- 1e-2
+  # penalty.l2.sdm <- penalty.l2.bias <- 0.01
 
   intercept_sd <- sqrt(1 / penalty.l2.intercept)
   beta_sd <- sqrt(1 / penalty.l2.sdm)
@@ -181,7 +181,6 @@ fit_model_multisp_pp_count <- function(
 
   # informative priors on gamma and delta so exp(log_bias), i.e., bias,
   # has range around (0, 1) for z in (0, 1)
-  # these work really well
   # delta_sd <- 0.3
   # gamma_sd <- 0.1
 
@@ -406,7 +405,7 @@ fit_model_multisp_pp_count <- function(
   #sample(init_index, size = nsamples, replace = FALSE, prob = exp(log_probs_np))
 
   m <- model(alpha, beta, gamma, delta)#, sampling_re_raw, sampling_re_sd)
-   plot(m)
+   # plot(m)
 
 
   ############
@@ -470,16 +469,13 @@ fit_model_multisp_pp_count <- function(
   # fit model
   ###################
 
-  # optim <- opt(
-  #   m,
-  #   optimiser = adam(learning_rate = 0.001),
-  #   max_iterations = 1e6
-  # )
-  # if it gives a numerical error try reducing the learning rate (or just run it
-  # again)
-  # if it still doesn't converge, increase the number of iterations
+  optim <- opt(
+    m,
+    optimiser = adam(learning_rate = 0.5),
+    max_iterations = 2e5
+  )
 
-  optim <- opt(m, max_iterations = 1e5) # with sinka species plus coluzzii this converges
+  #optim <- opt(m, max_iterations = 1e5) # with sinka species plus coluzzii this converges
 
   # should be 0 if converged
   optim$convergence
@@ -492,7 +488,7 @@ fit_model_multisp_pp_count <- function(
   )
 
 
-  optim$par
+  #optim$par
 
   init_vals <- inits_from_opt(
     optim,
@@ -516,6 +512,14 @@ fit_model_multisp_pp_count <- function(
   )
   ggsave(
     "outputs/figures/traceplots/alpha.png"
+  )
+
+  mcmc_trace(
+    x = draws,
+    regex_pars = "beta"
+  )
+  ggsave(
+    "outputs/figures/traceplots/beta.png"
   )
 
   mcmc_trace(

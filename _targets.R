@@ -283,11 +283,27 @@ list(
    target_species,
    target_spp()
    #target_spp_test_only()
+   # c(
+   #   "arabiensis", # in sinka 2010
+   #   "coluzzii",
+   #   "funestus", # in sinka 2010
+   #   "gambiae",  # in sinka 2010
+   #   "moucheti", # in sinka 2010
+   #   "nili"#,  # in sinka 2010
+   # )
  ),
 
  tar_target(
    model_data_records,
    generate_model_data_records(
+     full_data_records,
+     target_species = target_species
+   )
+ ),
+
+ tar_target(
+   model_data_records_ni,
+   generate_model_data_records_no_impute(
      full_data_records,
      target_species = target_species
    )
@@ -310,11 +326,16 @@ list(
  #   )
  # ),
 
+ # This target extracts the spatial data from the covariate rasts
+ # but also removes points that are outside of the project mask
+ # this gets rid of ~10k points (some of which will be imputed)
+ #
  tar_target(
    record_data_spatial_all,
    get_spatial_values(
      lyrs = covariate_rast_all,
-     dat = model_data_records,
+     #dat = model_data_records,
+     dat = model_data_records_ni,
      project_mask
    )
  ),
@@ -483,7 +504,7 @@ list(
      target_species,
      project_mask,
      image_name = "outputs/images/multisp_pp_count.RData",
-     n_burnin = 3000,
+     n_burnin = 2000,
      n_samples = 1000,
      n_chains = 50
    )
@@ -505,16 +526,18 @@ list(
    add_expert_offset(
      predfilelist = pred_file_multisp_pp_count,
      #expert_offset_maps = rast("outputs/rasters/va_plots_20250718/expert_offset_aggregated.tif")
-     expert_offset_maps = expert_offset_maps_500
+     expert_offset_maps = expert_offset_maps_500,
+     pred_type = "pa"
    )
  ),
 
  tar_target(
    pred_file_multisp_pp_count_count_expoff,
-   add_expert_offset_count(
+   add_expert_offset(
      predfilelist = pred_file_multisp_pp_count,
      #expert_offset_maps = rast("outputs/rasters/va_plots_20250718/expert_offset_aggregated.tif")
-     expert_offset_maps = expert_offset_maps_500
+     expert_offset_maps = expert_offset_maps_500,
+     pred_type = "count"
    )
  ),
 
@@ -535,7 +558,7 @@ list(
    make_distribution_plots(
      pred_dist,
      model_data_spatial,
-     plot_dir = "outputs/figures/distribution_plots/distn_20251030"
+     plot_dir = "outputs/figures/distribution_plots/distn_20251219"
    )
  ),
 
@@ -561,7 +584,7 @@ list(
    make_rel_abund_rgb_plot(
      rel_abund_rgb,
      project_mask,
-     filename = "outputs/figures/rgb_relative_abundance_20251030.png"
+     filename = "outputs/figures/rgb_relative_abundance_20251219.png"
    )
  ),
 
@@ -579,7 +602,7 @@ list(
    make_distribution_plots(
      pred_dist_scale,
      model_data_spatial,
-     plot_dir = "outputs/figures/distribution_plots/distn_20251030_scale"
+     plot_dir = "outputs/figures/distribution_plots/distn_20251219_scale"
    )
  ),
 
@@ -654,7 +677,7 @@ list(
    make_distribution_plots(
      pred_dist_sm,
      model_data_spatial,
-     plot_dir = "outputs/figures/distribution_plots/distn_20251030_sm"
+     plot_dir = "outputs/figures/distribution_plots/distn_20251219_sm"
    )
  ),
 
@@ -675,7 +698,7 @@ list(
    make_rel_abund_rgb_plot(
      rel_abund_rgb_sm,
      project_mask,
-     filename = "outputs/figures/rgb_relative_abundance_20251030_sm.png"
+     filename = "outputs/figures/rgb_relative_abundance_20251219_sm.png"
    )
  ),
 
@@ -693,7 +716,7 @@ list(
    make_distribution_plots(
      pred_dist_scale_sm,
      model_data_spatial,
-     plot_dir = "outputs/figures/distribution_plots/distn_20251030_sm_scale"
+     plot_dir = "outputs/figures/distribution_plots/distn_20251219_sm_scale"
    )
  ),
 
