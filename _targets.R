@@ -94,6 +94,11 @@ list(
   ),
 
   tar_terra_rast(
+    offsets,
+    read_offset_data()
+  ),
+
+  tar_terra_rast(
     covariate_rast,
     subset_covariate_rast(
       covariate_rast_all,

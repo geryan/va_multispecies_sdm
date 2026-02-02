@@ -1,0 +1,25 @@
+read_offset_data <- function(
+    odir = "/Users/gryan/Dropbox/vector_rasters/"
+  ){
+
+   onames <- list.files(path = odir) |>
+    sub(
+      pattern = "an_gambiae\\.",
+      replacement = "offset_",
+      x = _
+    ) |>
+    sub(
+      pattern = ".adult.tif",
+      replacement = "",
+      x = _
+    )
+
+   offsets <- list.files(odir, full.names = TRUE) |>
+     rast() |>
+     terra::aggregate(fact = 2)
+
+   names(offsets) <- onames
+
+   offsets
+
+}
