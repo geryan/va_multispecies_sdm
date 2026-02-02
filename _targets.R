@@ -339,8 +339,8 @@ list(
    record_data_spatial_all,
    get_spatial_values(
      lyrs = covariate_rast_all,
-     #dat = model_data_records,
-     dat = model_data_records_ni,
+     dat = model_data_records,
+     #dat = model_data_records_ni,
      project_mask
    )
  ),
