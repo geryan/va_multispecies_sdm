@@ -162,13 +162,17 @@ generate_model_data_records <- function(
         !is.na(count),
         count,
         presence
-      )
+      ),
+      model_date = start_date + (end_date - start_date)/2
     ) |>
     select(
       species,
       latitude,
       longitude,
       sampling_method,
+      start_date,
+      end_date,
+      model_date,
       study_months,
       data_type,
       presence,
