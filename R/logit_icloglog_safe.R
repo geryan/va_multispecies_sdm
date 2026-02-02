@@ -2,10 +2,26 @@
 # convert log lambda into a logit probability, to evaluate the pa likelihood in
 # a more numerically stable way (see ilogit_stable.R for definition and
 # explanation)
-logit_icloglog <- function(eta) {
-  exp_eta <- exp(eta)
-  log1p(-exp(-exp_eta)) + exp_eta
-}
+# logit_icloglog <- function(eta) {
+#   exp_eta <- exp(eta)
+#   log1p(-exp(-exp_eta)) + exp_eta
+# }
+
+# convert log lambda into a logit probability, to evaluate the pa likelihood in
+# a more numerically stable way (see ilogit_stable.R for definition and
+# explanation)
+
+# don't do this, this results in invalid samples for log_lambda_obs_pa >= 3.7
+# # pa_data_response_expected <- icloglog(log_lambda_obs_pa)
+
+# do this instead
+# # logit_prob_pa <- logit_icloglog(log_lambda_obs_pa)
+# # pa_data_response_expected <- ilogit(logit_prob_pa)
+# # distribution(pa_data_response) <- bernoulli(pa_data_response_expected)
+
+######################
+# SAFE VERSION
+######################
 
 # given a vector of values x, clamp them to within a specified range. This is
 # equivalent to: pmax(pmin(x, clamp_max), clamp_min), but will work with greta
@@ -39,6 +55,8 @@ logit_icloglog_safe <- function(
   exp_eta <- exp(eta_clamped)
   log1p(-exp(-exp_eta)) + exp_eta
 }
+
+logit_icloglog <- logit_icloglog_safe
 
 # to find clamp values, need to find out the values of eta (log abundance) that
 # over/underflow in TFP
