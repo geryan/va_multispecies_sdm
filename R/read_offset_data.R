@@ -14,12 +14,11 @@ read_offset_data <- function(
       x = _
     )
 
-   offsets <- list.files(odir, full.names = TRUE) |>
-     rast() |>
-     terra::aggregate(fact = 2)
+   offsets_raw <- list.files(odir, full.names = TRUE) |>
+     rast()
 
-   names(offsets) <- onames
+   names(offsets_raw) <- onames
 
-   offsets
+   offsets_raw
 
 }

@@ -38,6 +38,51 @@ list(
   # spatial data
   ########################
 
+  # do preprocessing of specific layers only
+  #
+
+  tar_terra_rast(
+    offsets_raw,
+    read_offset_data()
+  ),
+
+  tar_terra_rast(
+    project_mask_5,
+    make_mask_from_offsets(offsets_raw)
+  ),
+
+  tar_terra_rast(
+    offsets_5,
+    clean_offsets(
+      offsets_raw,
+      project_mask_5
+    )
+  ),
+
+  tar_terra_rast(
+    built_volume_raw,
+    rast("/Users/gryan/Documents/tki_work/vector_atlas/africa_spatial_data/data/raster/MAP_covariates/GHSL_2023/GHS_BUILT_V_R23A.2020.Annual.Data.1km.Data.tif") |>
+    set_layer_names("built_volume")
+  ),
+
+  tar_terra_rast(
+    elevation_raw,
+    global_regions |>
+      filter(continent == "Africa") |>
+      pull(iso3) |>
+      lapply(
+        FUN = function(x){
+          elevation_30s(
+            country = x,
+            path = "data/raster/geodata"
+          )
+        }
+      ) |>
+      sprc() |>
+      merge()
+  ),
+
+
   # spatial data preprocessing in
   # https://github.com/geryan/africa_spatial_data
 
@@ -94,11 +139,6 @@ list(
   ),
 
   tar_terra_rast(
-    offsets,
-    read_offset_data()
-  ),
-
-  tar_terra_rast(
     covariate_rast,
     subset_covariate_rast(
       covariate_rast_all,
@@ -109,10 +149,10 @@ list(
   ),
 
 
-  tar_terra_rast(
-    project_mask,
-    make_project_mask(covariate_rast)
-  ),
+  # tar_terra_rast(
+  #   project_mask,
+  #   make_project_mask(covariate_rast)
+  # ),
 
   ## specific regions/ countries of interest for close-up plots
 
@@ -375,6 +415,9 @@ list(
        )
    )
  ),
+
+
+
 
 
  tar_target(
