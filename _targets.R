@@ -66,6 +66,16 @@ list(
   ),
 
   tar_terra_rast(
+    built_volume_5,
+    built_volume_raw |>
+      aggregate(fact = 5) |>
+      crop(y = project_mask_5) |>
+      resample(y = project_mask_5) |>
+      mask(mask = project_mask_5) |>
+      scale()
+  ),
+
+  tar_terra_rast(
     elevation_raw,
     global_regions |>
       filter(continent == "Africa") |>
@@ -79,9 +89,116 @@ list(
         }
       ) |>
       sprc() |>
-      merge()
+      merge() |>
+      set_layer_names("elevation")
   ),
 
+  tar_terra_rast(
+    elevation_5,
+    elevation_raw |>
+      aggregate(fact = 5) |>
+      crop(y = project_mask_5) |>
+      resample(y = project_mask_5) |>
+      mask(mask = project_mask_5) |>
+      scale()
+  ),
+
+  tar_terra_rast(
+    footprint_raw,
+    footprint(
+      year = 2009,
+      path = "data/raster/geodata"
+    ) |>
+      set_layer_names("footprint")
+  ),
+
+  tar_terra_rast(
+    footprint_5,
+    footprint_raw |>
+      aggregate(fact = 5) |>
+      crop(y = project_mask_5) |>
+      resample(y = project_mask_5) |>
+      mask(mask = project_mask_5) |>
+      scale()
+  ),
+
+   # monthly EVI available from MAP, need to work out some code to process this
+   # stuff on MAP workbench so that I don't need to download all the enormous
+   # layers
+  tar_terra_rast(
+    evi_raw,
+    prepare_multi_layer(
+      data_dir ="/Users/gryan/Documents/tki_work/vector_atlas/africa_spatial_data/data/raster/MAP_covariates/EVI/"#,
+      # layer_prefix = "evi",
+      # file_id_prefix = ".*v6\\.",
+      # file_id_suffix = "\\.Annual.*"
+    )
+  ),
+
+  tar_terra_rast(
+    evi_5,
+    evi_raw |>
+      mean() |>
+      set_layer_names("evi") |>
+      crop(y = project_mask_5) |>
+      resample(y = project_mask_5) |>
+      mask(mask = project_mask_5) |>
+      scale()
+  ),
+
+  # same for TCB re monthly data
+  tar_terra_rast(
+    tcb_raw,
+    prepare_multi_layer(
+      data_dir ="/Users/gryan/Documents/tki_work/vector_atlas/africa_spatial_data/data/raster/MAP_covariates/TCB/"
+    )
+  ),
+
+  tar_terra_rast(
+    tcb_5,
+    tcb_raw |>
+      mean() |>
+      set_layer_names("tcb") |>
+      crop(y = project_mask_5) |>
+      resample(y = project_mask_5) |>
+      mask(mask = project_mask_5) |>
+      scale()
+  ),
+
+  # also same for lst re monthly data
+  tar_terra_rast(
+    lst_night_raw,
+    prepare_multi_layer(
+      data_dir ="/Users/gryan/Documents/tki_work/vector_atlas/africa_spatial_data/data/raster/MAP_covariates/LST_Night/"
+    )
+  ),
+
+  tar_terra_rast(
+    lst_night_5,
+    lst_night_raw |>
+      mean() |>
+      set_layer_names("lst_night") |>
+      crop(y = project_mask_5) |>
+      resample(y = project_mask_5) |>
+      mask(mask = project_mask_5) |>
+      scale()
+  ),
+
+  tar_terra_rast(
+    soil_clay_filled,
+    get_soil_af() |>
+      set_layer_names("soil_clay")
+  ),
+
+  tar_terra_rast(
+    soil_clay_5,
+    soil_clay_filled |>
+      aggregate(fact = 5) |>
+      crop(y = project_mask_5) |>
+      resample(y = project_mask_5) |>
+      mask(mask = project_mask_5) |>
+      scale()
+  ),
 
   # spatial data preprocessing in
   # https://github.com/geryan/africa_spatial_data
