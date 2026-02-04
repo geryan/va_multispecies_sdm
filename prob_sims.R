@@ -10,7 +10,8 @@ model_data_spatial <- model_data_spatial |>
   filter(
     (data_type != "count") |
       (data_type == "count" & count < 1000)
-  )
+  ) |>
+ filter(!(latitude > 14 & latitude < 14.5 & longitude > 38 & longitude < 38.5))
 #target_covariate_names <- target_covariate_names[c(1,3)] # works
 #target_covariate_names
 
@@ -463,34 +464,81 @@ sims <- calculate(
       data = 0.1,
       ncol = length(target_species),
       nrow = length(target_covariate_names)
-    ),
-    alpha = rep(
-      0.1,
-      times = length(target_species)
-    )
+     )#,
+    # alpha = rep(
+    #   0.1,
+    #   times = length(target_species)
+    # )
   ),
 
   nsim = n_sims
 )
+
+# pa likelihood
+# logit_prob_pa <- logit_icloglog(log_lambda_obs_pa)
+# pa_data_response_expected <- ilogit(logit_prob_pa)
+# distribution(pa_data_response) <- bernoulli(pa_data_response_expected)
+
+softplus <- function(x) {
+  log1p(exp(-abs(x))) + pmax(x, 0)
+}
+
+# x <- rnorm(100)
+# y1 <- softplus(x)
+# library(greta)
+# y2 <- calculate(log1pe(x))[[1]][, 1]
+# max(abs(y2 - y1))
+
+
+bernoulli_logprob <- function(y, logit_p) {
+  ifelse(y == 1,
+         -softplus(-logit_p),
+         -softplus(logit_p))
+}
+
+# p <- runif(10)
+# y <- rbinom(10, 1, p)
+#
+# bernoulli_logprob(y, qlogis(p))
+# dbinom(y, 1, p, log = TRUE)
+
+
+
 
 # compute likelihoods for these
 for (i in 1:n_sims) {
   lp_count <- sum(dpois(as.numeric(count_data_response),
             sims$count_data_response_expected[i, , 1],
             log = TRUE))
-  lp_pa <- sum(dbinom(as.numeric(pa_data_response),
-             size = 1,
-             prob = sims$pa_data_response_expected[i, , 1],
-             log = TRUE))
+  lp_pa <- sum(bernoulli_logprob(
+    as.numeric(pa_data_response),
+    logit_p = sims$logit_prob_pa[i, , 1]
+  ))
   lp_po <- sum(dpois(as.numeric(po_data_response),
             sims$po_data_response_expected[i, , 1],
             log = TRUE))
   print(
-    sprintf("sim %i: count: %s, pa: %s, po: %s",
+    sprintf("sim %i: count: %s, pa: %s, po: %s, sum %s",
       i,
       lp_count,
       lp_pa,
-      lp_po)
+      lp_po,
+      sum(lp_count, lp_pa, lp_po)
+      )
+  )
+
+  # lp_pa_bern <- bernoulli_logprob(
+  #   as.numeric(pa_data_response),
+  #   logit_p = sims$logit_prob_pa[i, , 1]
+  #   )
+  #
+  first_inf <- which(!is.finite(lp_pa))[1]
+  print(
+    sprintf("sim %i: does have %s infinite probs, starting at %s",
+            i,
+            sum(!is.finite(lp_pa)),
+            first_inf
+    )
   )
 
   print(
@@ -538,8 +586,8 @@ for (i in 1:n_sims) {
 
 
 # fit model
-n_burnin <- 2000
-n_samples <- 1000
+n_burnin <- 500
+n_samples <- 100
 n_chains <- 50
 
 # init_vals <- generate_valid_inits(
@@ -609,8 +657,8 @@ init_vals <- inits(
   nsp = n_species,
   ncv = length(target_covariate_names),
   inb = 0,
-  ina = 0,
-  ing = 1e-6
+  ina = 0#,
+  #ing = 1e-6
 )
 
 draws <- greta::mcmc(
