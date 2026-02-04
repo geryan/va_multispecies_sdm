@@ -60,8 +60,16 @@ target_species|stem|65c87667d3d497aa|5b6a4c229505afcc|a9dc6222a64934e8|128078239
 bg_points|stem|e6467302d0118646|5ab3f349852ce216|7da45c4d61801ce8|1048788436||t20441.223471339s|s3312b|3312|rds|local|vector|||0.473||
 model_data_records_ni|stem|289cf0b3b347ea8d|9e913000f9ce5739|a63c3ab471f87bd6|81492456||t20441.2235169306s|s92872b|92872|rds|local|vector|||1.743||
 pca_covariate_layers|stem|11c5499b5789e55d|b6972b6623e6e195|3a21388de98be324|2025745045||t20441.2235322521s|s7308822b|7308822|format_custom&read=dGVycmE6OnJhc3QocGF0aCk&write=ewogICAgZG8uY2FsbCh0ZXJyYTo6d3JpdGVSYXN0ZXIsIGMobGlzdChvYmplY3QsIGZpbGVuYW1lID0gcGF0aCwgCiAgICAgICAgZmlsZXR5cGUgPSAiR1RpZmYiLCBvdmVyd3JpdGUgPSBUUlVFLCBnZGFsID0gTlVMTCksIGxpc3QoKSkpCn0&marshal=dGVycmE6OndyYXAob2JqZWN0KQ&unmarshal=dGVycmE6OnVud3JhcChvYmplY3Qp&convert=&copy=&repository=|local|list|||0.826||
-model_fit_image_multisp_pp_count|stem|04bcbe45f0f5c318|99916d5031032928|fe80931f97c225d0|1784940676||t20441.2164012518s||90|rds|local|vector|||31.563|Removed 144973 rows containing non-finite outside the scale range (`stat_density()`).. Removed 724 rows containing non-finite outside the scale range (`stat_density()`).. Removed 144973 rows containing non-finite outside the scale range (`stat_ecdf()`).. Removed 724 rows containing non-finite outside the scale range (`stat_ecdf()`).. number of columns of result is not a multiple of vector length (arg 1). Using `size` aesthetic for lines was deprecated in ggplot2 3.4.0. ℹ Please use `linewidth` instead. ℹ The deprecated feature was likely used in the bayesplot package.   Please report the issue at <https://github.com/stan-dev/bayesplot/issues/>.. Removed 2107 rows containing missing values or values outside the scale range (`geom_tile()`).. Removed 2105 rows containing missing values or values outside the scale range (`geom_smooth()`).. Removed 3087 rows containing missing values or values outside the scale range (`geom_tile()`).. Removed 3085 rows containing missing values or values outside the scale range (`geom_smooth()`).|Detected numerical overflow during optimisation Please try one of the following: ℹ Using different initial values ℹ Using another optimiser. (E.g., instead of `adam()`, try `adam()`)
 offsets|stem|7d693627c9968306|45c66813eedc81ed|041dbcb426c2cae5|365709159||t20486.0561619052s|s527579858b|527579858|format_custom&read=dGVycmE6OnJhc3QocGF0aCk&write=ewogICAgZG8uY2FsbCh0ZXJyYTo6d3JpdGVSYXN0ZXIsIGMobGlzdChvYmplY3QsIGZpbGVuYW1lID0gcGF0aCwgCiAgICAgICAgZmlsZXR5cGUgPSAiR1RpZmYiLCBvdmVyd3JpdGUgPSBUUlVFLCBnZGFsID0gTlVMTCksIGxpc3QoKSkpCn0&marshal=dGVycmE6OndyYXAob2JqZWN0KQ&unmarshal=dGVycmE6OnVud3JhcChvYmplY3Qp&convert=&copy=&repository=|local|list|||90.83||
+model_data_records|stem|11e44f9c93c57a05|45d71e76908ccac5|d20624d6d790cb7b|1335289901||t20486.0853738092s|s170918b|170918|rds|local|vector|||2.088||
+record_data_spatial_all|stem|c57fa87543977095|ca720bcf0a5677f8|556e0418ea76c550|359892372||t20486.0853799085s|s621317b|621317|rds|local|vector|||0.35||
+record_data_spatial|stem|f6f3298d868d6638|b3dce82304afc246|1d5de2b81df45790|-165702811||t20486.9855396081s|s299748b|299748|rds|local|vector|||0.002||
+model_data_spatial|stem|2507467fc52612b4|d94a15faf7f469c2|a0aade8b708ab08f|-139668007||t20486.9855425513s|s321594b|321594|rds|local|vector|||0.005||
+model_fit_image_multisp_pp_count|stem|04bcbe45f0f5c318|99916d5031032928|4807c5a2f0b23b36|1784940676||t20487.0441012833s|s90b|90|rds|local|vector|||5059.412|Removed 481051 rows containing non-finite outside the scale range (`stat_density()`).. Removed 724 rows containing non-finite outside the scale range (`stat_density()`).. Removed 481051 rows containing non-finite outside the scale range (`stat_ecdf()`).. Removed 724 rows containing non-finite outside the scale range (`stat_ecdf()`).. number of columns of result is not a multiple of vector length (arg 1). Using `size` aesthetic for lines was deprecated in ggplot2 3.4.0. ℹ Please use `linewidth` instead. ℹ The deprecated feature was likely used in the bayesplot package.   Please report the issue at <https://github.com/stan-dev/bayesplot/issues/>.. Removed 9653 rows containing missing values or values outside the scale range (`geom_tile()`).. Removed 9651 rows containing missing values or values outside the scale range (`geom_smooth()`).. Removed 10633 rows containing missing values or values outside the scale range (`geom_tile()`).. Removed 10631 rows containing missing values or values outside the scale range (`geom_smooth()`).. Removed 33807 rows containing non-finite outside the scale range (`stat_density()`).. Removed 724 rows containing non-finite outside the scale range (`stat_density()`).. Removed 33807 rows containing non-finite outside the scale range (`stat_ecdf()`).. Removed 724 rows containing non-finite outside the scale range (`stat_ecdf()`).. Removed 9653 rows containing missing values or values outside the scale range (`geom_tile()`).. Removed 9651 rows containing missing values or values outside the scale range (`geom_smooth()`).. Removed 10633 rows containing missing values or values outside the scale range (`geom_tile()`).. Removed 10631 rows containing missing values or values outside the scale range (`geom_smooth()`).|
+built_volume_raw|stem|385a428794835a94|365e815de28eb343|2c530c1562a7fbd1|-83942318||t20487.9679819484s|s99029514b|99029514|format_custom&read=dGVycmE6OnJhc3QocGF0aCk&write=ewogICAgZG8uY2FsbCh0ZXJyYTo6d3JpdGVSYXN0ZXIsIGMobGlzdChvYmplY3QsIGZpbGVuYW1lID0gcGF0aCwgCiAgICAgICAgZmlsZXR5cGUgPSAiR1RpZmYiLCBvdmVyd3JpdGUgPSBUUlVFLCBnZGFsID0gTlVMTCksIGxpc3QoKSkpCn0&marshal=dGVycmE6OndyYXAob2JqZWN0KQ&unmarshal=dGVycmE6OnVud3JhcChvYmplY3Qp&convert=&copy=&repository=|local|list|||2.062||
+elevation_raw|stem|0109d5e267b5ce96|479f99b680e2f649|2c530c1562a7fbd1|-839583033||t20487.972468997s|s82237722b|82237722|format_custom&read=dGVycmE6OnJhc3QocGF0aCk&write=ewogICAgZG8uY2FsbCh0ZXJyYTo6d3JpdGVSYXN0ZXIsIGMobGlzdChvYmplY3QsIGZpbGVuYW1lID0gcGF0aCwgCiAgICAgICAgZmlsZXR5cGUgPSAiR1RpZmYiLCBvdmVyd3JpdGUgPSBUUlVFLCBnZGFsID0gTlVMTCksIGxpc3QoKSkpCn0&marshal=dGVycmE6OndyYXAob2JqZWN0KQ&unmarshal=dGVycmE6OnVud3JhcChvYmplY3Qp&convert=&copy=&repository=|local|list|||4.846||
+offsets_raw|stem|c43f867001e44ab6|45c66813eedc81ed|78d2a157cf83d663|-1932113517||t20488.0004650548s|s2113420159b|2113420159|format_custom&read=dGVycmE6OnJhc3QocGF0aCk&write=ewogICAgZG8uY2FsbCh0ZXJyYTo6d3JpdGVSYXN0ZXIsIGMobGlzdChvYmplY3QsIGZpbGVuYW1lID0gcGF0aCwgCiAgICAgICAgZmlsZXR5cGUgPSAiR1RpZmYiLCBvdmVyd3JpdGUgPSBUUlVFLCBnZGFsID0gTlVMTCksIGxpc3QoKSkpCn0&marshal=dGVycmE6OndyYXAob2JqZWN0KQ&unmarshal=dGVycmE6OnVud3JhcChvYmplY3Qp&convert=&copy=&repository=|local|list|||1.733||
+project_mask_5|stem|05baea647e2cd913|42cb12140c75da25|8e9e7c3e465f760d|2079336262||t20488.0055243291s|s662249b|662249|format_custom&read=dGVycmE6OnJhc3QocGF0aCk&write=ewogICAgZG8uY2FsbCh0ZXJyYTo6d3JpdGVSYXN0ZXIsIGMobGlzdChvYmplY3QsIGZpbGVuYW1lID0gcGF0aCwgCiAgICAgICAgZmlsZXR5cGUgPSAiR1RpZmYiLCBvdmVyd3JpdGUgPSBUUlVFLCBnZGFsID0gTlVMTCksIGxpc3QoKSkpCn0&marshal=dGVycmE6OndyYXAob2JqZWN0KQ&unmarshal=dGVycmE6OnVud3JhcChvYmplY3Qp&convert=&copy=&repository=|local|list|||39.487||
 count_counts|function|bbd950114352d673
 clean_sampling_method|function|a03e4217be186314
 check_point_data_type|function|b0555c1606d024b3
@@ -70,6 +78,7 @@ inits_are_deterministic|function|d5908bfa293df673
 make_new_mask|function|28e53edc14353f5e
 saveplotlist|function|aec56f0f0ef1303c
 get_notna_idx|function|eedc272e128c4295
+clamp|function|4ffc76b3a1c08d54
 clean_species|function|3aabcad3112bef5d
 reduce_sampling_methods|function|29ad8c02831b606c
 get_free_states|function|794e19ceb81e6ec8
@@ -81,12 +90,14 @@ make_plot_points|function|5613292e3a1880f7
 make_record_plot|function|1db94e342475a8ce
 distplot|function|5de84f7bbb3becc5
 enforce_dim|function|be52a9a8502be978
+clean_offsets|function|764ddf16b6e2fa57
 subset_covariate_rast|function|1b5d13fe2e15d50f
 .Random.seed|object|b8baa73906ec595f
 explore_full_data_records|function|ce89b4af68797f92
 prepare_bias|function|1da934e6fe11e4de
 prepare_model_layers_mech|function|8ce5c8245ea44469
 add_pa_points|function|6a3f1b0c8b7df77f
+make_mask_from_offsets|function|5f5b8e7f8cb08ed1
 filter_few|function|c5c8909a44af479d
 ppcsave|function|f9a41656f35169bc
 inits_from_opt|function|fe6695ba1985b289
@@ -94,9 +105,8 @@ make_covariate_plots|function|a1a0e7b14d79c71f
 check_impossible_coordinates|function|4cb3ee1f50e21e66
 predict_greta_mspp_count|function|9415e9325ac5f726
 make_records_table|function|e53a1219d75840f8
-read_offset_data|function|53ec69e327f22c75
+read_offset_data|function|5585661471d7d8a4
 poisson_to_prob|function|8408bc3157f8fe3b
-logit_icloglog|function|15d7ecb97b506323
 generate_unique_letters|function|d2503f99965cff4c
 make_expert_offset_maps|function|4cf8b3fac2345501
 prepare_mask|function|3672cdd5f1a4078f
@@ -114,11 +124,13 @@ make_rel_abund_rgb|function|ec41c5e7964ca994
 get_spatial_values|function|10b6b39d2d390156
 plot_points_map|function|0feb584e8aa31cf2
 get_expert_maps|function|24ad975508022b97
-target_spp|function|ba3f8576d5f90bd1
 add_expert_offset|function|07286815c16cde8c
+target_spp|function|ba3f8576d5f90bd1
 scale_predictions|function|2207dd1b1b135dcc
 make_pca_covariate_layers|function|a81d6ca8c94bed80
 count_counts_matrix|function|76b422e099acce00
+logit_icloglog_safe|function|2e0629dae90c3d67
+logit_icloglog|function|2e0629dae90c3d67
 make_data_records|function|870605b0b644d5fe
 prep_rcrds|function|804684b71044b5cc
 records_from_va|function|1bb3a24e9f3169cc
@@ -141,11 +153,8 @@ prob_sample_free_states|function|8aee19652ec83167
 make_distribution_plots|function|d3cd8db28d583e32
 predictive_checks|function|34000fe439631501
 prior_sample_free_states|function|77a3bc33b89a5729
-fit_model_multisp_pp_count|function|d2c6990be611538f
-fit_model_multisp_pp_count_4spp|function|1cec70a9be729317
-fit_model_multisp_pp_count_sm|function|bff0c70591e1aa5b
+fit_model_multisp_pp_count|function|bde07ccdce0eb2f2
+fit_model_multisp_pp_count_4spp|function|b41418a40f9f04f3
+fit_model_multisp_pp_count_sm|function|4e51326c61081578
 generate_valid_inits|function|1ff55a87fc86fe12
-model_data_records|stem|11e44f9c93c57a05|45d71e76908ccac5|d20624d6d790cb7b|1335289901||t20486.0853738092s|s170918b|170918|rds|local|vector|||2.088||
-record_data_spatial_all|stem|c57fa87543977095|ca720bcf0a5677f8|556e0418ea76c550|359892372||t20486.0853799085s|s621317b|621317|rds|local|vector|||0.35||
-record_data_spatial|stem|da7e69e6fdf2e87d|c1eab47c937ed283|b54bde3346eda615|-165702811||t20486.0853812427s|s282019b|282019|rds|local|vector|||0||
-model_data_spatial|stem|2c541d970a3e30b6|d94a15faf7f469c2|130743e630d10cac|-139668007||t20486.085382474s|s304818b|304818|rds|local|vector|||0.004||
+offsets_5|stem|077dfd4bc20297e4|1f1104247548aea2|6db40ccaa6ea6fbb|-1232488623||t20488.015888159s|s2112489711b|2112489711|format_custom&read=dGVycmE6OnJhc3QocGF0aCk&write=ewogICAgZG8uY2FsbCh0ZXJyYTo6d3JpdGVSYXN0ZXIsIGMobGlzdChvYmplY3QsIGZpbGVuYW1lID0gcGF0aCwgCiAgICAgICAgZmlsZXR5cGUgPSAiR1RpZmYiLCBvdmVyd3JpdGUgPSBUUlVFLCBnZGFsID0gTlVMTCksIGxpc3QoKSkpCn0&marshal=dGVycmE6OndyYXAob2JqZWN0KQ&unmarshal=dGVycmE6OnVud3JhcChvYmplY3Qp&convert=&copy=&repository=|local|list|||128.891||
