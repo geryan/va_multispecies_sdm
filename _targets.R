@@ -71,6 +71,7 @@ list(
       aggregate(fact = 5) |>
       crop(y = project_mask_5) |>
       resample(y = project_mask_5) |>
+      fill_na_with_nearest_mean(maxRadiusCell = 50) |>
       mask(mask = project_mask_5) |>
       scale()
   ),
@@ -99,6 +100,16 @@ list(
       aggregate(fact = 5) |>
       crop(y = project_mask_5) |>
       resample(y = project_mask_5) |>
+      fill_na_with_nearest_mean(maxRadiusCell = 50) |>
+      # focal(
+      #   w = focalMat(
+      #     x = rast(matrix(nrow = 20, ncol = 20)),
+      #     d = 2,
+      #     type = "Gauss"
+      #   ),
+      #   fun = mean,
+      #   na.policy = "only"
+      # ) |>
       mask(mask = project_mask_5) |>
       scale()
   ),
@@ -141,7 +152,9 @@ list(
       mean() |>
       set_layer_names("evi") |>
       crop(y = project_mask_5) |>
+      aggregate(fact = 5) |>
       resample(y = project_mask_5) |>
+      fill_na_with_nearest_mean(maxRadiusCell = 50) |>
       mask(mask = project_mask_5) |>
       scale()
   ),
@@ -160,7 +173,9 @@ list(
       mean() |>
       set_layer_names("tcb") |>
       crop(y = project_mask_5) |>
+      aggregate(fact = 5) |>
       resample(y = project_mask_5) |>
+      fill_na_with_nearest_mean(maxRadiusCell = 50) |>
       mask(mask = project_mask_5) |>
       scale()
   ),
@@ -178,8 +193,10 @@ list(
     lst_night_raw |>
       mean() |>
       set_layer_names("lst_night") |>
+      aggregate(fact = 5) |>
       crop(y = project_mask_5) |>
       resample(y = project_mask_5) |>
+      fill_na_with_nearest_mean(maxRadiusCell = 50) |>
       mask(mask = project_mask_5) |>
       scale()
   ),
@@ -198,6 +215,22 @@ list(
       resample(y = project_mask_5) |>
       mask(mask = project_mask_5) |>
       scale()
+  ),
+
+
+  tar_target(
+    mismatched_nas, # should be zero length if all NAs aligned
+    check_no_mismatched_nas(
+      proj_mask = project_mask_5,
+      offsets_5[[1]],
+      footprint_5,
+      lst_night_5,
+      elevation_5,
+      soil_clay_5,
+      evi_5,
+      built_volume_5,
+      tcb_5
+    )
   ),
 
   # spatial data preprocessing in
