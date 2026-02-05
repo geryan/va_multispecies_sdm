@@ -400,7 +400,7 @@ list(
     expert_offset_maps,
     make_expert_offset_maps(
       expert_maps,
-      project_mask,
+      project_mask_5,
       buffer_km = 1000
     )
   ),
@@ -409,7 +409,7 @@ list(
     expert_offset_maps_500,
     make_expert_offset_maps(
       expert_maps,
-      project_mask,
+      project_mask_5,
       buffer_km = 500
     )
   ),
@@ -554,7 +554,7 @@ list(
      lyrs = covariate_rast_5_all,
      dat = model_data_records,
      #dat = model_data_records_ni,
-     project_mask
+     project_mask_5
    )
  ),
 
@@ -654,7 +654,7 @@ list(
    make_point_plots(
      model_data_spatial,
      expert_maps,
-     project_mask
+     project_mask_5
    )
  ),
 
@@ -683,7 +683,7 @@ list(
    get_spatial_values(
      pca_covariate_layers,
      model_data_spatial,
-     project_mask
+     project_mask_5
    ) |>
      select(
        - all_of(target_covariate_names),
@@ -723,7 +723,7 @@ list(
      model_data_spatial,
      target_covariate_names,
      target_species,
-     project_mask,
+     project_mask_5,
      image_name = "outputs/images/multisp_pp_count.RData",
      n_burnin = 2000,
      n_samples = 1000,
@@ -804,7 +804,7 @@ list(
    rel_abund_plots,
    make_rel_abund_rgb_plot(
      rel_abund_rgb,
-     project_mask,
+     project_mask_5,
      filename = "outputs/figures/rgb_relative_abundance_20251219.png"
    )
  ),
@@ -838,7 +838,7 @@ list(
      model_data_spatial,
      target_covariate_names,
      target_species,
-     project_mask,
+     project_mask_5,
      image_name = "outputs/images/multisp_pp_count_sm.RData",
      n_burnin = 3000,
      n_samples = 1000,
@@ -918,7 +918,7 @@ list(
    rel_abund_plots_sm,
    make_rel_abund_rgb_plot(
      rel_abund_rgb_sm,
-     project_mask,
+     project_mask_5,
      filename = "outputs/figures/rgb_relative_abundance_20251219_sm.png"
    )
  ),
@@ -964,7 +964,7 @@ tar_target(
   get_spatial_values(
     lyrs = covariate_rast_5_all,
     dat = model_data_records_4,
-    project_mask
+    project_mask_5
   )
 ),
 
@@ -1013,7 +1013,7 @@ tar_target(
     model_data_spatial = model_data_spatial_4,
     target_covariate_names = target_covariate_names,
     target_species = target_species_4,
-    project_mask,
+    project_mask_5,
     image_name = "outputs/images/4_multisp_pp_count.RData",
     n_burnin = 2000,
     n_samples = 1000,
