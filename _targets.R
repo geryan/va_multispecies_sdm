@@ -263,6 +263,11 @@ list(
       mask(mask = project_mask_5)
   ),
 
+
+  #
+  # Tidy spatial data
+  #
+
   # check that there are not NAs hanginig around in layers that don't
   # match the mask
   tar_target(
@@ -281,77 +286,46 @@ list(
     )
   ),
 
-
-  # spatial data preprocessing in
-  # https://github.com/geryan/africa_spatial_data
-
-
-  # aggregated predictor variables, i.e., lower resolution images for quicker processing
-  # but use the high res ones for final product
-  # # mech layer is set to the minimum value above zero
-  tar_target(
-    covrastfile,
-    "data/raster/static_vars_agg_mech_nonzero_dist_from_sea.tif",
-    format = "file"
-  ),
-
-  tar_terra_rast(
-    covariate_rast_all,
-    rast(covrastfile)
-  ),
-
   tar_target(
     target_covariate_names,
     c(
-      #ag_microclim,
-      #research_tt_by_country,
-      #"arid",
-      #"built_volume",
-      # cropland,
+      "built_volume",
+      "evi", # correlates with pressure_mean rainfall_mean and solrad_mean
+      "tcb",
+      "lst_night",
       "elevation",
-      "evi_mean", # correlates with pressure_mean rainfall_mean and solrad_mean
       "footprint", # correlates with built_volume and cropland
-      #"lst_day_mean"#,
-      "lst_night_mean",
-      # # pressure_mean,
-      # # rainfall_mean,
-      "soil_clay",
-      # # solrad_mean,
-      # # surface_water, remove and replace with distance to surface water
-      "tcb_mean"#, # strongly correlates with tcw
-      # # tcw_mean,
-      # windspeed_mean,
-      #"easting",
-      #"northing",
-      # "distance_from_sea"
+      "soil_clay"
     )
-  ),
-
-  tar_target(
-    offset_names,
-    c("ag_microclim")
   ),
 
   tar_target(
     bias_names,
-    "research_tt_by_country"
+    "travel_time"
+  ),
+
+
+  tar_terra_rast(
+    covariate_rast_5_all,
+    c(built_volume_5,
+      evi_5,
+      tcb_5,
+      lst_night_5,
+      elevation_5,
+      soil_clay_5,
+      footprint_5,
+      bias_tt_5)
   ),
 
   tar_terra_rast(
-    covariate_rast,
+    covariate_rast_5,
     subset_covariate_rast(
-      covariate_rast_all,
+      covariate_rast_5_all,
       target_covariate_names,
-      offset_names,
       bias_names
     )
   ),
 
-
-  # tar_terra_rast(
-  #   project_mask,
-  #   make_project_mask(covariate_rast)
-  # ),
 
   ## specific regions/ countries of interest for close-up plots
 
@@ -452,7 +426,7 @@ list(
   tar_target(
     bg_points,
     terra::spatSample(
-      x = covariate_rast[[1]],
+      x = covariate_rast_5[[1]],
       size = n_bg,
       na.rm = TRUE,
       as.points = TRUE
@@ -473,7 +447,7 @@ list(
     bg_kmeans_list_spatial,
     bg_points_kmeans_spatial(
       n_bg,
-      covariate_rast,
+      covariate_rast_5,
       n_samples_per_bg = 200
     )
   ),
@@ -577,7 +551,7 @@ list(
  tar_target(
    record_data_spatial_all,
    get_spatial_values(
-     lyrs = covariate_rast_all,
+     lyrs = covariate_rast_5_all,
      dat = model_data_records,
      #dat = model_data_records_ni,
      project_mask
@@ -589,11 +563,11 @@ list(
    record_data_spatial_all |>
      select(
        - all_of(
-         names(covariate_rast_all)[
-           !names(covariate_rast_all) %in%
+         names(covariate_rast_5_all)[
+           !names(covariate_rast_5_all) %in%
              c(
                target_covariate_names,
-               offset_names,
+               #offset_names,
                bias_names
              )
          ]
@@ -656,7 +630,7 @@ list(
    make_covariate_plots(
      model_data_spatial,
      cvnames = c(
-       offset_names,
+       # offset_names,
        bias_names
      )
    )
@@ -698,7 +672,7 @@ list(
  tar_terra_rast(
    pca_covariate_layers,
    make_pca_covariate_layers(
-     covariate_rast,
+     covariate_rast_5,
      target_covariate_names,
      model_data_spatial
    )
@@ -762,7 +736,7 @@ list(
    pred_file_multisp_pp_count,
    predict_greta_mspp_count(
      image_filename = model_fit_image_multisp_pp_count,
-     prediction_layer = covariate_rast,
+     prediction_layer = covariate_rast_5,
      target_species,
      output_file_prefix = "outputs/rasters/multisp_pp_count"
    )
@@ -877,7 +851,7 @@ list(
    pred_file_multisp_pp_count_sm,
    predict_greta_mspp_count(
      image_filename = model_fit_image_multisp_pp_count_sm,
-     prediction_layer = covariate_rast,
+     prediction_layer = covariate_rast_5,
      target_species,
      output_file_prefix = "outputs/rasters/multisp_pp_count_sm"
    )
@@ -988,7 +962,7 @@ tar_target(
 tar_target(
   record_data_spatial_all_4,
   get_spatial_values(
-    lyrs = covariate_rast_all,
+    lyrs = covariate_rast_5_all,
     dat = model_data_records_4,
     project_mask
   )
@@ -999,11 +973,11 @@ tar_target(
   record_data_spatial_all_4 |>
     select(
       - all_of(
-        names(covariate_rast_all)[
-          !names(covariate_rast_all) %in%
+        names(covariate_rast_5_all)[
+          !names(covariate_rast_5_all) %in%
             c(
               target_covariate_names,
-              offset_names,
+              #offset_names,
               bias_names
             )
         ]
@@ -1052,7 +1026,7 @@ tar_target(
   pred_file_multisp_pp_count_4,
   predict_greta_mspp_count(
     image_filename = model_fit_image_multisp_pp_count_4,
-    prediction_layer = covariate_rast,
+    prediction_layer = covariate_rast_5,
     target_species,
     output_file_prefix = "outputs/rasters/4_multisp_pp_count"
   )

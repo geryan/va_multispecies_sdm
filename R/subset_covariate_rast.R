@@ -11,9 +11,9 @@
 #' @export
 subset_covariate_rast <- function(
   covariate_rast_all,
-  target_covariate_names,
-  offset_names,
-  bias_names
+  target_covariate_names = NULL,
+  offset_names = NULL,
+  bias_names = NULL
 ) {
 
   covariate_rast_all[[c(offset_names, target_covariate_names, bias_names)]]
