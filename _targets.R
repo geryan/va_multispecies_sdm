@@ -38,19 +38,25 @@ list(
   # spatial data
   ########################
 
-  # do preprocessing of specific layers only
-  #
 
+  # read in offset layers
+
+  # all raw layers
   tar_terra_rast(
     offsets_raw,
     read_offset_data()
   ),
 
+  # generate mask from offset layers
+  # some of these contain NAs within continent
+  # these are filled in the mask
   tar_terra_rast(
     project_mask_5,
     make_mask_from_offsets(offsets_raw)
   ),
 
+  # cleaning to fills NAs with zero
+  # might need to use .Machine$double.eps if causes problems with fitting
   tar_terra_rast(
     offsets_5,
     clean_offsets(
@@ -58,6 +64,14 @@ list(
       project_mask_5
     )
   ),
+
+  # read in other layers and match to offset size shape and extent
+
+  #
+  # layers from Malaria Atlas Project
+  #
+
+  # built volume
 
   tar_terra_rast(
     built_volume_raw,
@@ -75,6 +89,86 @@ list(
       mask(mask = project_mask_5) |>
       scale()
   ),
+
+  # EVI
+  # monthly EVI available from MAP, need to work out some code to process this
+  # stuff on MAP workbench so that I don't need to download all the enormous
+  # layers
+  tar_terra_rast(
+    evi_raw,
+    prepare_multi_layer(
+      data_dir ="/Users/gryan/Documents/tki_work/vector_atlas/africa_spatial_data/data/raster/MAP_covariates/EVI/"#,
+      # layer_prefix = "evi",
+      # file_id_prefix = ".*v6\\.",
+      # file_id_suffix = "\\.Annual.*"
+    )
+  ),
+
+  tar_terra_rast(
+    evi_5,
+    evi_raw |>
+      mean() |>
+      set_layer_names("evi") |>
+      crop(y = project_mask_5) |>
+      aggregate(fact = 5) |>
+      resample(y = project_mask_5) |>
+      fill_na_with_nearest_mean(maxRadiusCell = 50) |>
+      mask(mask = project_mask_5) |>
+      scale()
+  ),
+
+
+  # Tasseled Cap Brightness
+  # same for
+  # TCB re monthly data
+  tar_terra_rast(
+    tcb_raw,
+    prepare_multi_layer(
+      data_dir ="/Users/gryan/Documents/tki_work/vector_atlas/africa_spatial_data/data/raster/MAP_covariates/TCB/"
+    )
+  ),
+
+  tar_terra_rast(
+    tcb_5,
+    tcb_raw |>
+      mean() |>
+      set_layer_names("tcb") |>
+      crop(y = project_mask_5) |>
+      aggregate(fact = 5) |>
+      resample(y = project_mask_5) |>
+      fill_na_with_nearest_mean(maxRadiusCell = 50) |>
+      mask(mask = project_mask_5) |>
+      scale()
+  ),
+
+
+  # land surface temperature at night annual mean
+  # also same for lst re monthly data
+  tar_terra_rast(
+    lst_night_raw,
+    prepare_multi_layer(
+      data_dir ="/Users/gryan/Documents/tki_work/vector_atlas/africa_spatial_data/data/raster/MAP_covariates/LST_Night/"
+    )
+  ),
+
+  tar_terra_rast(
+    lst_night_5,
+    lst_night_raw |>
+      mean() |>
+      set_layer_names("lst_night") |>
+      aggregate(fact = 5) |>
+      crop(y = project_mask_5) |>
+      resample(y = project_mask_5) |>
+      fill_na_with_nearest_mean(maxRadiusCell = 50) |>
+      mask(mask = project_mask_5) |>
+      scale()
+  ),
+
+  #
+  # via `geodata`
+  #
+
+  # elevation
 
   tar_terra_rast(
     elevation_raw,
@@ -101,18 +195,29 @@ list(
       crop(y = project_mask_5) |>
       resample(y = project_mask_5) |>
       fill_na_with_nearest_mean(maxRadiusCell = 50) |>
-      # focal(
-      #   w = focalMat(
-      #     x = rast(matrix(nrow = 20, ncol = 20)),
-      #     d = 2,
-      #     type = "Gauss"
-      #   ),
-      #   fun = mean,
-      #   na.policy = "only"
-      # ) |>
       mask(mask = project_mask_5) |>
       scale()
   ),
+
+  # soil clay
+
+  tar_terra_rast(
+    soil_clay_filled,
+    get_soil_af() |>
+      set_layer_names("soil_clay")
+  ),
+
+  tar_terra_rast(
+    soil_clay_5,
+    soil_clay_filled |>
+      aggregate(fact = 5) |>
+      crop(y = project_mask_5) |>
+      resample(y = project_mask_5) |>
+      mask(mask = project_mask_5) |>
+      scale()
+  ),
+
+  # footprint
 
   tar_terra_rast(
     footprint_raw,
@@ -133,91 +238,8 @@ list(
       scale()
   ),
 
-   # monthly EVI available from MAP, need to work out some code to process this
-   # stuff on MAP workbench so that I don't need to download all the enormous
-   # layers
-  tar_terra_rast(
-    evi_raw,
-    prepare_multi_layer(
-      data_dir ="/Users/gryan/Documents/tki_work/vector_atlas/africa_spatial_data/data/raster/MAP_covariates/EVI/"#,
-      # layer_prefix = "evi",
-      # file_id_prefix = ".*v6\\.",
-      # file_id_suffix = "\\.Annual.*"
-    )
-  ),
-
-  tar_terra_rast(
-    evi_5,
-    evi_raw |>
-      mean() |>
-      set_layer_names("evi") |>
-      crop(y = project_mask_5) |>
-      aggregate(fact = 5) |>
-      resample(y = project_mask_5) |>
-      fill_na_with_nearest_mean(maxRadiusCell = 50) |>
-      mask(mask = project_mask_5) |>
-      scale()
-  ),
-
-  # same for TCB re monthly data
-  tar_terra_rast(
-    tcb_raw,
-    prepare_multi_layer(
-      data_dir ="/Users/gryan/Documents/tki_work/vector_atlas/africa_spatial_data/data/raster/MAP_covariates/TCB/"
-    )
-  ),
-
-  tar_terra_rast(
-    tcb_5,
-    tcb_raw |>
-      mean() |>
-      set_layer_names("tcb") |>
-      crop(y = project_mask_5) |>
-      aggregate(fact = 5) |>
-      resample(y = project_mask_5) |>
-      fill_na_with_nearest_mean(maxRadiusCell = 50) |>
-      mask(mask = project_mask_5) |>
-      scale()
-  ),
-
-  # also same for lst re monthly data
-  tar_terra_rast(
-    lst_night_raw,
-    prepare_multi_layer(
-      data_dir ="/Users/gryan/Documents/tki_work/vector_atlas/africa_spatial_data/data/raster/MAP_covariates/LST_Night/"
-    )
-  ),
-
-  tar_terra_rast(
-    lst_night_5,
-    lst_night_raw |>
-      mean() |>
-      set_layer_names("lst_night") |>
-      aggregate(fact = 5) |>
-      crop(y = project_mask_5) |>
-      resample(y = project_mask_5) |>
-      fill_na_with_nearest_mean(maxRadiusCell = 50) |>
-      mask(mask = project_mask_5) |>
-      scale()
-  ),
-
-  tar_terra_rast(
-    soil_clay_filled,
-    get_soil_af() |>
-      set_layer_names("soil_clay")
-  ),
-
-  tar_terra_rast(
-    soil_clay_5,
-    soil_clay_filled |>
-      aggregate(fact = 5) |>
-      crop(y = project_mask_5) |>
-      resample(y = project_mask_5) |>
-      mask(mask = project_mask_5) |>
-      scale()
-  ),
-
-
+  # check that there are not NAs hanginig around in layers that don't
+  # match the mask
   tar_target(
     mismatched_nas, # should be zero length if all NAs aligned
     check_no_mismatched_nas(
@@ -232,6 +254,7 @@ list(
       tcb_5
     )
   ),
+
 
   # spatial data preprocessing in
   # https://github.com/geryan/africa_spatial_data
