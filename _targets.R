@@ -238,6 +238,31 @@ list(
       scale()
   ),
 
+  #
+  # bias
+  # travel time from research facilities
+  # layer created in
+  # https://github.com/geryan/africa_anopheles_sampling_bias
+
+  tar_terra_rast(
+    bias_tt_raw,
+    rast("/Users/gryan/Documents/tki_work/vector_atlas/africa_anopheles_sampling_bias/outputs/tt_by_country.tif")
+  ),
+
+  # that this doesn't quite match the mask layer suggests I need to redo
+  # the bias analysis with a different layer
+  # grouch
+  tar_terra_rast(
+    bias_tt_5,
+    bias_tt_raw|>
+      aggregate(fact = 5) |>
+      crop(y = project_mask_5) |>
+      resample(y = project_mask_5) |>
+      fill_na_with_nearest_mean(maxRadiusCell = 50) |>
+      scale_rast_to_1(reverse = TRUE) |>
+      mask(mask = project_mask_5)
+  ),
+
   # check that there are not NAs hanginig around in layers that don't
   # match the mask
   tar_target(
@@ -245,13 +270,14 @@ list(
     check_no_mismatched_nas(
       proj_mask = project_mask_5,
       offsets_5[[1]],
-      footprint_5,
+      built_volume_5,
+      evi_5,
+      tcb_5,
       lst_night_5,
       elevation_5,
       soil_clay_5,
-      evi_5,
-      built_volume_5,
-      tcb_5
+      footprint_5,
+      bias_tt_5
     )
   ),
 
