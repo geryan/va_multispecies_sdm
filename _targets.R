@@ -52,16 +52,17 @@ list(
   # these are filled in the mask
   tar_terra_rast(
     project_mask_5,
-    make_mask_from_offsets(offsets_raw)
+    make_mask_from_offsets(offsets_raw) |>
+      set_layer_names("project_mask")
   ),
 
-  # cleaning to fills NAs with zero
-  # might need to use .Machine$double.eps if causes problems with fitting
+  # cleaning to fills NAs within continent with very small number
   tar_terra_rast(
     offsets_5,
     clean_offsets(
       offsets_raw,
-      project_mask_5
+      project_mask_5,
+      replacement = .Machine$double.eps
     )
   ),
 

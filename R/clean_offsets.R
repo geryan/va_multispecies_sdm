@@ -9,13 +9,14 @@
 #' @export
 clean_offsets <- function(
     offsets_raw,
-    project_mask_5
+    project_mask_5,
+    replacement = 0
   ) {
 
   app(
     offsets_raw,
     fun = function(x){
-      ifelse(is.na(x), 0, x)
+      ifelse(is.na(x), replacement, x)
     }
   ) * project_mask_5
 
