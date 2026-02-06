@@ -555,7 +555,7 @@ list(
      lyrs = covariate_rast_5_all,
      dat = model_data_records,
      #dat = model_data_records_ni,
-     project_mask_5
+     project_mask = project_mask_5
    )
  ),
 
@@ -697,6 +697,20 @@ list(
      model_data_spatial_pca,
      cvnames = names(pca_covariate_layers),
      fname = "outputs/figures/cov_violins_pca.png"
+   )
+ ),
+
+ ##############
+ #
+ # Read in indexed data from offset layers
+ #
+ ##############
+
+ tar_target(
+   mod_dat_spat,
+   match_offset_data(
+     model_data_spatial,
+     offsets_5
    )
  ),
 
