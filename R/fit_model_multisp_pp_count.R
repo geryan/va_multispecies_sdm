@@ -472,7 +472,7 @@ fit_model_multisp_pp_count <- function(
   optim <- opt(
     m,
     optimiser = adam(learning_rate = 0.5),
-    max_iterations = 2e5
+    max_iterations = 1e5
   )
 
   #optim <- opt(m, max_iterations = 1e5) # with sinka species plus coluzzii this converges
@@ -483,17 +483,36 @@ fit_model_multisp_pp_count <- function(
     paste(
       "optimiser value is",
       optim$convergence,
-      "should be 0 if optimiser converged"
+      "; it should be 0 if optimiser converged"
     )
   )
-
-
+  #
+  #
   #optim$par
 
   init_vals <- inits_from_opt(
     optim,
     n_chains = n_chains
   )
+
+  # get inits using fitian method
+  # doesn't work because gets gammas that are outside of range
+  # of priors
+  # inits_fithian <- fithian_inits(
+  #   dat = model_data,
+  #   target_species = target_species,
+  #   n_pixel = n_pixel
+  # )
+
+  # init_vals <- inits(
+  #   n_chains = n_chains,
+  #   nsp = length(target_species),
+  #   ncv = length(target_covariate_names),
+  #   ina = inits_fithian$alpha,
+  #   inb = inits_fithian$beta,
+  #   ing = inits_fithian$gamma,
+  #   ind = inits_fithian$delta
+  # )
 
 
   draws <- greta::mcmc(
