@@ -29,7 +29,7 @@ extract_ym_indexed_layer_data <- function(
     select(x, y) |>
     as.matrix() |>
     cellFromXY(
-      object = offsets_5[[1]],
+      object = r[[1]],
       xy = _
     )
 
