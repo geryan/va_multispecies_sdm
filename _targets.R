@@ -714,6 +714,7 @@ list(
    )
  ),
 
+ # write out to process from monthly on MAP AWS
  tar_target(
    writemds,
    write_csv(
@@ -722,6 +723,21 @@ list(
    )
  ),
 
+ # read back in from AWS
+ tar_target(
+   mds,
+   read_csv(file = "data/processed/mod_dat_spat_updated.csv")
+ ),
+
+
+ # plots of offset layers against presence and absence
+ tar_target(
+   offset_pa_plots,
+   make_offset_pa_plots(
+     mod_dat_spat,
+     target_species,
+   )
+ ),
 
  # one sp add at a time
  # add absence vs presence at a time
@@ -743,7 +759,7 @@ list(
  tar_target(
    model_fit_image_multisp_pp_count,
    fit_model_multisp_pp_count(
-     model_data_spatial = mod_dat_spat,
+     model_data_spatial = mds,
      target_covariate_names,
      target_species,
      project_mask_5,
