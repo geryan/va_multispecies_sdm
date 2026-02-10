@@ -13,18 +13,10 @@ fit_model_multisp_pp_count <- function(
   # tl()
 
   model_data_spatial <- model_data_spatial |>
-    # select(
-    #   - evi_mean,
-    #   - lst_day_mean
-    #   - footprint
-    # )
     filter(
       (data_type != "count") |
         (data_type == "count" & count < 1000)
     )
-  #target_covariate_names <- target_covariate_names[c(1,3)] # works
-  #target_covariate_names
-
 
   # index of distinct locations
   distinct_idx <- model_data_spatial |>
@@ -55,7 +47,6 @@ fit_model_multisp_pp_count <- function(
     as_tibble() |>
     select(
       all_of(target_covariate_names)
-      #"footprint"
     ) |>
     as.matrix() |>
     as_data()
@@ -199,8 +190,9 @@ fit_model_multisp_pp_count <- function(
 
   # offset from calculated gambiae adult survival given habitat
   #log_lambda_adults <- log_offset
+  # this turns offset off instead of above line
   log_lambda_adults <- rep(0, times = dim(log_offset)[[1]]) |>
-    as_data()
+   as_data()
 
   # combine larval habitat and adult life cycle offset
   log_lambda <- sweep(log_lambda_larval_habitat, 1, log_lambda_adults, "+")

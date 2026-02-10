@@ -88,6 +88,8 @@ bg_kmeans_df|stem|4bb303dc749b4b80|8ffe7a0260c8c62b|59c012d4df9d1720|-366115926|
 model_data_spatial|stem|c12daea98824eb92|d94a15faf7f469c2|e747a829c578ba27|-139668007||t20489.9752536614s|s381114b|381114|rds|local|vector|||0.005||
 offsets_5|stem|9ed24b6ba8b0fb84|c4546929dbaa61ab|c0c8c4dc29927ea7|-1232488623||t20490.0104129528s|s2113417867b|2113417867|format_custom&read=dGVycmE6OnJhc3QocGF0aCk&write=ewogICAgZG8uY2FsbCh0ZXJyYTo6d3JpdGVSYXN0ZXIsIGMobGlzdChvYmplY3QsIGZpbGVuYW1lID0gcGF0aCwgCiAgICAgICAgZmlsZXR5cGUgPSAiR1RpZmYiLCBvdmVyd3JpdGUgPSBUUlVFLCBnZGFsID0gTlVMTCksIGxpc3QoKSkpCn0&marshal=dGVycmE6OndyYXAob2JqZWN0KQ&unmarshal=dGVycmE6OnVud3JhcChvYmplY3Qp&convert=&copy=&repository=|local|list|||125.239||
 mod_dat_spat|stem|bc69465b2644a6f6|e8f5efc79449d719|88422341c60dd875|-1497430604||t20492.9570954834s|s422759b|422759|rds|local|vector|||23.734||
+writemds|stem|bc69465b2644a6f6|af226cb2a6a06029|5054689786c62bad|-323229535||t20493.197633585s|s422759b|422759|rds|local|vector|||0.254||
+model_fit_image_multisp_pp_count|stem|04bcbe45f0f5c318|146b741d4ff6c8cc|cb4244a382872760|1784940676||t20493.966733794s|s90b|90|rds|local|vector|||1893.658|Computation failed in `stat_density()`. Caused by error in `precompute_bw()`: ! `bw` must be a finite, positive number, not `Inf`.. Removed 586463 rows containing non-finite outside the scale range (`stat_density()`).. Removed 807 rows containing non-finite outside the scale range (`stat_density()`).. Removed 586463 rows containing non-finite outside the scale range (`stat_ecdf()`).. Removed 807 rows containing non-finite outside the scale range (`stat_ecdf()`).. number of columns of result is not a multiple of vector length (arg 1). Using `size` aesthetic for lines was deprecated in ggplot2 3.4.0. ℹ Please use `linewidth` instead. ℹ The deprecated feature was likely used in the bayesplot package.   Please report the issue at <https://github.com/stan-dev/bayesplot/issues/>.. Removed 11442 rows containing missing values or values outside the scale range (`geom_tile()`).. Removed 11440 rows containing missing values or values outside the scale range (`geom_smooth()`).. Removed 12422 rows containing missing values or values outside the scale range (`geom_tile()`).. Removed 12420 rows containing missing values or values outside the scale range (`geom_smooth()`).. Removed 44163 rows containing non-finite outside the scale range (`stat_density()`).. Removed 807 rows containing non-finite outside the scale range (`stat_density()`).. Removed 44163 rows containing non-finite outside the scale range (`stat_ecdf()`).. Removed 807 rows containing non-finite outside the scale range (`stat_ecdf()`).. number of columns of result is not a multiple of vector length (arg 3). Removed 11442 rows containing missing values or values outside the scale range (`geom_tile()`).. Removed 11440 rows containing missing values or values outside the scale range (`geom_smooth()`).. Removed 12422 rows containing missing values or|
 count_counts|function|bbd950114352d673
 clean_sampling_method|function|a03e4217be186314
 check_point_data_type|function|b0555c1606d024b3
@@ -132,6 +134,7 @@ make_records_table|function|e53a1219d75840f8
 read_offset_data|function|5585661471d7d8a4
 poisson_to_prob|function|8408bc3157f8fe3b
 generate_unique_letters|function|d2503f99965cff4c
+make_offset_pa_plots|function|30b97a88095409eb
 make_expert_offset_maps|function|4cf8b3fac2345501
 prepare_mask|function|3672cdd5f1a4078f
 combine_raw_data|function|8645a044672e3a66
@@ -141,9 +144,9 @@ frame_bg_kmeans|function|2c321672ced57cb4
 make_project_mask|function|243c2735aec74ca0
 bg_points_kmeans_spatial|function|cc52527c35e94398
 bg_points_kmeans_env|function|d9e19ef48a56de13
-plot_points_expert_map|function|c01a5726595732a3
-make_rel_abund_rgb_plot|function|160bd219c92b5206
 calculate_posterior_multisp_pp_with_offset|function|89b6e72efdf8d411
+make_rel_abund_rgb_plot|function|160bd219c92b5206
+plot_points_expert_map|function|c01a5726595732a3
 get_soil_af|function|2f4081727efe66b2
 make_rel_abund_rgb|function|ec41c5e7964ca994
 get_spatial_values|function|10b6b39d2d390156
@@ -180,8 +183,8 @@ prob_sample_free_states|function|8aee19652ec83167
 make_distribution_plots|function|d3cd8db28d583e32
 predictive_checks|function|34000fe439631501
 prior_sample_free_states|function|77a3bc33b89a5729
-fit_model_multisp_pp_count|function|35c5111902a957bf
+fit_model_multisp_pp_count|function|0dd86034f8cb61b3
 fit_model_multisp_pp_count_4spp|function|b41418a40f9f04f3
 fit_model_multisp_pp_count_sm|function|4e51326c61081578
 generate_valid_inits|function|1ff55a87fc86fe12
-model_fit_image_multisp_pp_count|stem|04bcbe45f0f5c318|f6442fc72ae94595|7f8c135215b90096|1784940676||t20487.0441012833s||90|rds|local|vector|||13.942|Computation failed in `stat_density()`. Caused by error in `precompute_bw()`: ! `bw` must be a finite, positive number, not `Inf`.. Removed 586463 rows containing non-finite outside the scale range (`stat_density()`).. Removed 807 rows containing non-finite outside the scale range (`stat_density()`).. Removed 586463 rows containing non-finite outside the scale range (`stat_ecdf()`).. Removed 807 rows containing non-finite outside the scale range (`stat_ecdf()`).. number of columns of result is not a multiple of vector length (arg 1). Using `size` aesthetic for lines was deprecated in ggplot2 3.4.0. ℹ Please use `linewidth` instead. ℹ The deprecated feature was likely used in the bayesplot package.   Please report the issue at <https://github.com/stan-dev/bayesplot/issues/>.. Removed 11442 rows containing missing values or values outside the scale range (`geom_tile()`).. Removed 11440 rows containing missing values or values outside the scale range (`geom_smooth()`).. Removed 12422 rows containing missing values or values outside the scale range (`geom_tile()`).. Removed 12420 rows containing missing values or values outside the scale range (`geom_smooth()`).|Some provided initial values are outside the range of values their variables can take
+mds|stem|c45fb6183edf5707|51496eb44e31de27|2c530c1562a7fbd1|1182771496||t20494.0900862718s|s476380b|476380|rds|local|vector|||2.437||
