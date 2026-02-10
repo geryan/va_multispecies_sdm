@@ -45,7 +45,7 @@ fit_model_multisp_pp_count <- function(
 
 
   # get offset values from gambiae mechanistic model
-  log_offset <- log(model_data_spatial[distinct_idx,"ag_microclim"])|>
+  log_offset <- log(model_data_spatial[distinct_idx,"offset"])|>
     as.matrix() |>
     as_data()
 
@@ -61,7 +61,7 @@ fit_model_multisp_pp_count <- function(
     as_data()
 
   # get bias values
-  z <- model_data_spatial[distinct_idx,"research_tt_by_country"] |>
+  z <- model_data_spatial[distinct_idx,"travel_time"] |>
     as.matrix() |>
     as_data()
 
@@ -498,6 +498,7 @@ fit_model_multisp_pp_count <- function(
   # get inits using fitian method
   # doesn't work because gets gammas that are outside of range
   # of priors
+  # # fixed by setting delta as > 0 but not yet tested
   # inits_fithian <- fithian_inits(
   #   dat = model_data,
   #   target_species = target_species,

@@ -41,7 +41,7 @@ fithian_inits <- function(dat, target_species, n_pixel){
     alpha = start_alphas,
     beta = 0,
     gamma = start_gammas,
-    delta = 0
+    delta = 0.1
   )
 
 }

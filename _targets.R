@@ -714,6 +714,14 @@ list(
    )
  ),
 
+ tar_target(
+   writemds,
+   write_csv(
+     mod_dat_spat,
+     file = "data/processed/mod_dat_spat.csv"
+   )
+ ),
+
 
  # one sp add at a time
  # add absence vs presence at a time
@@ -735,13 +743,13 @@ list(
  tar_target(
    model_fit_image_multisp_pp_count,
    fit_model_multisp_pp_count(
-     model_data_spatial,
+     model_data_spatial = mod_dat_spat,
      target_covariate_names,
      target_species,
      project_mask_5,
      image_name = "outputs/images/multisp_pp_count.RData",
-     n_burnin = 2000,
-     n_samples = 1000,
+     n_burnin = 500,
+     n_samples = 500,
      n_chains = 50
    )
  ),
