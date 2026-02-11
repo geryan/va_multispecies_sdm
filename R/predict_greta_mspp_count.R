@@ -1,7 +1,9 @@
 predict_greta_mspp_count <- function(
     image_filename,
     prediction_layer,
+    offset,
     target_species,
+    target_covariate_names,
     output_file_prefix
 ){
 
@@ -16,17 +18,19 @@ predict_greta_mspp_count <- function(
 
   x_predict <- layer_values[!naidx, prednames]
 
-  # offset_pred <- layer_values[!naidx, "ag_microclim"]
-  #
-  # log_offset_pred <- log(offset_pred)
-  #
-  # log_lambda_adults_predict <- log_offset_pred
+  offset_values <- values(offset)
+
+  offset_pred <- offset_values[!naidx]
+
+  log_offset_pred <- log(offset_pred)
+
+  log_lambda_adults_predict <- log_offset_pred
 
   log_lambda_larval_habitat_predict <- sweep(x_predict %*% beta, 2, alpha, FUN = "+")
 
 
-  #log_lambda_predict <- sweep(log_lambda_larval_habitat_predict, 1, log_lambda_adults_predict, "+")
-  log_lambda_predict <-log_lambda_larval_habitat_predict
+  log_lambda_predict <- sweep(log_lambda_larval_habitat_predict, 1, log_lambda_adults_predict, "+")
+  #log_lambda_predict <-log_lambda_larval_habitat_predict
 
   pa_rate_predict <- icloglog(log_lambda_predict)
 

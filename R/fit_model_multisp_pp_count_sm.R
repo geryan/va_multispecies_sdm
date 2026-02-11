@@ -37,7 +37,7 @@ fit_model_multisp_pp_count_sm <- function(
 
 
   # get offset values from gambiae mechanistic model
-  log_offset <- log(model_data_spatial[distinct_idx,"ag_microclim"])|>
+  log_offset <- log(model_data_spatial[distinct_idx,"offset"])|>
     as.matrix() |>
     as_data()
 
@@ -47,13 +47,12 @@ fit_model_multisp_pp_count_sm <- function(
     as_tibble() |>
     select(
       all_of(target_covariate_names)
-      #"footprint"
     ) |>
     as.matrix() |>
     as_data()
 
   # get bias values
-  z <- model_data_spatial[distinct_idx,"research_tt_by_country"] |>
+  z <- model_data_spatial[distinct_idx,"travel_time"] |>
     as.matrix() |>
     as_data()
 
@@ -143,6 +142,8 @@ fit_model_multisp_pp_count_sm <- function(
     filter(data_type == "bg") |>
     nrow()
 
+  # don't need this with weight
+  #area_bg <- total_area/n_bg
 
   ########### priors
 
@@ -153,8 +154,8 @@ fit_model_multisp_pp_count_sm <- function(
   penalty.l2.sdm <- penalty.l2.bias <- 0.1
 
   # trying others
-  #penalty.l2.intercept <- 1e-2
-  # penalty.l2.sdm <- penalty.l2.bias <- 100
+  penalty.l2.intercept <- 1e-2
+  # penalty.l2.sdm <- penalty.l2.bias <- 0.01
 
   intercept_sd <- sqrt(1 / penalty.l2.intercept)
   beta_sd <- sqrt(1 / penalty.l2.sdm)
@@ -171,7 +172,6 @@ fit_model_multisp_pp_count_sm <- function(
 
   # informative priors on gamma and delta so exp(log_bias), i.e., bias,
   # has range around (0, 1) for z in (0, 1)
-  # these work really well
   # delta_sd <- 0.3
   # gamma_sd <- 0.1
 
@@ -189,9 +189,10 @@ fit_model_multisp_pp_count_sm <- function(
 
 
   # offset from calculated gambiae adult survival given habitat
-  #log_lambda_adults <- log_offset
-  log_lambda_adults <- rep(0, times = dim(log_offset)[[1]]) |>
-    as_data()
+  log_lambda_adults <- log_offset
+  # this turns offset off instead of above line
+  # log_lambda_adults <- rep(0, times = dim(log_offset)[[1]]) |>
+  #  as_data()
 
   # combine larval habitat and adult life cycle offset
   log_lambda <- sweep(log_lambda_larval_habitat, 1, log_lambda_adults, "+")
@@ -406,16 +407,14 @@ fit_model_multisp_pp_count_sm <- function(
   # fit model
   ###################
 
-  # optim <- opt(
-  #   m,
-  #   optimiser = adam(learning_rate = 0.001),
-  #   max_iterations = 1e6
-  # )
-  # if it gives a numerical error try reducing the learning rate (or just run it
-  # again)
-  # if it still doesn't converge, increase the number of iterations
 
-  optim <- opt(m, max_iterations = 1e5) # with sinka species plus coluzzii this converges
+  optim <- opt(
+    m,
+    optimiser = adam(learning_rate = 0.1),
+    max_iterations = 5e4
+  )
+
+  #optim <- opt(m, max_iterations = 1e5) # with sinka species plus coluzzii this converges
 
   # should be 0 if converged
   optim$convergence
@@ -423,17 +422,37 @@ fit_model_multisp_pp_count_sm <- function(
     paste(
       "optimiser value is",
       optim$convergence,
-      "should be 0 if optimiser converged"
+      "; it should be 0 if optimiser converged"
     )
   )
-
-
+  #
+  #
   #optim$par
 
   init_vals <- inits_from_opt(
     optim,
     n_chains = n_chains
   )
+
+  # get inits using fitian method
+  # doesn't work because gets gammas that are outside of range
+  # of priors
+  # # fixed by setting delta as > 0 but not yet tested
+  # inits_fithian <- fithian_inits(
+  #   dat = model_data,
+  #   target_species = target_species,
+  #   n_pixel = n_pixel
+  # )
+  #
+  # init_vals <- inits(
+  #   n_chains = n_chains,
+  #   nsp = length(target_species),
+  #   ncv = length(target_covariate_names),
+  #   ina = inits_fithian$alpha,
+  #   inb = inits_fithian$beta,
+  #   ing = inits_fithian$gamma,
+  #   ind = inits_fithian$delta
+  # )
 
 
   draws <- greta::mcmc(
@@ -452,6 +471,14 @@ fit_model_multisp_pp_count_sm <- function(
   )
   ggsave(
     "outputs/figures/traceplots/sm_alpha.png"
+  )
+
+  mcmc_trace(
+    x = draws,
+    regex_pars = "beta"
+  )
+  ggsave(
+    "outputs/figures/traceplots/sm_beta.png"
   )
 
   mcmc_trace(

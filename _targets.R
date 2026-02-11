@@ -327,6 +327,43 @@ list(
     )
   ),
 
+  tar_terra_rast(
+    covariate_rast_10,
+    aggregate(
+      covariate_rast_5,
+      fact = 2,
+      fun = "mean",
+      cores = 4
+    )
+  ),
+
+  tar_terra_rast(
+    offsets_avg_5,
+    offsets_5[[289:300]] |>
+      mean() |>
+      set_layer_names(layernames = "offset")
+  ),
+
+  tar_terra_rast(
+    offsets_avg_10,
+    aggregate(
+      offsets_avg_5,
+      fact = 2,
+      fun = "mean",
+      cores = 4
+    )
+  ),
+
+  tar_terra_rast(
+    offsets_avg_p_5,
+    1 - exp(-offsets_avg_5)
+  ),
+
+  tar_terra_rast(
+    offsets_avg_p_10,
+    1 - exp(-offsets_avg_10)
+  ),
+
 
   ## specific regions/ countries of interest for close-up plots
 
@@ -759,13 +796,18 @@ list(
  tar_target(
    model_fit_image_multisp_pp_count,
    fit_model_multisp_pp_count(
-     model_data_spatial = mds,
+     model_data_spatial = mds |>
+       filter(
+         !is.na(tcb),
+         !is.na(evi),
+         !is.na(lst_night)
+       ),
      target_covariate_names,
      target_species,
      project_mask_5,
      image_name = "outputs/images/multisp_pp_count.RData",
-     n_burnin = 500,
-     n_samples = 500,
+     n_burnin = 4000,
+     n_samples = 1000,
      n_chains = 50
    )
  ),
@@ -775,8 +817,10 @@ list(
    pred_file_multisp_pp_count,
    predict_greta_mspp_count(
      image_filename = model_fit_image_multisp_pp_count,
-     prediction_layer = covariate_rast_5,
+     prediction_layer = covariate_rast_10,
+     offset = offsets_avg_10,
      target_species,
+     target_covariate_names,
      output_file_prefix = "outputs/rasters/multisp_pp_count"
    )
  ),
@@ -810,7 +854,7 @@ list(
  # this is the temporary thang until the above are tidied
  tar_terra_rast(
    pred_dist,
-   rast(x = pred_file_multisp_pp_count_pa_expoff)
+   rast(x = pred_file_multisp_pp_count$pa)
  ),
 
  tar_target(
@@ -818,7 +862,7 @@ list(
    make_distribution_plots(
      pred_dist,
      model_data_spatial,
-     plot_dir = "outputs/figures/distribution_plots/distn_20251219"
+     plot_dir = "outputs/figures/distribution_plots/distn_20260211"
    )
  ),
 
@@ -874,12 +918,17 @@ list(
   tar_target(
    model_fit_image_multisp_pp_count_sm,
    fit_model_multisp_pp_count_sm(
-     model_data_spatial,
+     model_data_spatial = mds |>
+       filter(
+         !is.na(tcb),
+         !is.na(evi),
+         !is.na(lst_night)
+       ),
      target_covariate_names,
      target_species,
      project_mask_5,
      image_name = "outputs/images/multisp_pp_count_sm.RData",
-     n_burnin = 3000,
+     n_burnin = 2000,
      n_samples = 1000,
      n_chains = 50
    )

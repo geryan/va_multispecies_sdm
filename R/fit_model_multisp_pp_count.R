@@ -189,10 +189,10 @@ fit_model_multisp_pp_count <- function(
 
 
   # offset from calculated gambiae adult survival given habitat
-  #log_lambda_adults <- log_offset
+  log_lambda_adults <- log_offset
   # this turns offset off instead of above line
-  log_lambda_adults <- rep(0, times = dim(log_offset)[[1]]) |>
-   as_data()
+  # log_lambda_adults <- rep(0, times = dim(log_offset)[[1]]) |>
+  #  as_data()
 
   # combine larval habitat and adult life cycle offset
   log_lambda <- sweep(log_lambda_larval_habitat, 1, log_lambda_adults, "+")
@@ -463,7 +463,7 @@ fit_model_multisp_pp_count <- function(
 
   optim <- opt(
     m,
-    optimiser = adam(learning_rate = 0.5),
+    optimiser = adam(learning_rate = 0.1),
     max_iterations = 1e5
   )
 
@@ -496,7 +496,7 @@ fit_model_multisp_pp_count <- function(
   #   target_species = target_species,
   #   n_pixel = n_pixel
   # )
-
+  #
   # init_vals <- inits(
   #   n_chains = n_chains,
   #   nsp = length(target_species),
