@@ -560,7 +560,10 @@ list(
 
   tar_target(
     bg_kmeans_df,
-    frame_bg_kmeans(bg_kmeans_list_spatial)
+    frame_bg_kmeans(
+      bg_kmeans_list_spatial,
+      project_mask = project_mask_5
+    )
   ),
 
   ####################################

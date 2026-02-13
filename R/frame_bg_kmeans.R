@@ -7,7 +7,7 @@
 #' @return
 #' @author geryan
 #' @export
-frame_bg_kmeans <- function(bg_kmeans_list_spatial) {
+frame_bg_kmeans <- function(bg_kmeans_list_spatial, project_mask) {
 
   # bg_kmeans_list$x |>
   #   as_tibble() |>
@@ -24,11 +24,25 @@ frame_bg_kmeans <- function(bg_kmeans_list_spatial) {
   #       as.numeric()
   #   )
   #
-  tibble(
+  df <- tibble(
     longitude = bg_kmeans_list_spatial$coords[,"x"],
     latitude = bg_kmeans_list_spatial$coords[,"y"],
     bg_kmeans_list_spatial$x,
     weight = bg_kmeans_list_spatial$weight
   )
+
+  valid <- terra::extract(
+    x = project_mask,
+    y = tibble(
+      x = df$longitude,
+      y = df$latitude
+    )
+  ) |>
+    mutate(
+      valid = !is.na(project_mask)
+    ) |>
+    pull(valid)
+
+  df[valid,]
 
 }
