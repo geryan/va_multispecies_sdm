@@ -1,6 +1,7 @@
 predict_greta_mspp_count <- function(
     image_filename,
     prediction_layer,
+    offset,
     target_species,
     output_file_prefix
 ){
@@ -15,6 +16,13 @@ predict_greta_mspp_count <- function(
   naidx <- is.na(layer_values[,1])
 
   x_predict <- layer_values[!naidx, prednames]
+  offset_values <- values(offset)
+
+  offset_pred <- offset_values[!naidx]
+
+  log_offset_pred <- log(offset_pred)
+
+  log_lambda_adults_predict <- log_offset_pred
 
   log_lambda_larval_habitat_predict <- sweep(x_predict %*% beta, 2, alpha, FUN = "+")
 
