@@ -696,10 +696,23 @@ list(
      )
  ),
 
+ # subsample the data to speed up model fitting, while iterating model
+ # development
+ tar_target(
+   record_data_spatial_subsample,
+   record_data_spatial |>
+     group_by(
+       species,
+       data_type,
+       sampling_method
+     ) |>
+     sample_fraction(0.1)
+ ),
+
  tar_target(
    model_data_spatial_no_offset,
    bind_rows(
-     record_data_spatial |>
+     record_data_spatial_subsample |>
        mutate(weight = 1),
      bg_kmeans_df |>
        mutate(
@@ -709,6 +722,7 @@ list(
        )
    )
  ),
+
 
  ##############
  #
