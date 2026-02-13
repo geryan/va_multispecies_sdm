@@ -397,13 +397,13 @@ list(
   tar_terra_rast(
     covariate_rast_5_all,
     c(
-      built_volume_5,
-      evi_5,
-      tcb_5,
-      lst_night_5,
-      elevation_5,
-      soil_clay_5,
-      footprint_5,
+      # built_volume_5,
+      # evi_5,
+      # tcb_5,
+      # lst_night_5,
+      # elevation_5,
+      # soil_clay_5,
+      # footprint_5,
       landcover_covs,
       bias_tt_5
     )
@@ -722,7 +722,8 @@ list(
        data_type,
        sampling_method
      ) |>
-     sample_fraction(0.1)
+     slice_sample(prop = 0.1) |>
+     ungroup()
  ),
 
  tar_target(
