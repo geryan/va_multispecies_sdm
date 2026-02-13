@@ -51,10 +51,45 @@ list(
   # some of these contain NAs within continent
   # these are filled in the mask
   tar_terra_rast(
-    project_mask_5,
+    project_mask_5_outline,
     make_mask_from_offsets(offsets_raw) |>
       set_layer_names("project_mask")
   ),
+
+  # read in other layers and match to offset size shape and extent
+  #
+  tar_terra_rast(
+    landcover_raw,
+    get_landcovers(
+      vars = c(
+        "trees",
+        "grassland",
+        "shrubs",
+        "cropland",
+        "built",
+        #"bare",
+        "water",
+        "wetland",
+        "mangroves"
+      ),
+      path = "data/raster/geodata/"
+    )
+  ),
+
+  tar_terra_rast(
+    water_mask_5,
+    make_water_mask(
+      water = landcover_raw[["water"]],
+      proj_mask = project_mask_5_outline
+    )
+  ),
+
+  tar_terra_rast(
+    project_mask_5,
+    project_mask_5_outline |>
+      mask(mask = water_mask_5)
+  ),
+
 
   # cleaning to fills NAs within continent with very small number
   tar_terra_rast(
@@ -66,7 +101,17 @@ list(
     )
   ),
 
-  # read in other layers and match to offset size shape and extent
+  ## landcover vars from worldcover
+  tar_terra_rast(
+    landcover_covs,
+    landcover_raw |>
+      aggregate(fact = 5) |>
+      crop(y = project_mask_5) |>
+      resample(y = project_mask_5) |>
+      fill_na_with_nearest_mean(maxRadiusCell = 50) |>
+      mask(mask = project_mask_5) |>
+      scale()
+  ),
 
   #
   # layers from Malaria Atlas Project
@@ -239,6 +284,17 @@ list(
       scale()
   ),
 
+  # tar_terra_rast(
+  #   built_volume_5,
+  #   built_volume_raw |>
+  #     aggregate(fact = 5) |>
+  #     crop(y = project_mask_5) |>
+  #     resample(y = project_mask_5) |>
+  #     fill_na_with_nearest_mean(maxRadiusCell = 50) |>
+  #     mask(mask = project_mask_5) |>
+  #     scale()
+  # ),
+
   #
   # bias
   # travel time from research facilities
@@ -283,6 +339,7 @@ list(
       elevation_5,
       soil_clay_5,
       footprint_5,
+      landcover_covs,
       bias_tt_5
     )
   ),
@@ -290,13 +347,21 @@ list(
   tar_target(
     target_covariate_names,
     c(
-      "built_volume",
-      "evi", # correlates with pressure_mean rainfall_mean and solrad_mean
-      "tcb",
-      "lst_night",
+      #"built_volume",
+      #"evi", # correlates with pressure_mean rainfall_mean and solrad_mean
+      #"tcb",
+      #"lst_night",
       "elevation",
       "footprint", # correlates with built_volume and cropland
-      "soil_clay"
+      #"soil_clay",
+      "trees",
+      "grassland",
+      "shrubs",
+      "cropland",
+      "built",
+      "water",
+      "wetland",
+      "mangroves"
     )
   ),
 
@@ -308,14 +373,17 @@ list(
 
   tar_terra_rast(
     covariate_rast_5_all,
-    c(built_volume_5,
+    c(
+      built_volume_5,
       evi_5,
       tcb_5,
       lst_night_5,
       elevation_5,
       soil_clay_5,
       footprint_5,
-      bias_tt_5)
+      landcover_covs,
+      bias_tt_5
+    )
   ),
 
   tar_terra_rast(
@@ -614,7 +682,7 @@ list(
  ),
 
  tar_target(
-   model_data_spatial,
+   model_data_spatial_no_offset,
    bind_rows(
      record_data_spatial |>
        mutate(weight = 1),
@@ -626,6 +694,21 @@ list(
        )
    )
  ),
+
+ ##############
+ #
+ # Read in indexed data from offset layers
+ #
+ ##############
+
+ tar_target(
+   model_data_spatial,
+   match_offset_data(
+     model_data_spatial_no_offset,
+     offsets_5
+   )
+ ),
+
 
 
 
@@ -737,44 +820,31 @@ list(
    )
  ),
 
- ##############
+
+ # # write out to process from monthly on MAP AWS
+ # tar_target(
+ #   writemds,
+ #   write_csv(
+ #     mod_dat_spat,
+ #     file = "data/processed/mod_dat_spat.csv"
+ #   )
+ # ),
  #
- # Read in indexed data from offset layers
+ # # read back in from AWS
+ # tar_target(
+ #   mds,
+ #   read_csv(file = "data/processed/mod_dat_spat_updated.csv")
+ # ),
+
  #
- ##############
-
- tar_target(
-   mod_dat_spat,
-   match_offset_data(
-     model_data_spatial,
-     offsets_5
-   )
- ),
-
- # write out to process from monthly on MAP AWS
- tar_target(
-   writemds,
-   write_csv(
-     mod_dat_spat,
-     file = "data/processed/mod_dat_spat.csv"
-   )
- ),
-
- # read back in from AWS
- tar_target(
-   mds,
-   read_csv(file = "data/processed/mod_dat_spat_updated.csv")
- ),
-
-
- # plots of offset layers against presence and absence
- tar_target(
-   offset_pa_plots,
-   make_offset_pa_plots(
-     mod_dat_spat,
-     target_species,
-   )
- ),
+ # # plots of offset layers against presence and absence
+ # tar_target(
+ #   offset_pa_plots,
+ #   make_offset_pa_plots(
+ #     mod_dat_spat,
+ #     target_species,
+ #   )
+ # ),
 
  # one sp add at a time
  # add absence vs presence at a time
@@ -796,15 +866,10 @@ list(
  tar_target(
    model_fit_image_multisp_pp_count,
    fit_model_multisp_pp_count(
-     model_data_spatial = mds |>
-       filter(
-         !is.na(tcb),
-         !is.na(evi),
-         !is.na(lst_night)
-       ),
-     target_covariate_names,
-     target_species,
-     project_mask_5,
+     model_data_spatial = model_data_spatial,
+     target_covariate_names = target_covariate_names,
+     target_species = target_species,
+     project_mask = project_mask_5,
      image_name = "outputs/images/multisp_pp_count.RData",
      n_burnin = 4000,
      n_samples = 1000,
@@ -918,50 +983,53 @@ list(
   tar_target(
    model_fit_image_multisp_pp_count_sm,
    fit_model_multisp_pp_count_sm(
-     model_data_spatial = mds |>
-       filter(
-         !is.na(tcb),
-         !is.na(evi),
-         !is.na(lst_night)
-       ),
-     target_covariate_names,
-     target_species,
-     project_mask_5,
+     model_data_spatial = model_data_spatial |>
+       group_by(
+         species,
+         data_type,
+         sampling_method
+       ) |>
+       sample_frac(0.2) |>
+       ungroup(),
+     target_covariate_names = target_covariate_names,
+     target_species = target_species,
+     project_mask = project_mask_5,
      image_name = "outputs/images/multisp_pp_count_sm.RData",
-     n_burnin = 2000,
-     n_samples = 1000,
-     n_chains = 50
+     n_burnin = 1000,
+     n_samples = 500,
+     n_chains = 20
    )
  ),
 
  # # # read in image and predict out raster as a tif
  tar_target(
    pred_file_multisp_pp_count_sm,
-   predict_greta_mspp_count(
+   predict_greta_mspp_count_sm(
      image_filename = model_fit_image_multisp_pp_count_sm,
-     prediction_layer = covariate_rast_5,
+     prediction_layer = covariate_rast_10,
+     offset = offsets_avg_10,
      target_species,
      output_file_prefix = "outputs/rasters/multisp_pp_count_sm"
    )
  ),
 
- tar_target(
-   pred_file_multisp_pp_count_expoff_sm,
-   add_expert_offset(
-     predfilelist = pred_file_multisp_pp_count_sm,
-     expert_offset_maps = expert_offset_maps_500
-     #expert_offset_maps = rast("outputs/rasters/va_plots_20250718/expert_offset_aggregated.tif")
-   )
- ),
-
- tar_target(
-   pred_file_multisp_pp_count_expoff_sm_count,
-   add_expert_offset_count(
-     predfilelist = pred_file_multisp_pp_count_sm,
-     expert_offset_maps = expert_offset_maps_500
-     #expert_offset_maps = rast("outputs/rasters/va_plots_20250718/expert_offset_aggregated.tif")
-   )
- ),
+ # tar_target(
+ #   pred_file_multisp_pp_count_expoff_sm,
+ #   add_expert_offset(
+ #     predfilelist = pred_file_multisp_pp_count_sm,
+ #     expert_offset_maps = expert_offset_maps_500
+ #     #expert_offset_maps = rast("outputs/rasters/va_plots_20250718/expert_offset_aggregated.tif")
+ #   )
+ # ),
+ #
+ # tar_target(
+ #   pred_file_multisp_pp_count_expoff_sm_count,
+ #   add_expert_offset_count(
+ #     predfilelist = pred_file_multisp_pp_count_sm,
+ #     expert_offset_maps = expert_offset_maps_500
+ #     #expert_offset_maps = rast("outputs/rasters/va_plots_20250718/expert_offset_aggregated.tif")
+ #   )
+ # ),
 #
 #  tar_target(
 #    pred_file_multisp_pp_count_expoff_sm_500,
@@ -978,7 +1046,7 @@ list(
  # this is the temporary thang until the above are tidied
  tar_terra_rast(
    pred_dist_sm,
-   rast(x = pred_file_multisp_pp_count_expoff_sm)
+   rast(x = pred_file_multisp_pp_count_sm$pa)
  ),
 
  tar_target(
@@ -986,7 +1054,7 @@ list(
    make_distribution_plots(
      pred_dist_sm,
      model_data_spatial,
-     plot_dir = "outputs/figures/distribution_plots/distn_20251219_sm"
+     plot_dir = "outputs/figures/distribution_plots/distn_20260212_sm"
    )
  ),
 
@@ -1033,112 +1101,112 @@ list(
  #############################################################################
  # 4 species only analysis
 # need to refine this list
-tar_target(
-  target_species_4,
-  target_spp_test_only()
-),
+# tar_target(
+#   target_species_4,
+#   target_spp_test_only()
+# ),
+#
+# tar_target(
+#   model_data_records_4,
+#   generate_model_data_records(
+#     full_data_records,
+#     target_species = target_species_4
+#   )
+# ),
+#
+#
+# tar_target(
+#   record_data_spatial_all_4,
+#   get_spatial_values(
+#     lyrs = covariate_rast_5_all,
+#     dat = model_data_records_4,
+#     project_mask_5
+#   )
+# ),
+#
+# tar_target(
+#   record_data_spatial_4,
+#   record_data_spatial_all_4 |>
+#     select(
+#       - all_of(
+#         names(covariate_rast_5_all)[
+#           !names(covariate_rast_5_all) %in%
+#             c(
+#               target_covariate_names,
+#               #offset_names,
+#               bias_names
+#             )
+#         ]
+#       ),
+#     )
+# ),
+#
+# tar_target(
+#   model_data_spatial_4,
+#   bind_rows(
+#     record_data_spatial_4 |>
+#       mutate(weight = 1),
+#     bg_kmeans_df |>
+#       mutate(
+#         data_type = "bg",
+#         presence = 0,
+#         n = 0
+#       )
+#   )
+# ),
 
-tar_target(
-  model_data_records_4,
-  generate_model_data_records(
-    full_data_records,
-    target_species = target_species_4
-  )
-),
-
-
-tar_target(
-  record_data_spatial_all_4,
-  get_spatial_values(
-    lyrs = covariate_rast_5_all,
-    dat = model_data_records_4,
-    project_mask_5
-  )
-),
-
-tar_target(
-  record_data_spatial_4,
-  record_data_spatial_all_4 |>
-    select(
-      - all_of(
-        names(covariate_rast_5_all)[
-          !names(covariate_rast_5_all) %in%
-            c(
-              target_covariate_names,
-              #offset_names,
-              bias_names
-            )
-        ]
-      ),
-    )
-),
-
-tar_target(
-  model_data_spatial_4,
-  bind_rows(
-    record_data_spatial_4 |>
-      mutate(weight = 1),
-    bg_kmeans_df |>
-      mutate(
-        data_type = "bg",
-        presence = 0,
-        n = 0
-      )
-  )
-),
-
-## multispecies pp count
-##
-
-# fit the model in greta
-# save an image of the environment within function
-# otherwise the greta model nodes become disconnected and buggered up
-# because of some R6 nonsense with greta or whatever and the usual targets
-# shenanigans
-tar_target(
-  model_fit_image_multisp_pp_count_4,
-  fit_model_multisp_pp_count_4spp(
-    model_data_spatial = model_data_spatial_4,
-    target_covariate_names = target_covariate_names,
-    target_species = target_species_4,
-    project_mask_5,
-    image_name = "outputs/images/4_multisp_pp_count.RData",
-    n_burnin = 2000,
-    n_samples = 1000,
-    n_chains = 50
-  )
-),
-
-# # read in image and predict out raster as a tif
-tar_target(
-  pred_file_multisp_pp_count_4,
-  predict_greta_mspp_count(
-    image_filename = model_fit_image_multisp_pp_count_4,
-    prediction_layer = covariate_rast_5,
-    target_species,
-    output_file_prefix = "outputs/rasters/4_multisp_pp_count"
-  )
-),
-
-tar_target(
-  pred_file_multisp_pp_count_pa_expoff_4,
-  add_expert_offset(
-    predfilelist = pred_file_multisp_pp_count_4,
-    #expert_offset_maps = rast("outputs/rasters/va_plots_20250718/expert_offset_aggregated.tif")
-    expert_offset_maps = expert_offset_maps_500,
-    pred_type = "pa"
-  )
-),
-
-tar_target(
-  pred_file_multisp_pp_count_count_expoff_4,
-  add_expert_offset(
-    predfilelist = pred_file_multisp_pp_count_4,
-    #expert_offset_maps = rast("outputs/rasters/va_plots_20250718/expert_offset_aggregated.tif")
-    expert_offset_maps = expert_offset_maps_500,
-    pred_type = "count"
-  )
-),
+# ## multispecies pp count
+# ##
+#
+# # fit the model in greta
+# # save an image of the environment within function
+# # otherwise the greta model nodes become disconnected and buggered up
+# # because of some R6 nonsense with greta or whatever and the usual targets
+# # shenanigans
+# tar_target(
+#   model_fit_image_multisp_pp_count_4,
+#   fit_model_multisp_pp_count_4spp(
+#     model_data_spatial = model_data_spatial_4,
+#     target_covariate_names = target_covariate_names,
+#     target_species = target_species_4,
+#     project_mask_5,
+#     image_name = "outputs/images/4_multisp_pp_count.RData",
+#     n_burnin = 2000,
+#     n_samples = 1000,
+#     n_chains = 50
+#   )
+# ),
+#
+# # # read in image and predict out raster as a tif
+# tar_target(
+#   pred_file_multisp_pp_count_4,
+#   predict_greta_mspp_count(
+#     image_filename = model_fit_image_multisp_pp_count_4,
+#     prediction_layer = covariate_rast_5,
+#     target_species,
+#     output_file_prefix = "outputs/rasters/4_multisp_pp_count"
+#   )
+# ),
+#
+# tar_target(
+#   pred_file_multisp_pp_count_pa_expoff_4,
+#   add_expert_offset(
+#     predfilelist = pred_file_multisp_pp_count_4,
+#     #expert_offset_maps = rast("outputs/rasters/va_plots_20250718/expert_offset_aggregated.tif")
+#     expert_offset_maps = expert_offset_maps_500,
+#     pred_type = "pa"
+#   )
+# ),
+#
+# tar_target(
+#   pred_file_multisp_pp_count_count_expoff_4,
+#   add_expert_offset(
+#     predfilelist = pred_file_multisp_pp_count_4,
+#     #expert_offset_maps = rast("outputs/rasters/va_plots_20250718/expert_offset_aggregated.tif")
+#     expert_offset_maps = expert_offset_maps_500,
+#     pred_type = "count"
+#   )
+# ),
 
 
 
