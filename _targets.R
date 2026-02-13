@@ -41,7 +41,7 @@ list(
   # get the user, for switching paths
   tar_target(
     user_is_nick,
-    Sys.info()["user"] == "nick"
+    Sys.info()[["user"]] == "nick"
   ),
 
   # read in offset layers
@@ -317,11 +317,11 @@ list(
 
   tar_terra_rast(
     bias_tt_raw,
-    ifelse(
-      user_is_nick,
-      rast("data/raster/tt_by_country.tif"),
+    if (user_is_nick) {
+      rast("data/raster/tt_by_country.tif")
+    } else{
       rast("/Users/gryan/Documents/tki_work/vector_atlas/africa_anopheles_sampling_bias/outputs/tt_by_country.tif")
-    )
+    }
     # rast("/Users/gryan/Documents/tki_work/vector_atlas/africa_anopheles_sampling_bias/outputs/tt_by_country.tif")
   ),
 
