@@ -584,6 +584,14 @@ fit_model_multisp_pp_count <- function(
 
 
 
+  ###### Plot parameter estimates
+
+  interval_plots(
+    draws = draws,
+    target_species = target_species,
+    target_covariate_names = target_covariate_names,
+    sampling_methods = sampling_methods
+  )
 
   ############
   # Save image

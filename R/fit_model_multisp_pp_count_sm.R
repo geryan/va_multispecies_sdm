@@ -9,8 +9,6 @@ fit_model_multisp_pp_count_sm <- function(
     n_chains = 4
 ){
 
-  # library(targets.utils)
-  # tl()
 
   model_data_spatial <- model_data_spatial |>
     filter(
@@ -537,6 +535,15 @@ fit_model_multisp_pp_count_sm <- function(
     output_prefix = "outputs/figures/ppc_sm/posterior"
   )
 
+
+  ###### Plot parameter estimates
+
+  interval_plots(
+    draws = draws,
+    target_species = target_species,
+    target_covariate_names = target_covariate_names,
+    sampling_methods = sampling_methods
+  )
 
 
 
