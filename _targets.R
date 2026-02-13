@@ -106,13 +106,15 @@ list(
   ## landcover vars from worldcover
   tar_terra_rast(
     landcover_covs,
-    landcover_raw |>
       aggregate(fact = 5) |>
       crop(y = project_mask_5) |>
       resample(y = project_mask_5) |>
       fill_na_with_nearest_mean(maxRadiusCell = 50) |>
-      mask(mask = project_mask_5) |>
-      scale()
+      mask(mask = project_mask_5) #|> scale()
+    # don't scale landcover types, so they remain 0-1, and a
+    # positive-constrained coefficient enforces that more habitat corresponds
+    # with more mosquitoes
+
   ),
 
   #
@@ -353,9 +355,12 @@ list(
       #"evi", # correlates with pressure_mean rainfall_mean and solrad_mean
       #"tcb",
       #"lst_night",
-      "elevation",
-      "footprint", # correlates with built_volume and cropland
-      "soil_clay",
+      # "elevation",
+      # "footprint", # correlates with built_volume and cropland
+      #"soil_clay",
+
+      # only use the worldcover landcover classes, in fractional cover (0-1)
+      # form, excluding the obviously unsuitable habitat (bare, snow, etc)
       "trees",
       "grassland",
       "shrubs",
