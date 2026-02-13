@@ -1,4 +1,4 @@
-predict_greta_mspp_count <- function(
+predict_greta_mspp_count_sm <- function(
     image_filename,
     prediction_layer,
     offset,
@@ -26,10 +26,12 @@ predict_greta_mspp_count <- function(
 
   log_lambda_larval_habitat_predict <- sweep(x_predict %*% beta, 2, alpha, FUN = "+")
 
+  log_lambda_combine_predict <- sweep(log_lambda_larval_habitat_predict, 1, log_lambda_adults_predict, "+")
+
   # simulate human_landing_catch indoor
   sampling_re_predict <- sampling_re_raw[5] * sampling_re_sd
 
-  log_lambda_predict <- log_lambda_larval_habitat_predict +
+  log_lambda_predict <- log_lambda_combine_predict +
     sampling_re_predict
 
   pa_rate_predict <- icloglog(log_lambda_predict)
