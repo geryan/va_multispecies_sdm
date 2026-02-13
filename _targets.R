@@ -38,6 +38,11 @@ list(
   # spatial data
   ########################
 
+  # get the user, for switching paths
+  tar_target(
+    user_is_nick,
+    Sys.info()["user"] == "nick"
+  ),
 
   # read in offset layers
 
@@ -45,7 +50,11 @@ list(
   tar_terra_rast(
     offsets_raw,
     read_offset_data(
-      odir = "../mosmicrosim/processing/vector_rasters"
+      odir = ifelse(
+        user_is_nick,
+        "../mosmicrosim/processing/vector_rasters",
+        "/Users/gryan/Dropbox/vector_rasters/"
+      )
     )
   ),
 
@@ -307,7 +316,12 @@ list(
 
   tar_terra_rast(
     bias_tt_raw,
-    rast("/Users/gryan/Documents/tki_work/vector_atlas/africa_anopheles_sampling_bias/outputs/tt_by_country.tif")
+    ifelse(
+      user_is_nick,
+      rast("data/raster/tt_by_country.tif"),
+      rast("/Users/gryan/Documents/tki_work/vector_atlas/africa_anopheles_sampling_bias/outputs/tt_by_country.tif")
+    )
+    # rast("/Users/gryan/Documents/tki_work/vector_atlas/africa_anopheles_sampling_bias/outputs/tt_by_country.tif")
   ),
 
   # that this doesn't quite match the mask layer suggests I need to redo
