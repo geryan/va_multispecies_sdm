@@ -115,6 +115,7 @@ list(
   ## landcover vars from worldcover
   tar_terra_rast(
     landcover_covs,
+    landcover_raw |>
       aggregate(fact = 5) |>
       crop(y = project_mask_5) |>
       resample(y = project_mask_5) |>
@@ -329,13 +330,14 @@ list(
   # grouch
   tar_terra_rast(
     bias_tt_5,
-    bias_tt_raw|>
+    bias_tt_raw |>
       aggregate(fact = 5) |>
       crop(y = project_mask_5) |>
       resample(y = project_mask_5) |>
       fill_na_with_nearest_mean(maxRadiusCell = 50) |>
       scale_rast_to_1(reverse = TRUE) |>
-      mask(mask = project_mask_5)
+      mask(mask = project_mask_5) |>
+      `names<-`("travel_time")
   ),
 
 
