@@ -30,7 +30,7 @@ generate_model_data_records_no_impute <- function(
     # fruit off polygons and centroid of admin points
     filter(point_data) |>
     mutate(
-      sampling_method = reduce_sampling_methods(sampling_method),
+      # sampling_method = reduce_sampling_methods(sampling_method),
     ) |>
     # select(
     #   -start_date,

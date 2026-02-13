@@ -240,7 +240,7 @@ clean_full_data_records <- function(
       point_data = check_point_data_type(area_type)
     ) |>
     mutate(
-      sampling_method = reduce_sampling_methods(sampling_method),
+      # sampling_method = reduce_sampling_methods(sampling_method),
       known_indoor = case_when(
         stringr::str_ends(sampling_method, "ind") ~ TRUE,
         sampling_method == "hri" ~ TRUE,
