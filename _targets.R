@@ -24,8 +24,8 @@ tar_option_set(
     "magrittr",
     "stringr",
     "bayesplot",
-    "patchwork",
-    "see"
+    "patchwork"
+    # "see"
   ),
   workspace_on_error = TRUE
 )
@@ -44,7 +44,9 @@ list(
   # all raw layers
   tar_terra_rast(
     offsets_raw,
-    read_offset_data()
+    read_offset_data(
+      odir = "../mosmicrosim/processing/vector_rasters"
+    )
   ),
 
   # generate mask from offset layers

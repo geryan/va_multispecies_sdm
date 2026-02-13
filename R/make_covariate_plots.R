@@ -38,7 +38,7 @@ make_covariate_plots <- function(
       )
     ) |>
     ggplot() +
-    geom_violinhalf(
+    geom_violin(
       aes(
         x = dtype,
         y = value,
