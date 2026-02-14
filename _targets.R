@@ -917,9 +917,9 @@ list(
      target_species = target_species,
      project_mask = project_mask_5,
      image_name = "outputs/images/multisp_pp_count.RData",
-     n_burnin = 2000,
-     n_samples = 1000,
-     n_chains = 50
+     n_burnin = 1000,
+     n_samples = 500,
+     n_chains = 20
    )
  ),
 
@@ -1029,14 +1029,7 @@ list(
   tar_target(
    model_fit_image_multisp_pp_count_sm,
    fit_model_multisp_pp_count_sm(
-     model_data_spatial = model_data_spatial |>
-       group_by(
-         species,
-         data_type,
-         sampling_method
-       ) |>
-       sample_frac(0.2) |>
-       ungroup(),
+     model_data_spatial = model_data_spatial,
      target_covariate_names = target_covariate_names,
      target_species = target_species,
      project_mask = project_mask_5,

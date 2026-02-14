@@ -30,7 +30,10 @@ generate_model_data_records <- function(
     # fruit off polygons and centroid of admin points
     filter(point_data) |>
     mutate(
-      # sampling_method = reduce_sampling_methods(sampling_method),
+      # record the detailed sampling method (for posterior checks), and then
+      # reduce to fewer classes for modelling
+      sampling_method_detailed = sampling_method,
+      sampling_method = reduce_sampling_methods(sampling_method),
     ) |>
     # select(
     #   -start_date,
@@ -73,6 +76,7 @@ generate_model_data_records <- function(
     select(
       source_id,
       start_date,
+      sampling_method_detailed,
       sampling_method,
       latitude,
       longitude,
@@ -88,6 +92,7 @@ generate_model_data_records <- function(
       source_id,
       start_date,
       sampling_method,
+      sampling_method_detailed,
       latitude,
       longitude,
       study_months
@@ -104,6 +109,7 @@ generate_model_data_records <- function(
       source_id,
       start_date,
       sampling_method,
+      sampling_method_detailed,
       latitude,
       longitude,
       study_months
@@ -170,6 +176,7 @@ generate_model_data_records <- function(
       latitude,
       longitude,
       sampling_method,
+      sampling_method_detailed,
       start_date,
       end_date,
       model_date,
