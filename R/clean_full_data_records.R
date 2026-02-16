@@ -24,7 +24,10 @@ clean_full_data_records <- function(
       year_end,
       species,
       starts_with("species_id"),
-      confidence_in_georef
+      confidence_in_georef,
+      mosquitoes_tested_n,
+      mosquitoes_dead_n,
+      percent_mortality
     )  |>
     select( # remove extraneous cols selected with helper funs above
       -occurrence_n_total
@@ -221,11 +224,15 @@ clean_full_data_records <- function(
         is.na(itn_use) ~ FALSE,
         itn_use == "yes" ~ TRUE,
         TRUE ~ FALSE
-      )
+      ),
+      mtn = !is.na(mosquitoes_tested_n),
+      mdn = !is.na(mosquitoes_dead_n),
+      pcm = !is.na(percent_mortality)
     ) |>
     rowwise() |>
     mutate(
-      insecticide = any(ic, itn)
+      insecticide = any(ic, itn),
+      prob_bioassay = any(mtn, mdn, pcm)
     ) |>
     ungroup() |>
     # check if point or not  -
@@ -241,8 +248,8 @@ clean_full_data_records <- function(
       ),
       ic_ki = insecticide & known_indoor
     ) |>
-    filter(!ic_ki) |>
-    # get rid of cols I dgaf about eh
+    filter(!ic_ki, !prob_bioassay) |>
+    # get rid of cols with insecticide use or bioassay larval samples
     select(
       - sampling_occurrence,
       - starts_with("species_id"),

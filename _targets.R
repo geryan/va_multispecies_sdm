@@ -353,7 +353,7 @@ list(
       #"lst_night",
       "elevation",
       "footprint", # correlates with built_volume and cropland
-      #"soil_clay",
+      "soil_clay",
       "trees",
       "grassland",
       "shrubs",
@@ -574,7 +574,8 @@ list(
 
  tar_target(
    raw_data_file,
-   "data/tabular/VA_FULL_DATA_20250716.csv",
+   #"data/tabular/VA_FULL_DATA_20250716.csv",
+   "data/tabular/VA_DATA_20260202.csv",
    format = "file"
  ),
 
@@ -582,7 +583,9 @@ list(
    raw_data,
    read_csv(
      file = raw_data_file,
-     guess_max = 30000
+     guess_max = 100000 # some cols are largely empty until end, so needs this
+     # or will assume they are logical and break when they are not
+     # NB this is longer than the entire data set (for now...)
    )
  ),
 
@@ -591,7 +594,9 @@ list(
  # process data
 
  # clean and make a set of records that are tidy and complete
- # but not excluding anything yet
+ # removes data where insecticides were used
+ # and larval bioassay data
+ #
  tar_target(
    full_data_records,
    clean_full_data_records(raw_data)
@@ -874,7 +879,7 @@ list(
      target_species = target_species,
      project_mask = project_mask_5,
      image_name = "outputs/images/multisp_pp_count.RData",
-     n_burnin = 4000,
+     n_burnin = 2000,
      n_samples = 1000,
      n_chains = 50
    )
@@ -893,25 +898,25 @@ list(
    )
  ),
 
- tar_target(
-   pred_file_multisp_pp_count_pa_expoff,
-   add_expert_offset(
-     predfilelist = pred_file_multisp_pp_count,
-     #expert_offset_maps = rast("outputs/rasters/va_plots_20250718/expert_offset_aggregated.tif")
-     expert_offset_maps = expert_offset_maps_500,
-     pred_type = "pa"
-   )
- ),
-
- tar_target(
-   pred_file_multisp_pp_count_count_expoff,
-   add_expert_offset(
-     predfilelist = pred_file_multisp_pp_count,
-     #expert_offset_maps = rast("outputs/rasters/va_plots_20250718/expert_offset_aggregated.tif")
-     expert_offset_maps = expert_offset_maps_500,
-     pred_type = "count"
-   )
- ),
+ # tar_target(
+ #   pred_file_multisp_pp_count_pa_expoff,
+ #   add_expert_offset(
+ #     predfilelist = pred_file_multisp_pp_count,
+ #     #expert_offset_maps = rast("outputs/rasters/va_plots_20250718/expert_offset_aggregated.tif")
+ #     expert_offset_maps = expert_offset_maps_500,
+ #     pred_type = "pa"
+ #   )
+ # ),
+ #
+ # tar_target(
+ #   pred_file_multisp_pp_count_count_expoff,
+ #   add_expert_offset(
+ #     predfilelist = pred_file_multisp_pp_count,
+ #     #expert_offset_maps = rast("outputs/rasters/va_plots_20250718/expert_offset_aggregated.tif")
+ #     expert_offset_maps = expert_offset_maps_500,
+ #     pred_type = "count"
+ #   )
+ # ),
 
 
  #
@@ -998,9 +1003,9 @@ list(
      target_species = target_species,
      project_mask = project_mask_5,
      image_name = "outputs/images/multisp_pp_count_sm.RData",
-     n_burnin = 1000,
+     n_burnin = 2000,
      n_samples = 500,
-     n_chains = 20
+     n_chains = 50
    )
  ),
 

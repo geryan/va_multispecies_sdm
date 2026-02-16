@@ -3,14 +3,14 @@
 #' .. content for \details{} ..
 #'
 #' @title
-#' @param model_data_spatial
+#' @param model_data_spatial_no_offset
 #' @param offsets_5
 #' @return
 #' @author geryan
 #' @export
-match_offset_data <- function(model_data_spatial, offsets_5) {
+match_offset_data <- function(model_data_spatial_no_offset, offsets_5) {
 
-  dat_date <- model_data_spatial |>
+  dat_date <- model_data_spatial_no_offset |>
     select(x = longitude, y = latitude, date = model_date) |>
     distinct() |>
     filter(!is.na(date))
@@ -21,7 +21,7 @@ match_offset_data <- function(model_data_spatial, offsets_5) {
     min_year = 2000
   )
 
-  dat_no_date <- model_data_spatial |>
+  dat_no_date <- model_data_spatial_no_offset |>
     filter(is.na(model_date)) |>
     select(x = longitude, y = latitude) |>
     distinct()
@@ -52,7 +52,7 @@ match_offset_data <- function(model_data_spatial, offsets_5) {
     )
   )
 
-  model_data_spatial |>
+  model_data_spatial_no_offset |>
     left_join(
       y = matched_data,
       by = c("longitude", "latitude", "model_date")
