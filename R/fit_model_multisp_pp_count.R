@@ -168,7 +168,13 @@ fit_model_multisp_pp_count <- function(
 
   # intercept and slopes for abundance rate
   alpha <- normal(0, intercept_sd, dim = n_species)
-  beta <- normal(0, beta_sd, dim = c(n_cov_abund, n_species))
+
+  # force beta to be positive, so that abundance is forced to be higher in
+  # non-bare-gound landcover types
+  beta <- normal(0,
+                 beta_sd,
+                 dim = c(n_cov_abund, n_species),
+                 truncation = c(0, Inf))
 
   # informative priors on gamma and delta so exp(log_bias), i.e., bias,
   # has range around (0, 1) for z in (0, 1)

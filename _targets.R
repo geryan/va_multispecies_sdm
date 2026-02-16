@@ -24,8 +24,8 @@ tar_option_set(
     "magrittr",
     "stringr",
     "bayesplot",
-    "patchwork",
-    "see"
+    "patchwork"
+    # "see"
   ),
   workspace_on_error = TRUE
 )
@@ -38,13 +38,24 @@ list(
   # spatial data
   ########################
 
+  # get the user, for switching paths
+  tar_target(
+    user_is_nick,
+    Sys.info()[["user"]] == "nick"
+  ),
 
   # read in offset layers
 
   # all raw layers
   tar_terra_rast(
     offsets_raw,
-    read_offset_data()
+    read_offset_data(
+      odir = ifelse(
+        user_is_nick,
+        "../mosmicrosim/processing/vector_rasters",
+        "/Users/gryan/Dropbox/vector_rasters/"
+      )
+    )
   ),
 
   # generate mask from offset layers
@@ -109,8 +120,11 @@ list(
       crop(y = project_mask_5) |>
       resample(y = project_mask_5) |>
       fill_na_with_nearest_mean(maxRadiusCell = 50) |>
-      mask(mask = project_mask_5) |>
-      scale()
+      mask(mask = project_mask_5) #|> scale()
+    # don't scale landcover types, so they remain 0-1, and a
+    # positive-constrained coefficient enforces that more habitat corresponds
+    # with more mosquitoes
+
   ),
 
   #
@@ -303,7 +317,12 @@ list(
 
   tar_terra_rast(
     bias_tt_raw,
-    rast("/Users/gryan/Documents/tki_work/vector_atlas/africa_anopheles_sampling_bias/outputs/tt_by_country.tif")
+    if (user_is_nick) {
+      rast("data/raster/tt_by_country.tif")
+    } else{
+      rast("/Users/gryan/Documents/tki_work/vector_atlas/africa_anopheles_sampling_bias/outputs/tt_by_country.tif")
+    }
+    # rast("/Users/gryan/Documents/tki_work/vector_atlas/africa_anopheles_sampling_bias/outputs/tt_by_country.tif")
   ),
 
   # that this doesn't quite match the mask layer suggests I need to redo
@@ -311,13 +330,14 @@ list(
   # grouch
   tar_terra_rast(
     bias_tt_5,
-    bias_tt_raw|>
+    bias_tt_raw |>
       aggregate(fact = 5) |>
       crop(y = project_mask_5) |>
       resample(y = project_mask_5) |>
       fill_na_with_nearest_mean(maxRadiusCell = 50) |>
       scale_rast_to_1(reverse = TRUE) |>
-      mask(mask = project_mask_5)
+      mask(mask = project_mask_5) |>
+      `names<-`("travel_time")
   ),
 
 
@@ -332,13 +352,13 @@ list(
     check_no_mismatched_nas(
       proj_mask = project_mask_5,
       offsets_5[[1]],
-      built_volume_5,
-      evi_5,
-      tcb_5,
-      lst_night_5,
-      elevation_5,
-      soil_clay_5,
-      footprint_5,
+      # built_volume_5,
+      # evi_5,
+      # tcb_5,
+      # lst_night_5,
+      # elevation_5,
+      # soil_clay_5,
+      # footprint_5,
       landcover_covs,
       bias_tt_5
     )
@@ -351,9 +371,12 @@ list(
       #"evi", # correlates with pressure_mean rainfall_mean and solrad_mean
       #"tcb",
       #"lst_night",
-      "elevation",
-      "footprint", # correlates with built_volume and cropland
-      "soil_clay",
+      # "elevation",
+      # "footprint", # correlates with built_volume and cropland
+      #"soil_clay",
+
+      # only use the worldcover landcover classes, in fractional cover (0-1)
+      # form, excluding the obviously unsuitable habitat (bare, snow, etc)
       "trees",
       "grassland",
       "shrubs",
@@ -374,13 +397,13 @@ list(
   tar_terra_rast(
     covariate_rast_5_all,
     c(
-      built_volume_5,
-      evi_5,
-      tcb_5,
-      lst_night_5,
-      elevation_5,
-      soil_clay_5,
-      footprint_5,
+      # built_volume_5,
+      # evi_5,
+      # tcb_5,
+      # lst_night_5,
+      # elevation_5,
+      # soil_clay_5,
+      # footprint_5,
       landcover_covs,
       bias_tt_5
     )
@@ -689,10 +712,24 @@ list(
      )
  ),
 
+ # subsample the data to speed up model fitting, while iterating model
+ # development
+ tar_target(
+   record_data_spatial_subsample,
+   record_data_spatial |>
+     group_by(
+       species,
+       data_type,
+       sampling_method
+     ) |>
+     slice_sample(prop = 0.1) |>
+     ungroup()
+ ),
+
  tar_target(
    model_data_spatial_no_offset,
    bind_rows(
-     record_data_spatial |>
+     record_data_spatial_subsample |>
        mutate(weight = 1),
      bg_kmeans_df |>
        mutate(
@@ -702,6 +739,7 @@ list(
        )
    )
  ),
+
 
  ##############
  #
@@ -879,9 +917,9 @@ list(
      target_species = target_species,
      project_mask = project_mask_5,
      image_name = "outputs/images/multisp_pp_count.RData",
-     n_burnin = 2000,
-     n_samples = 1000,
-     n_chains = 50
+     n_burnin = 1000,
+     n_samples = 500,
+     n_chains = 20
    )
  ),
 
@@ -991,21 +1029,14 @@ list(
   tar_target(
    model_fit_image_multisp_pp_count_sm,
    fit_model_multisp_pp_count_sm(
-     model_data_spatial = model_data_spatial |>
-       group_by(
-         species,
-         data_type,
-         sampling_method
-       ) |>
-       sample_frac(0.2) |>
-       ungroup(),
+     model_data_spatial = model_data_spatial,
      target_covariate_names = target_covariate_names,
      target_species = target_species,
      project_mask = project_mask_5,
      image_name = "outputs/images/multisp_pp_count_sm.RData",
-     n_burnin = 2000,
+     n_burnin = 1000,
      n_samples = 500,
-     n_chains = 50
+     n_chains = 20
    )
  ),
 
