@@ -352,13 +352,13 @@ list(
     check_no_mismatched_nas(
       proj_mask = project_mask_5,
       offsets_5[[1]],
-      built_volume_5,
-      evi_5,
-      tcb_5,
-      lst_night_5,
-      elevation_5,
-      soil_clay_5,
-      footprint_5,
+      # built_volume_5,
+      # evi_5,
+      # tcb_5,
+      # lst_night_5,
+      # elevation_5,
+      # soil_clay_5,
+      # footprint_5,
       landcover_covs,
       bias_tt_5
     )
@@ -1034,9 +1034,9 @@ list(
      target_species = target_species,
      project_mask = project_mask_5,
      image_name = "outputs/images/multisp_pp_count_sm.RData",
-     n_burnin = 2000,
+     n_burnin = 1000,
      n_samples = 500,
-     n_chains = 50
+     n_chains = 20
    )
  ),
 
