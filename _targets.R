@@ -101,6 +101,15 @@ list(
       mask(mask = water_mask_5)
   ),
 
+  # distance from sea
+  tar_terra_rast(
+    dist_from_sea,
+    make_distance_from_sea(
+      project_mask_5,
+      project_mask_5_outline
+    )
+  ),
+
 
   # cleaning to fills NAs within continent with very small number
   tar_terra_rast(
