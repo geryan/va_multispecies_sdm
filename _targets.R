@@ -433,7 +433,8 @@ list(
       covariate_rast_5,
       fact = 2,
       fun = "mean",
-      cores = 4
+      cores = 4,
+      na.rm = TRUE
     )
   ),
 
@@ -1049,7 +1050,6 @@ list(
    )
  ),
 
- # # # read in image and predict out raster as a tif
  tar_target(
    pred_file_multisp_pp_count_sm,
    predict_greta_mspp_count_sm(
@@ -1059,6 +1059,34 @@ list(
      target_species,
      output_file_prefix = "outputs/rasters/multisp_pp_count_sm"
    )
+ ),
+
+ # # # read in image and predict out lambda in the absence of offset
+ # median and lower and higher bounds (2.5 and 95%iles)
+ tar_target(
+   pred_file_lambda_no_offset_sm,
+   pred_file_lambda_no_offset(
+     image_name = model_fit_image_multisp_pp_count_sm,
+     prediction_layer = covariate_rast_5, # use 10k for faster preds
+     target_species,
+     output_file_prefix = "outputs/rasters/multisp_pp_lambda_no_offset_sm",
+     sm = TRUE, # if predict survey method
+     nsims = 50 # lower for faster preds
+   )
+ ),
+
+ # add average offset and make average predicted distribution
+ tar_terra_rast(
+   pred_dist_sm,
+   lambda_to_p(
+     x = rast(pred_file_lambda_no_offset_sm$lambda_no_offset) * exp(offsets_avg_5)
+   )
+ ),
+
+ # scale predicted distribution
+ tar_terra_rast(
+   pred_dist_scale_sm,
+   scale_predictions(pred_dist_scale_sm)
  ),
 
  # tar_target(
@@ -1092,10 +1120,10 @@ list(
  # distribution plots
 
  # this is the temporary thang until the above are tidied
- tar_terra_rast(
-   pred_dist_sm,
-   rast(x = pred_file_multisp_pp_count_sm$pa)
- ),
+ # tar_terra_rast(
+ #   pred_dist_sm,
+ #   rast(x = pred_file_multisp_pp_count_sm$pa)
+ # ),
 
  tar_target(
    distribution_plots_sm,
@@ -1128,22 +1156,22 @@ list(
  ),
 
  ## variance scaling
-
- tar_terra_rast(
-   pred_dist_scale_sm,
-   scale_predictions(
-     pred_file_multisp_pp_count_expoff_sm_count
-   )
- ),
-
- tar_target(
-   distribution_plots_scale_sm,
-   make_distribution_plots(
-     pred_dist_scale_sm,
-     model_data_spatial,
-     plot_dir = "outputs/figures/distribution_plots/distn_20251219_sm_scale"
-   )
- ),
+ #
+ # tar_terra_rast(
+ #   pred_dist_scale_sm,
+ #   scale_predictions(
+ #     pred_file_multisp_pp_count_expoff_sm_count
+ #   )
+ # ),
+ #
+ # tar_target(
+ #   distribution_plots_scale_sm,
+ #   make_distribution_plots(
+ #     pred_dist_scale_sm,
+ #     model_data_spatial,
+ #     plot_dir = "outputs/figures/distribution_plots/distn_20251219_sm_scale"
+ #   )
+ # ),
 
  #############################################################################
  #############################################################################
