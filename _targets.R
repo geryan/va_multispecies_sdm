@@ -433,7 +433,8 @@ list(
       covariate_rast_5,
       fact = 2,
       fun = "mean",
-      cores = 4
+      cores = 4,
+      na.rm = TRUE
     )
   ),
 
