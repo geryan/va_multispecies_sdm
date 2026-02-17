@@ -110,6 +110,13 @@ list(
     )
   ),
 
+  # proximity to sea (1 is close, 0 is far)
+  tar_terra_rast(
+    prox_to_sea,
+    make_proximity_to_sea(
+      dist_from_sea
+    )
+  ),
 
   # cleaning to fills NAs within continent with very small number
   tar_terra_rast(
@@ -369,6 +376,7 @@ list(
       # soil_clay_5,
       # footprint_5,
       landcover_covs,
+      prox_to_sea,
       bias_tt_5
     )
   ),
@@ -393,7 +401,10 @@ list(
       "built",
       "water",
       "wetland",
-      "mangroves"
+      "mangroves",
+
+      # and proximity to sea, for merus and melas
+      "prox_to_sea"
     )
   ),
 
@@ -401,7 +412,6 @@ list(
     bias_names,
     "travel_time"
   ),
-
 
   tar_terra_rast(
     covariate_rast_5_all,
@@ -414,6 +424,7 @@ list(
       # soil_clay_5,
       # footprint_5,
       landcover_covs,
+      prox_to_sea,
       bias_tt_5
     )
   ),
@@ -451,7 +462,8 @@ list(
       offsets_avg_5,
       fact = 2,
       fun = "mean",
-      cores = 4
+      cores = 4,
+      na.rm = TRUE
     )
   ),
 
@@ -732,7 +744,7 @@ list(
        data_type,
        sampling_method
      ) |>
-     slice_sample(prop = 0.1) |>
+     slice_sample(prop = 0.5) |>
      ungroup()
  ),
 
