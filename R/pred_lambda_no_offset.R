@@ -7,28 +7,22 @@ predict_lambda_no_offset <- function(
     nsims = 50
 ){
 
+  # load image with model and draws in it
+
   load(image_name)
 
   prednames <- target_covariate_names
 
+  # create values to predict to using covatiate layers
   r <- prediction_layer
 
   layer_values <- values(r)
   naidx <- is.na(layer_values[,1])
 
   x_predict <- layer_values[!naidx, prednames]
-  #offset_values <- values(offset)
-
-  #offset_pred <- offset_values[!naidx]
-
-  #log_offset_pred <- log(offset_pred)
-
-#  log_lambda_adults_predict <- log_offset_pred
 
   log_lambda_larval_habitat_predict <- sweep(x_predict %*% beta, 2, alpha, FUN = "+")
 
-  #log_lambda_combine_predict <- sweep(log_lambda_larval_habitat_predict, 1, log_lambda_adults_predict, "+")
-  #
 
   if(sm){
     # simulate human_landing_catch indoor
@@ -42,48 +36,26 @@ predict_lambda_no_offset <- function(
   }
 
 
-
-  #pa_rate_predict <- icloglog(log_lambda_predict)
-
   lambda_predict <- exp(log_lambda_predict)
 
-  # run 100 sims for each cell and take the mean
-
-
-
-  # count
-  pred_lambda <- calculate(
-    lambda_predict[,1],
-    values = draws,
-    nsim = 100
-  )
-
-  preds_mean_count <- apply(
-    preds_count$count_rate_predict,
-    MARGIN = c(2,3),
-    median,
-    na.rm = TRUE
-  )
-
-  preds_rast_count <- rep(r[[1]], times = n_species)
-  names(preds_rast_count) <- target_species
-  for(i in 1:n_species) {
-    preds_rast_count[[i]][!naidx] <- preds_mean_count[,i]
-  }
-
-
+  # create   rasters to put values into
+  #
   rast_lambda_no_offset <- rep(r[[1]], times = n_species)
   names(rast_lambda_no_offset) <- target_species
-  uncert_lambda_no_offset <- rast_lambda_no_offset
+  hast_lambda_no_offset <- rast_lambda_no_offset
+  last_lambda_no_offset <- rast_lambda_no_offset
 
+  # iterate by species for memory efficiency
   for(i in 1:n_species){
 
+    # simulate predictions of lambda without offset from priors
     pred_lambda <- calculate(
       lambda_predict[,i],
       values = draws,
       nsim = nsims
     )
 
+    # calculate median, and lower and upper quantiles and sd
     preds_med <- apply(
       pred_lambda$lambda_predict,
       MARGIN = c(2,3),
