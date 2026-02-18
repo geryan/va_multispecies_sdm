@@ -40,7 +40,8 @@ add_pa_points_list <- function(
 
     },
     plot_list,
-    model_data_spatial
+    model_data_spatial,
+    simplify = FALSE
   )
 
   pl

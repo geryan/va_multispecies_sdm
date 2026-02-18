@@ -33,7 +33,7 @@ distplotlist <- function(
       distplot(pred_dist, x, colscheme)
     },
     pred_dist,
-    colscheme
-  )
+    colscheme,
+    simplify = FALSE)
 
 }
