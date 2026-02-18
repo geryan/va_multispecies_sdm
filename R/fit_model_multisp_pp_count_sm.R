@@ -414,7 +414,7 @@ fit_model_multisp_pp_count_sm <- function(
 
   optim <- opt(
     m,
-    optimiser = adam(learning_rate = 0.1),
+    optimiser = adam(learning_rate = 0.01),
     max_iterations = 5e4
   )
 
