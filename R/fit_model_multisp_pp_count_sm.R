@@ -204,7 +204,7 @@ fit_model_multisp_pp_count_sm <- function(
     as_tibble()
 
   # define some knots to do a reduced-rank GP
-  n_inducing <- 50
+  n_inducing <- 20
   kmn <- kmeans(bg_coords_proj, centers = n_inducing)
   inducing_points_proj <- kmn$centers
   # plot(inducing_points_proj, asp = 1)
@@ -265,31 +265,54 @@ fit_model_multisp_pp_count_sm <- function(
   #        asp = 0.8)
   # }
 
+  n_latent <- 3
+
   # these are the zero-mean, variance-one spatially-varying beta effects for all
   # n_scv species-covariate combinations. They share the hyperparameter
   # lengthscale, but have different process shapes
-  beta_spatial_raw <- greta.gp::gp(x = distinct_coords_proj,
+  beta_spatial_latent <- greta.gp::gp(x = distinct_coords_proj,
                                    kernel = kernel_svc,
                                    inducing = inducing_points_proj,
-                                   n = n_svc)
+                                   n = n_latent)
 
-  # apply a separate marginal variance to each of these; shrinking them to zero
-  beta_spatial_variances <- normal(0, 1,
-                                   truncation = c(0, Inf),
-                                   dim = n_svc)
-  beta_spatial_scaled <- sweep(beta_spatial_raw,
-                               2,
-                               beta_spatial_variances,
-                               FUN = "*")
+  # # apply a separate marginal variance to each of these; shrinking them to zero
+  # beta_spatial_variances <- normal(0, 1,
+  #                                  truncation = c(0, Inf),
+  #                                  dim = n_svc)
+  # beta_spatial_variances <- beta_spatial_variances * 0
+
+  # define a loadings matrix between these latent factors and the
+  # spatially-varying coefficients. Upper diagonal elements negative and
+  # diagonal elements positive to minimise rotational invariance and sign
+  # flipping nonidentifiability
+  beta_spatial_loadings <- zeros(n_svc, n_latent)
+  svc_loading_sd <- 0.1
+  lower_index <- which(lower.tri(beta_spatial_loadings))
+  lower_loadings <- normal(0, svc_loading_sd,
+                           dim = length(lower_index))
+  diag_loadings <- normal(0, svc_loading_sd,
+                          truncation = c(0, Inf),
+                          dim = n_latent)
+  beta_spatial_loadings[lower_index] <- lower_loadings
+  diag(beta_spatial_loadings) <- diag_loadings
+
+  # convert these into the spatial betas
+  beta_spatial <- beta_spatial_latent %*% t(beta_spatial_loadings)
 
   # make these positive (median 0)
-  beta_spatial_scaled_pos <- exp(beta_spatial_scaled)
+  beta_spatial_pos <- exp(beta_spatial)
 
-  # model the main effects separately. Note that we could marginalise these
-  # parameters with a bias kernel in the GP, but that would mean we can't
-  # simultaneously generate all the GPs from the same kernel and also shrink the
-  # spatial processes separately for each SVC (difference marginal variance),
-  # without also shrinking the main effects. So we define these separately.
+  # sims <- calculate(beta_spatial_latent[, 1], nsim = 9)
+  # par(mfrow = c(3, 3))
+  # for(i in seq_len(9)) {
+  #   plot(distinct_coords_proj,
+  #        pch = 16,
+  #        cex = 0.5 * plogis(sims$beta_spatial_latent[i, , 1]),
+  #        asp = 0.8)
+  # }
+  #
+
+  # model the main effects separately and combine them
 
   # these are constrained to be positive
   beta <- normal(0,
@@ -297,17 +320,16 @@ fit_model_multisp_pp_count_sm <- function(
                  dim = c(n_cov_abund, n_species),
                  truncation = c(0, Inf))
 
-  # flatten these to combine with the spatial effects (but leave the original as
   # a matrix for plotting code)
   beta_vec <- beta
   dim(beta_vec) <- c(n_svc, 1)
 
   # make a matrix of  positive-constrained spatially-varying coefficients
-  beta_spatial <- sweep(beta_spatial_scaled_pos, 2, beta_vec, FUN = "*")
+  beta_spatial <- sweep(beta_spatial_pos, 2, beta_vec, FUN = "*")
 
   # we need to pull out the untransformed internal variables v, so we can
   # initialise them
-  gp_info <- attributes(beta_spatial_raw)$gp_info
+  gp_info <- attributes(beta_spatial_latent)$gp_info
   v <- gp_info$v
 
   # now we need to combine them with the covariates to model
@@ -525,7 +547,7 @@ fit_model_multisp_pp_count_sm <- function(
   # define and fit the model by MAP and MCMC
 
   m <- model(alpha, beta, gamma, delta, sampling_re_raw, sampling_re_sd,
-             v, lengthscale, beta_spatial_variances)
+             v, lengthscale, diag_loadings, lower_loadings)
 
 
   ############
@@ -610,9 +632,11 @@ fit_model_multisp_pp_count_sm <- function(
       ),
       n_cov_abund, n_species),
     # set all raw spatial random effects to 0
-    v = matrix(0, n_inducing, n_svc),
+    v = matrix(0, n_inducing, n_latent),
     lengthscale = gamma_prior_mean,
-    beta_spatial_variances = rep(0.1, n_svc),
+    diag_loadings = rep(0.01, n_latent),
+    lower_loadings = rep(0, length(lower_index)),
+    # beta_spatial_variances = rep(0.1, n_svc),
     gamma = c(-10, -8, -9, -9, -1, -1, -7, -7),
     delta = 38.8,
     sampling_re_raw = rep(0, 9) +
@@ -620,32 +644,32 @@ fit_model_multisp_pp_count_sm <- function(
     sampling_re_sd = 1
   )
 
-  # optim <- opt(
-  #   m,
-  #   optimiser = adam(learning_rate = 0.1),
-  #   max_iterations = 5e4,
-  #   initial_values = inits_manual
-  # )
+  optim <- opt(
+    m,
+    optimiser = adam(learning_rate = 0.1),
+    max_iterations = 5e4,
+    # initial_values = inits_manual
+  )
   #
   # # optim <- opt(m, max_iterations = 1e5) # with sinka species plus coluzzii this converges
   #
   # # should be 0 if converged
-  # optim$convergence
-  # print(
-  #   paste(
-  #     "optimiser value is",
-  #     optim$convergence,
-  #     "; it should be 0 if optimiser converged"
-  #   )
-  # )
-
-
-  # optim$par
-
-  # init_vals <- inits_from_opt(
-  #   optim,
-  #   n_chains = n_chains
-  # )
+  optim$convergence
+  print(
+    paste(
+      "optimiser value is",
+      optim$convergence,
+      "; it should be 0 if optimiser converged"
+    )
+  )
+  #
+  #
+  # # optim$par
+  #
+  init_vals <- inits_from_opt(
+    optim,
+    n_chains = n_chains
+  )
 
   # get inits using fitian method
   # doesn't work because gets gammas that are outside of range
@@ -673,10 +697,12 @@ fit_model_multisp_pp_count_sm <- function(
     warmup = n_burnin,
     n_samples = n_samples,
     chains = n_chains,
-    # initial_values = init_vals,
-    initial_values = inits_manual
+    initial_values = init_vals
+    # initial_values = inits_manual
   )
 
+  sry <- summary(draws)
+  post_means <- sry$statistics[, "Mean"]
   print(summary(draws))
 
   mcmc_trace(
