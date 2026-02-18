@@ -33,12 +33,10 @@ fit_model_multisp_pp_count_sm <- function(
 
   distinct_coords <- model_data_spatial[distinct_idx, c("latitude", "longitude")]
 
-
   # get offset values from gambiae mechanistic model
   log_offset <- log(model_data_spatial[distinct_idx,"offset"])|>
     as.matrix() |>
     as_data()
-
 
   # get covariate values
   x <- model_data_spatial[distinct_idx,] |>
@@ -54,7 +52,6 @@ fit_model_multisp_pp_count_sm <- function(
     as.matrix() |>
     as_data()
 
-
   # number of cells in analysis data per Fithian model (not in raster)
   n_pixel <- nrow(x)
 
@@ -66,7 +63,6 @@ fit_model_multisp_pp_count_sm <- function(
   n_species_with_bg <- unique(model_data_spatial$species) # includes NA
 
   n_species <- length(n_species_with_bg[!is.na(n_species_with_bg)])
-
 
   ## sampling methods
   sm_freq <- table(
@@ -167,12 +163,185 @@ fit_model_multisp_pp_count_sm <- function(
   # intercept and slopes for abundance rate
   alpha <- normal(0, intercept_sd, dim = n_species)
 
-  # force beta to be positive, so that abundance is forced to be higher in
-  # non-bare-gound landcover types
-  beta <- normal(0,
-                 beta_sd,
-                 dim = c(n_cov_abund, n_species),
-                 truncation = c(0, Inf))
+  # beta <- normal(0,
+  #                beta_sd,
+  #                dim = c(n_cov_abund, n_species),
+  #                truncation = c(0, Inf))
+
+  # for each covariate, model beta as a positive-constrained spatially-varying
+  # covariate. Positive so that abundance is forced to be higher in
+  # non-bare-gound landcover types, spatially varying to account for: a)
+  # differences in definition of landcover types in different parts of Africa
+  # (e.g. 'grassland in the Sahel is likely to be very different from in the
+  # southern Congo basin), b) differences in species phenotypes across Africa,
+  # and c) residual spatial autocorrelation in distributions (e.g. due to
+  # dispersal limitation in the coastal species)
+
+  # # use greta.gp to define independent 2D GPs for spatial variation for each
+  # # species/covariate combination
+
+  # transform distinct coordinates to a projected coordinate reference system: equal earth
+  # projection
+  distinct_coords_proj <- distinct_coords |>
+    sf::st_as_sf(
+      coords = c("longitude", "latitude"),
+      crs = sf::st_crs(4326)
+    ) |>
+    sf::st_transform(
+      crs("+proj=eqearth")
+    ) |>
+    sf::st_coordinates() |>
+    as_tibble()
+
+  # do the same with background points, to use for defining knots
+  bg_coords_proj <- bg_data |>
+    distinct(
+      longitude,
+      latitude
+    ) |>
+    sf::st_as_sf(
+      coords = c("longitude", "latitude"),
+      crs = sf::st_crs(4326)
+    ) |>
+    sf::st_transform(
+      crs("+proj=eqearth")
+    ) |>
+    sf::st_coordinates() |>
+    as_tibble()
+
+  # define some knots to do a reduced-rank GP
+  n_inducing <- 50
+  kmn <- kmeans(bg_coords_proj, centers = n_inducing)
+  inducing_points_proj <- kmn$centers
+  # plot(inducing_points_proj, asp = 1)
+  # points(bg_coords_proj, pch = ".")
+
+  # max_distance <- max(range(distinct_coords_proj))
+  # # GP lengthscale, in meters
+  # lower <- epiwave.mapping::matern_lengthscale_from_correl(
+  #   max_distance / 10,
+  #   correlation = 0.1,
+  #   nu = 0.5
+  # )
+  # upper <- epiwave.mapping::matern_lengthscale_from_correl(
+  #   max_distance / 2,
+  #   correlation = 0.1,
+  #   nu = 0.5
+  # )
+  # gamma_prior_params <- epiwave.mapping::find_gamma_parameters(
+  #   upper_value = upper,
+  #   upper_prob = 0.1,
+  #   lower_value = lower,
+  #   lower_prob = 0.1
+  # )
+  gamma_prior_params <- list(
+    shape = 3,
+    rate = 5e-6
+  )
+
+  # define a spatial kernel
+  lengthscale <- gamma(gamma_prior_params$shape, gamma_prior_params$rate)
+  lengthscales <- c(lengthscale, lengthscale)
+  variance <- normal(0, 1, truncation = c(0, Inf))
+  kernel_scv_space <- greta.gp::rbf(lengthscales = lengthscales,
+                                variance = variance,
+                                columns = 1:2)
+
+  # and an intercept kernel, in order to marginalise the intercepts and
+  # hopefully improve sampling
+  kernel_scv_int <- greta.gp::bias(variance = beta_sd ^ 2)
+
+  # combine them
+  kernel_scv <- kernel_scv_int + kernel_scv_space
+
+  n_scv <- n_species * n_cov_abund
+
+  # # prior simulations to check range of prior spatial correlation
+  # beta_spatial <- greta.gp::gp(x = bg_coords_proj,
+  #                              kernel = kernel_scv_space, # kernel_scv,
+  #                              inducing = inducing_points_proj,
+  #                              n = n_scv)
+  # sims <- calculate(beta_spatial,
+  #                   values = list(variance = 1),
+  #                   nsim = 9)
+  #
+  # par(mfrow = c(3, 3))
+  # for(i in seq_len(9)) {
+  #   plot(bg_coords_proj,
+  #        pch = 16,
+  #        cex = 0.1 + 1 * plogis(sims$beta_spatial[i, , 1]),
+  #        asp = 0.8)
+  # }
+
+  # these are the spatially-varying betas for all n_scv species-covariate
+  # combinations. They share hyperparameters lengthscale and variance, but have
+  # different spatial patterns
+  beta_spatial <- greta.gp::gp(x = distinct_coords_proj,
+                               kernel = kernel_scv,
+                               inducing = inducing_points_proj,
+                               n = n_scv)
+
+  # we need to pull out the untransformed internal variables v, so we can
+  # initialise them
+  gp_info <- attributes(beta_spatial)$gp_info
+  v <- gp_info$v
+
+  # back-calculate the main effects (intercept term)
+  beta <- greta.gp::project(
+    f = beta_spatial,
+    x = distinct_coords_proj[1, ],
+    kernel = kernel_scv_int
+  )
+
+  # restructure into the same orientation as the old beta - I am pretty sure
+  # this is the correct orientation
+  dim(beta) <- c(n_cov_abund, n_species)
+
+
+  # now we need to combine them with the covariates to model
+  # log_lambda_larval_habitat spatially
+
+  # duplicate x horizontally, n_species times
+  x_tiled <- do.call(
+    cbind,
+    replicate(n_species, x,
+              simplify = FALSE)
+  )
+
+  # multiply with beta elementwise
+  x_beta <- x_tiled * beta_spatial
+
+  # collapse down into n_pixels by n_species matrix, by
+  # matrix multiplying by a block matrix?
+  blocks <- matrix(0,
+                   n_species,
+                   n_species * n_cov_abund)
+  for (species in seq_len(n_species)) {
+    cols <- (species - 1) * n_cov_abund + seq_len(n_cov_abund)
+    blocks[species, cols] <- 1
+  }
+
+  # get x * beta, for each species (columns), for each distinct pixel (rows)
+  x_beta_species <- x_beta %*% t(blocks)
+
+  # # the code above is doing the following, but faster
+  # res <- matrix(NA,
+  #               nrow = n_pixels,
+  #               ncol = n_species)
+  # for (species in seq_len(n_species)) {
+  #   cols <- (species - 1) * n_cov_abund + seq_len(n_cov_abund)
+  #   res[, species] <- rowSums(x_beta[, cols])
+  # }
+  # # check
+  # identical(res, x_beta_species)
+
+
+  # add alpha to get log larval habitat for each species across all sites based
+  # on env covariates
+  log_lambda_larval_habitat <- sweep(x_beta_species, 2, alpha, FUN = "+")
+  # log_lambda_larval_habitat <- sweep(zeros(n_pixel, n_species), 2, alpha, FUN = "+")
+
+
 
   # informative priors on gamma and delta so exp(log_bias), i.e., bias,
   # has range around (0, 1) for z in (0, 1)
@@ -186,10 +355,6 @@ fit_model_multisp_pp_count_sm <- function(
   gamma <- normal(0, gamma_sd, dim = n_species)
   delta <- normal(1, delta_sd, dim = c(n_cov_bias), truncation = c(0, Inf))
 
-  # log rates across all sites
-  # larval habitat based on env covariates
-  log_lambda_larval_habitat <- sweep(x %*% beta, 2, alpha, FUN = "+")
-  # log_lambda_larval_habitat <- sweep(zeros(n_pixel, n_species), 2, alpha, FUN = "+")
 
 
   # offset from calculated gambiae adult survival given habitat
@@ -347,7 +512,7 @@ fit_model_multisp_pp_count_sm <- function(
 
   # define and fit the model by MAP and MCMC
 
-  m <- model(alpha, beta, gamma, delta, sampling_re_raw, sampling_re_sd)
+  m <- model(alpha, v, gamma, delta, sampling_re_raw, sampling_re_sd)
 
 
   ############
@@ -404,12 +569,20 @@ fit_model_multisp_pp_count_sm <- function(
     output_prefix = "outputs/figures/ppc_sm/prior"
   )
 
-
-
-
   ###################
   # fit model
   ###################
+
+  # manually set some inits (from previous optimiser runs), then optimise again
+  inits_manual <- initials(
+    alpha = c(8.19, 5.76, 2.59, 7.67, -64.58, -46.96, 3.95, -8.3),
+    # set all beta coefficients to 0
+    v = matrix(0, n_inducing, n_scv),
+    gamma = c(-9.9, -8.03, -9.24, -8.79, -1.77, -1.42, -7.58, -7.54),
+    delta = 42,
+    sampling_re_raw = c(-0.12, 0.74, 0.2, 1.55, 1.11, 0.23, 3.27, -8.84, 5.96),
+    sampling_re_sd = 0.27
+  )
 
 
   optim <- opt(
@@ -418,7 +591,7 @@ fit_model_multisp_pp_count_sm <- function(
     max_iterations = 5e4
   )
 
-  #optim <- opt(m, max_iterations = 1e5) # with sinka species plus coluzzii this converges
+  # optim <- opt(m, max_iterations = 1e5) # with sinka species plus coluzzii this converges
 
   # should be 0 if converged
   optim$convergence
@@ -429,9 +602,9 @@ fit_model_multisp_pp_count_sm <- function(
       "; it should be 0 if optimiser converged"
     )
   )
-  #
-  #
-  #optim$par
+
+
+  # optim$par
 
   init_vals <- inits_from_opt(
     optim,
