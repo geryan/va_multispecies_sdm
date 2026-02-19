@@ -118,6 +118,46 @@ list(
     )
   ),
 
+  # One Earth Bioregions SpatVector file
+  tar_terra_vect(
+    oneearth_vect,
+    make_oneearth(
+      mask = project_mask_5
+    )
+  ),
+
+  # multiband raster of smoothed dummy variables for bioregions
+  tar_terra_rast(
+    bioregion_layers,
+    make_smooth_dummies(
+      oneearth_vect,
+      mask = project_mask_5,
+      level = "bioregion"
+    )
+  ),
+
+  # multiband raster of smoothed dummy variables for subrealms
+  tar_terra_rast(
+    subrealm_layers,
+    make_smooth_dummies(
+      oneearth_vect,
+      mask = project_mask_5,
+      level = "subrealm"
+    )
+  ),
+
+  # the names of the dummy variables
+  tar_target(
+    subrealm_names,
+    names(subrealm_layers)
+  ),
+
+  tar_target(
+    bioregion_names,
+    names(bioregion_layers)
+  ),
+
+
   # cleaning to fills NAs within continent with very small number
   tar_terra_rast(
     offsets_5,
@@ -465,7 +505,22 @@ list(
       # footprint_5,
       landcover_covs,
       prox_to_sea,
-      bioregion_stack,
+
+      # subrealm_layers,
+      # bioregion_layers,
+
+      # this is a horrible hack because they take a long time to run, instead
+      # fix this where these things are created
+      bioregion_layers |>
+        terra::resample(project_mask_5) |>
+        fill_na_with_nearest_mean(maxRadiusCell = 3) |>
+        mask(project_mask_5),
+
+      subrealm_layers |>
+        terra::resample(project_mask_5) |>
+        fill_na_with_nearest_mean(maxRadiusCell = 3) |>
+        mask(project_mask_5),
+
       bias_tt_5
     )
   ),
@@ -474,8 +529,10 @@ list(
     covariate_rast_5,
     subset_covariate_rast(
       covariate_rast_5_all,
-      target_covariate_names,
-      bias_names
+      target_covariate_names = target_covariate_names,
+      subrealm_names = subrealm_names,
+      bioregion_names = bioregion_names,
+      bias_names = bias_names
     )
   ),
 
@@ -806,6 +863,8 @@ list(
            !names(covariate_rast_5_all) %in%
              c(
                target_covariate_names,
+               subrealm_names,
+               bioregion_names,
                #offset_names,
                bias_names
              )
@@ -1136,6 +1195,8 @@ list(
      model_data_spatial = model_data_spatial,
      target_covariate_names = target_covariate_names,
      target_species = target_species,
+     subrealm_names = subrealm_names,
+     bioregion_names = bioregion_names,
      project_mask = project_mask_5,
      image_name = "outputs/images/multisp_pp_count_sm.RData",
      n_burnin = 1000,

@@ -2,6 +2,8 @@ fit_model_multisp_pp_count_sm <- function(
     model_data_spatial,
     target_covariate_names,
     target_species,
+    subrealm_names,
+    bioregion_names,
     project_mask,
     image_name = "outputs/images/multisp_pp_count_sm.RData",
     n_burnin = 50,
@@ -42,6 +44,24 @@ fit_model_multisp_pp_count_sm <- function(
     as_tibble() |>
     select(
       all_of(target_covariate_names)
+    ) |>
+    as.matrix() |>
+    as_data()
+
+  # get subrealm dummy values
+  x_subrealm <- model_data_spatial[distinct_idx,] |>
+    as_tibble() |>
+    select(
+      all_of(subrealm_names)
+    ) |>
+    as.matrix() |>
+    as_data()
+
+  # get bioregion dummy values
+  x_bioregion <- model_data_spatial[distinct_idx,] |>
+    as_tibble() |>
+    select(
+      all_of(bioregion_names)
     ) |>
     as.matrix() |>
     as_data()
@@ -166,153 +186,58 @@ fit_model_multisp_pp_count_sm <- function(
   # covariate. Positive so that abundance is forced to be higher in
   # non-bare-gound landcover types, spatially varying to account for: a)
   # differences in definition of landcover types in different parts of Africa
-  # (e.g. 'grassland in the Sahel is likely to be very different from in the
+  # (e.g. 'grassland' in the Sahel is likely to be very different from in the
   # southern Congo basin), b) differences in species phenotypes across Africa,
   # and c) residual spatial autocorrelation in distributions (e.g. due to
   # dispersal limitation in the coastal species)
 
-  # # use greta.gp to define independent 2D GPs for spatial variation for each
-  # # species/covariate combination
+  # define the spatially varying coefficients (for each species and landcover
+  # type) with a main effect, plus a subrealm-varying coefficient, plus a
+  # bioregion-varying coefficient, with shrinkage applied to these increasing
+  # levels of complexity
 
-  # transform distinct coordinates to a projected coordinate reference system: equal earth
-  # projection
-  distinct_coords_proj <- distinct_coords |>
-    sf::st_as_sf(
-      coords = c("longitude", "latitude"),
-      crs = sf::st_crs(4326)
-    ) |>
-    sf::st_transform(
-      crs("+proj=eqearth")
-    ) |>
-    sf::st_coordinates() |>
-    as_tibble()
-
-  # do the same with background points, to use for defining knots
-  bg_coords_proj <- bg_data |>
-    distinct(
-      longitude,
-      latitude
-    ) |>
-    sf::st_as_sf(
-      coords = c("longitude", "latitude"),
-      crs = sf::st_crs(4326)
-    ) |>
-    sf::st_transform(
-      crs("+proj=eqearth")
-    ) |>
-    sf::st_coordinates() |>
-    as_tibble()
-
-  # define some knots to do a reduced-rank GP
-  n_inducing <- 20
-  kmn <- kmeans(bg_coords_proj, centers = n_inducing)
-  inducing_points_proj <- kmn$centers
-  # plot(inducing_points_proj, asp = 1)
-  # points(bg_coords_proj, pch = ".")
-
-  # max_distance <- max(range(distinct_coords_proj))
-  # # GP lengthscale, in meters
-  # lower <- epiwave.mapping::matern_lengthscale_from_correl(
-  #   max_distance / 5,
-  #   correlation = 0.1,
-  #   nu = 0.5
-  # )
-  # upper <- epiwave.mapping::matern_lengthscale_from_correl(
-  #   max_distance / 2,
-  #   correlation = 0.1,
-  #   nu = 0.5
-  # )
-  # gamma_prior_params <- epiwave.mapping::find_gamma_parameters(
-  #   upper_value = upper,
-  #   upper_prob = 0.1,
-  #   lower_value = lower,
-  #   lower_prob = 0.1
-  # )
-  gamma_prior_params <- list(
-    shape = 8,
-    rate = 1e-5
-  )
-
-  # define a spatial kernel, with variance 1 (so we can shrink the spatial
-  # processes indvidually later)
-  lengthscale <- gamma(gamma_prior_params$shape,
-                       gamma_prior_params$rate)
-  lengthscales <- c(lengthscale, lengthscale)
-  kernel_svc <- greta.gp::rbf(lengthscales = lengthscales,
-                              variance = 1,
-                              columns = 1:2)
-
-  # consider penalising this more: set the variance in the kernel to 1, create
-  # vector of variances for each SVC (with prior penalising toward 0), and
-  # multiply these by beta_spatial to shrink spatial variation in each
-  # coefficient separately
-
+  # load the matrices of subrealm and bioregion dummy variables at the distinct locations
+  n_subrealm <- length(subrealm_names)
+  n_bioregion <- length(bioregion_names)
   n_svc <- n_species * n_cov_abund
 
-  # # prior simulations to check range of prior spatial correlation
-  # beta_spatial_raw <- greta.gp::gp(x = bg_coords_proj,
-  #                              kernel = kernel_svc,
-  #                              inducing = inducing_points_proj,
-  #                              n = n_svc)
-  # sims <- calculate(beta_spatial_raw,
-  #                   nsim = 9)
-  #
-  # par(mfrow = c(3, 3))
-  # for(i in seq_len(9)) {
-  #   plot(bg_coords_proj,
-  #        pch = 16,
-  #        cex = 0.1 + 1 * plogis(sims$beta_spatial_raw[i, , 1]),
-  #        asp = 0.8)
-  # }
+  # define subrealm weights (one per subrealm x SVC combination)
+  subrealm_sd <- normal(0, 1,
+                        truncation = c(0, Inf))
+  subrealm_svc_coef_raw <- normal(0, 1,
+                                  dim = c(n_subrealm, n_svc))
+  subrealm_svc_coef <- subrealm_svc_coef_raw * subrealm_sd
 
-  n_latent <- 3
+  # # define bioregion weights (one per bioregion x SVC combination)
+  # bioregion_sd <- normal(0, 1,
+  #                        truncation = c(0, Inf))
+  # bioregion_svc_coef_raw <- normal(0, 1,
+  #                                  dim = c(n_bioregion, n_svc))
+  # bioregion_svc_coef <- bioregion_svc_coef_raw * bioregion_sd
 
-  # these are the zero-mean, variance-one spatially-varying beta effects for all
-  # n_scv species-covariate combinations. They share the hyperparameter
-  # lengthscale, but have different process shapes
-  beta_spatial_latent <- greta.gp::gp(x = distinct_coords_proj,
-                                   kernel = kernel_svc,
-                                   inducing = inducing_points_proj,
-                                   n = n_latent)
-
-  # # apply a separate marginal variance to each of these; shrinking them to zero
-  # beta_spatial_variances <- normal(0, 1,
-  #                                  truncation = c(0, Inf),
-  #                                  dim = n_svc)
-  # beta_spatial_variances <- beta_spatial_variances * 0
-
-  # define a loadings matrix between these latent factors and the
-  # spatially-varying coefficients. Upper diagonal elements negative and
-  # diagonal elements positive to minimise rotational invariance and sign
-  # flipping nonidentifiability
-  beta_spatial_loadings <- zeros(n_svc, n_latent)
-  svc_loading_sd <- 0.1
-  lower_index <- which(lower.tri(beta_spatial_loadings))
-  lower_loadings <- normal(0, svc_loading_sd,
-                           dim = length(lower_index))
-  diag_loadings <- normal(0, svc_loading_sd,
-                          truncation = c(0, Inf),
-                          dim = n_latent)
-  beta_spatial_loadings[lower_index] <- lower_loadings
-  diag(beta_spatial_loadings) <- diag_loadings
-
-  # convert these into the spatial betas
-  beta_spatial <- beta_spatial_latent %*% t(beta_spatial_loadings)
+  # convert these into the spatial variation in the betas
+  beta_eff_subrealm <- x_subrealm %*% subrealm_svc_coef
+  # beta_eff_bioregion <- x_bioregion %*% bioregion_svc_coef
+  beta_spatial <- beta_eff_subrealm #+ beta_eff_bioregion
 
   # make these positive (median 0)
   beta_spatial_pos <- exp(beta_spatial)
 
-  # sims <- calculate(beta_spatial_latent[, 1], nsim = 9)
+  # # simulate to check there variation
+  # sims <- calculate(beta_spatial[, 1], nsim = 9)
   # par(mfrow = c(3, 3))
   # for(i in seq_len(9)) {
-  #   plot(distinct_coords_proj,
+  #   plot(distinct_coords[, 2:1],
   #        pch = 16,
-  #        cex = 0.5 * plogis(sims$beta_spatial_latent[i, , 1]),
+  #        cex = 0.5 * plogis(sims[[1]][i, , 1]),
   #        asp = 0.8)
   # }
-  #
 
-  # model the main effects separately and combine them
+  # model the main (species by landcover type) effects separately as
+  # positive-constrained coefficients and combine them. Note that we could put
+  # the log of these in the earlier model, but it is helpful to be able to
+  # specify their positive-constrained values in this matrix orientation when
+  # initialising
 
   # these are constrained to be positive
   beta <- normal(0,
@@ -320,17 +245,12 @@ fit_model_multisp_pp_count_sm <- function(
                  dim = c(n_cov_abund, n_species),
                  truncation = c(0, Inf))
 
-  # a matrix for plotting code)
+  # make them as a matrix for plotting code, but flatten for combining into SVCs
   beta_vec <- beta
   dim(beta_vec) <- c(n_svc, 1)
 
   # make a matrix of  positive-constrained spatially-varying coefficients
   beta_spatial <- sweep(beta_spatial_pos, 2, beta_vec, FUN = "*")
-
-  # we need to pull out the untransformed internal variables v, so we can
-  # initialise them
-  gp_info <- attributes(beta_spatial_latent)$gp_info
-  v <- gp_info$v
 
   # now we need to combine them with the covariates to model
   # log_lambda_larval_habitat spatially
@@ -547,7 +467,8 @@ fit_model_multisp_pp_count_sm <- function(
   # define and fit the model by MAP and MCMC
 
   m <- model(alpha, beta, gamma, delta, sampling_re_raw, sampling_re_sd,
-             v, lengthscale, diag_loadings, lower_loadings)
+             subrealm_sd, subrealm_svc_coef_raw)# ,
+             # bioregion_sd, bioregion_svc_coef_raw)
 
 
   ############
@@ -608,49 +529,48 @@ fit_model_multisp_pp_count_sm <- function(
   # fit model
   ###################
 
-  gamma_prior_mean <- gamma_prior_params$shape / gamma_prior_params$rate
-
-  # manually set some inits (from previous optimiser runs), then optimise again
-  inits_manual <- initials(
-    # alpha = c(0, 0, 0, 0, -70, -50, -10, -10),
-    alpha = c(-10, -10, -10, -10, -20, -50, -10, -10),
-    # # set all beta main and spatial coefficients to 0
-    # beta = matrix(0.01, n_cov_abund, n_species),
-    # fill vertically (one species at a time)
-    beta = matrix(
-      c(
-        # arabiensis coluzzi funestus gambiae
-        runif(n_cov_abund * 4, 0.1, 10),
-        # melas - bump up distance to sea
-        runif(n_cov_abund, 0.1, 10) +
-          60 * (target_covariate_names == "prox_to_sea"),
-        # merus - bump up distance to sea
-        runif(n_cov_abund, 0.1, 10) +
-          40 * (target_covariate_names == "prox_to_sea"),
-        # moucheti & nili, slightly higher
-        runif(n_cov_abund * 2, 0.1, 15)
-      ),
-      n_cov_abund, n_species),
-    # set all raw spatial random effects to 0
-    v = matrix(0, n_inducing, n_latent),
-    lengthscale = gamma_prior_mean,
-    diag_loadings = rep(0.01, n_latent),
-    lower_loadings = rep(0, length(lower_index)),
-    # beta_spatial_variances = rep(0.1, n_svc),
-    gamma = c(-10, -8, -9, -9, -1, -1, -7, -7),
-    delta = 38.8,
-    sampling_re_raw = rep(0, 9) +
-      -2 * (sampling_methods == "other"),
-    sampling_re_sd = 1
-  )
+  # # manually set some inits (from previous optimiser runs), then optimise again
+  # inits_manual <- initials(
+  #   # alpha = c(0, 0, 0, 0, -70, -50, -10, -10),
+  #   # alpha = c(-10, -10, -10, -10, -20, -50, -10, -10),
+  #   alpha = c(-4, -3, -8, -3, -20, -25, 0, -40),
+  #   # # set all beta main and spatial coefficients to 0
+  #   # beta = matrix(0.01, n_cov_abund, n_species),
+  #   # fill vertically (one species at a time)
+  #   beta = matrix(
+  #     c(
+  #       # arabiensis coluzzi funestus gambiae
+  #       runif(n_cov_abund * 4, 0.1, 10),
+  #       # melas - bump up distance to sea
+  #       runif(n_cov_abund, 0.1, 10) +
+  #         60 * (target_covariate_names == "prox_to_sea"),
+  #       # merus - bump up distance to sea
+  #       runif(n_cov_abund, 0.1, 10) +
+  #         40 * (target_covariate_names == "prox_to_sea"),
+  #       # moucheti & nili, slightly higher
+  #       runif(n_cov_abund * 2, 0.1, 15)
+  #     ),
+  #     n_cov_abund, n_species),
+  #   # set all raw spatial random effects to 0
+  #   subrealm_sd = 0.01,
+  #   subrealm_svc_coef_raw = array(0, dim = dim(subrealm_svc_coef_raw)),
+  #   # bioregion_sd = 0.01,
+  #   # bioregion_svc_coef_raw = array(0, dim = dim(bioregion_svc_coef_raw)),
+  #   # beta_spatial_variances = rep(0.1, n_svc),
+  #   gamma = c(-9.5, -8, -9, -9, -3, -2, -6, -7),
+  #   delta = 45,
+  #   sampling_re_raw = rep(0, 9) +
+  #     -2 * (sampling_methods == "other"),
+  #   sampling_re_sd = 1.5
+  # )
 
   optim <- opt(
     m,
     optimiser = adam(learning_rate = 0.1),
-    max_iterations = 5e4,
+    max_iterations = 1e5
     # initial_values = inits_manual
   )
-  #
+
   # # optim <- opt(m, max_iterations = 1e5) # with sinka species plus coluzzii this converges
   #
   # # should be 0 if converged
@@ -691,10 +611,12 @@ fit_model_multisp_pp_count_sm <- function(
   #   ind = inits_fithian$delta
   # )
 
-
+  Lmax <- 10
+  Lmin <- round(Lmax / 2)
   draws <- greta::mcmc(
     m,
     warmup = n_burnin,
+    sampler = hmc(Lmin = Lmin, Lmax = Lmax),
     n_samples = n_samples,
     chains = n_chains,
     initial_values = init_vals
