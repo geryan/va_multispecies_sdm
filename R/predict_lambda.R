@@ -50,12 +50,6 @@ predict_lambda <- function(
   offset_vals <- offset_vals[!naidx]
 
 
-  # notes to gerry here:
-  # -covert lamba preds to p with offset
-  # - calculate mean and sd
-  # - calculate cv = sd/mean
-  # - save out these rasters
-
   # iterate by species for memory efficiency
   for(i in 1:n_species){
 
