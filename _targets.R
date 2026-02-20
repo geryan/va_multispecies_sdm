@@ -143,7 +143,21 @@ list(
 
   ),
 
-  #
+  # this reads in the bioregions as a single file
+  # but it's useless for passing on the categories
+  # only good if want to make a pretty picture of it
+  tar_terra_rast(
+    bioregions_all,
+    get_bioregions(project_mask = project_mask_5)
+  ),
+
+  # this returns a stack of layers 1 bioregion each
+  tar_terra_rast(
+    bioregion_stack,
+    split_bioregions(project_mask = project_mask_5)
+  ),
+
+
   # layers from Malaria Atlas Project
   #
 
@@ -404,7 +418,33 @@ list(
       "mangroves",
 
       # and proximity to sea, for merus and melas
-      "prox_to_sea"
+      "prox_to_sea",
+
+      # bioregions - hashed out ones unlikely to use
+      "AT02",
+      "AT05",
+      "AT06",
+      "AT07",
+      "AT08",
+      "AT09",
+      "AT10",
+      "AT11",
+      "AT12",
+      "AT13",
+      "AT14",
+      "AT15",
+      "AT16",
+      "AT17",
+      #"AT18",
+      "AT19",
+      "AT20",
+      "AT21",
+      "AT22",
+      "AT23"#,
+      #"PA23",
+      #"PA24",
+      #"PA25",
+      #"PA26"
     )
   ),
 
@@ -425,6 +465,7 @@ list(
       # footprint_5,
       landcover_covs,
       prox_to_sea,
+      bioregion_stack,
       bias_tt_5
     )
   ),
