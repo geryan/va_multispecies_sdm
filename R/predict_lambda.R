@@ -1,8 +1,9 @@
-predict_lambda_no_offset <- function(
+predict_lambda <- function(
     image_name,
     prediction_layer,
     target_species,
     output_file_prefix,
+    offset,
     sm = FALSE,
     nsims = 50
 ){
@@ -42,42 +43,60 @@ predict_lambda_no_offset <- function(
   #
   rast_lambda_no_offset <- rep(r[[1]], times = n_species)
   names(rast_lambda_no_offset) <- target_species
-  hast_lambda_no_offset <- rast_lambda_no_offset
-  last_lambda_no_offset <- rast_lambda_no_offset
+  rast_p <- rast_lambda_no_offset
+  rast_p_cv <- rast_lambda_no_offset
+
+  offset_vals <- values(offset)
+  offset_vals <- offset_vals[!naidx]
+
 
   # iterate by species for memory efficiency
   for(i in 1:n_species){
 
     # simulate predictions of lambda without offset from priors
-    pred_lambda <- calculate(
-      lambda_predict[,i],
+    pred_lambda_no_offset <- calculate(
+      lp = lambda_predict[,i],
       values = draws,
       nsim = nsims
     )
 
     # calculate median, and lower and upper quantiles and sd
-    preds_med <- apply(
-      pred_lambda$lambda_predict,
+    preds_lambda_median <- apply(
+      pred_lambda_no_offset$lp,
       MARGIN = c(2,3),
       median,
       na.rm = TRUE
     )
 
-    preds_lwr <- apply(
-      pred_lambda$lambda_predict,
+
+    #preds_lambda <- t(t(pred_lambda_no_offset$lp[,,1]) * offset_vals)
+
+    preds_lambda <- sweep(
+      x = pred_lambda_no_offset$lp,
       MARGIN = c(2,3),
-      function(x){quantile(x, probs = 0.025, na.rm = TRUE)}
+      FUN = "*",
+      offset_vals
     )
 
-    preds_upp <- apply(
-      pred_lambda$lambda_predict,
+    preds_p <- lambda_to_p(preds_lambda)
+
+    preds_p_mean <- apply(
+      preds_p,
       MARGIN = c(2,3),
-      function(x){quantile(x, probs = 0.975,na.rm = TRUE)}
+      FUN = mean
     )
 
-    rast_lambda_no_offset[[i]][!naidx] <- preds_med
-    last_lambda_no_offset[[i]][!naidx] <- preds_lwr
-    hast_lambda_no_offset[[i]][!naidx] <- preds_upp
+    preds_p_sd <- apply(
+      preds_p,
+      MARGIN = c(2,3),
+      FUN = sd
+    )
+
+    preds_p_cv <- preds_p_sd / preds_p_mean
+
+    rast_lambda_no_offset[[i]][!naidx] <- preds_lambda_median
+    rast_p[[i]][!naidx] <- preds_p_mean
+    rast_p_cv[[i]][!naidx] <- preds_p_cv
 
   }
 
@@ -92,33 +111,34 @@ predict_lambda_no_offset <- function(
     overwrite = TRUE
   )
 
-  output_filename_l <- sprintf(
-    "%s_lower.tif",
+  output_filename_p <- sprintf(
+    "%s_p.tif",
     output_file_prefix
   )
 
   writeRaster(
-    x = last_lambda_no_offset,
-    filename = output_filename_l,
+    x = rast_p,
+    filename = output_filename_p,
     overwrite = TRUE
   )
 
-  output_filename_h <- sprintf(
-    "%s_upper.tif",
+  output_filename_p_cv <- sprintf(
+    "%s_p_cv.tif",
     output_file_prefix
   )
 
   writeRaster(
-    x = hast_lambda_no_offset,
-    filename = output_filename_h,
+    x = rast_p_cv,
+    filename = output_filename_p_cv,
     overwrite = TRUE
   )
+
 
 
   list(
     lambda_no_offset = output_filename_lambda,
-    lower = output_filename_l,
-    upper = output_filename_h
+    p = output_filename_p,
+    p_cv = output_filename_p_cv
   )
 
 

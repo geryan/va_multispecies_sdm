@@ -37,6 +37,9 @@ clean_full_data_records <- function(
     # nb all of the no source_id also have no species except 1
     # so the second term here doesn't change much
     filter(!is.na(source_id)) |>
+    # these points from this source almost certainly mis-identified
+    filter(!(source_id == 4682 & species == "merus")) |>
+    filter(!(source_id == 1002611 & species == "moucheti")) |>
     mutate(
       # clean up species names
       species = clean_species(species),
