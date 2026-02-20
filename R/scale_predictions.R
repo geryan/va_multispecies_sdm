@@ -8,11 +8,30 @@
 #' @author geryan
 #' @export
 scale_predictions <- function(
-    lambda_file,
+    lambda_file = NULL,
+    lambda_rast = NULL,
     n_sample = 1000
   ) {
 
-  lambda <- rast(lambda_file)
+  if(!is.null(lambda_file) & !is.null(lambda_rast)){
+    stop("provide either lambda file or raster only, not both")
+  }
+
+  if(is.null(lambda_file) & is.null(lambda_rast)){
+    stop("must provide either lambda file or raster")
+  }
+
+  if(!is.null(lambda_file)){
+
+    lambda <- rast(lambda_file)
+
+  } else if (!is.null(lambda_rast)){
+
+    lambda <- lambda_rast
+
+  }
+
+
 
   log_lambda <- log(lambda)
   log_lambda[is.infinite(log_lambda)] <- NA

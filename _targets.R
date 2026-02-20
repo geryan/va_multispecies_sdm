@@ -1223,6 +1223,22 @@ list(
    )
  ),
 
+ tar_target(
+   abundance_cubes,
+   make_abundance_cubes(
+     lambda_no_offset_file = preds_sm$lambda_no_offset,
+     offset_stack = aggregate(
+       offsets_5[[277:300]],
+       fact = 2,
+       fun = "mean",
+       cores = 4,
+       na.rm = TRUE
+     ), #subset for purposes of iteration, use full for final
+     target_species,
+     write_dir = "outputs/rasters/abundance_cubes/"
+   )
+ ),
+
  ## variance scaling
  #
  # tar_terra_rast(
