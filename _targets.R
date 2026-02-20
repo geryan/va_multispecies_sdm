@@ -1097,9 +1097,9 @@ list(
      target_species = target_species,
      project_mask = project_mask_5,
      image_name = "outputs/images/multisp_pp_count_sm.RData",
-     n_burnin = 1000,
-     n_samples = 500,
-     n_chains = 20
+     n_burnin = 2000,
+     n_samples = 1000,
+     n_chains = 50
    )
  ),
 
@@ -1118,11 +1118,24 @@ list(
  # median and lower and higher bounds (2.5 and 95%iles)
  tar_target(
    pred_file_lambda_no_offset_sm,
-   pred_file_lambda_no_offset(
+   pred_lambda_no_offset(
      image_name = model_fit_image_multisp_pp_count_sm,
      prediction_layer = covariate_rast_5, # use 10k for faster preds
      target_species,
      output_file_prefix = "outputs/rasters/multisp_pp_lambda_no_offset_sm",
+     sm = TRUE, # if predict survey method
+     nsims = 50 # lower for faster preds
+   )
+ ),
+
+ tar_target(
+   preds_sm,
+   predict_lambda(
+     image_name = model_fit_image_multisp_pp_count_sm,
+     prediction_layer = covariate_rast_10, # use 10k for faster preds
+     target_species,
+     output_file_prefix = "outputs/rasters/multisp_pp_sm",
+     offset = offsets_avg_10,
      sm = TRUE, # if predict survey method
      nsims = 50 # lower for faster preds
    )
