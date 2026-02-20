@@ -612,7 +612,7 @@ list(
 
   tar_target(
     n_bg,
-    250
+    2000
   ),
 
   tar_target(
@@ -1097,36 +1097,36 @@ list(
      target_species = target_species,
      project_mask = project_mask_5,
      image_name = "outputs/images/multisp_pp_count_sm.RData",
-     n_burnin = 2000,
-     n_samples = 1000,
+     n_burnin = 1000,
+     n_samples = 500,
      n_chains = 50
    )
  ),
 
- tar_target(
-   pred_file_multisp_pp_count_sm,
-   predict_greta_mspp_count_sm(
-     image_filename = model_fit_image_multisp_pp_count_sm,
-     prediction_layer = covariate_rast_10,
-     offset = offsets_avg_10,
-     target_species,
-     output_file_prefix = "outputs/rasters/multisp_pp_count_sm"
-   )
- ),
-
- # # # read in image and predict out lambda in the absence of offset
- # median and lower and higher bounds (2.5 and 95%iles)
- tar_target(
-   pred_file_lambda_no_offset_sm,
-   pred_lambda_no_offset(
-     image_name = model_fit_image_multisp_pp_count_sm,
-     prediction_layer = covariate_rast_5, # use 10k for faster preds
-     target_species,
-     output_file_prefix = "outputs/rasters/multisp_pp_lambda_no_offset_sm",
-     sm = TRUE, # if predict survey method
-     nsims = 50 # lower for faster preds
-   )
- ),
+ # tar_target(
+ #   pred_file_multisp_pp_count_sm,
+ #   predict_greta_mspp_count_sm(
+ #     image_filename = model_fit_image_multisp_pp_count_sm,
+ #     prediction_layer = covariate_rast_10,
+ #     offset = offsets_avg_10,
+ #     target_species,
+ #     output_file_prefix = "outputs/rasters/multisp_pp_count_sm"
+ #   )
+ # ),
+ #
+ # # # # read in image and predict out lambda in the absence of offset
+ # # median and lower and higher bounds (2.5 and 95%iles)
+ # tar_target(
+ #   pred_file_lambda_no_offset_sm,
+ #   pred_lambda_no_offset(
+ #     image_name = model_fit_image_multisp_pp_count_sm,
+ #     prediction_layer = covariate_rast_5, # use 10k for faster preds
+ #     target_species,
+ #     output_file_prefix = "outputs/rasters/multisp_pp_lambda_no_offset_sm",
+ #     sm = TRUE, # if predict survey method
+ #     nsims = 50 # lower for faster preds
+ #   )
+ # ),
 
  tar_target(
    preds_sm,
@@ -1141,18 +1141,20 @@ list(
    )
  ),
 
- # add average offset and make average predicted distribution
  tar_terra_rast(
    pred_dist_sm,
-   lambda_to_p(
-     x = rast(pred_file_lambda_no_offset_sm$lambda_no_offset) * exp(offsets_avg_5)
-   )
+   rast(preds_sm$p)
+ ),
+
+ tar_terra_rast(
+   pred_dcv_sm,
+   rast(preds_sm$p_cv)
  ),
 
  # scale predicted distribution
  tar_terra_rast(
    pred_dist_scale_sm,
-   scale_predictions(pred_dist_scale_sm)
+   scale_predictions(lambda_rast = pred_dist_sm)
  ),
 
  # tar_target(
@@ -1172,13 +1174,13 @@ list(
  #     #expert_offset_maps = rast("outputs/rasters/va_plots_20250718/expert_offset_aggregated.tif")
  #   )
  # ),
-#
-#  tar_target(
-#    pred_file_multisp_pp_count_expoff_sm_500,
-#    add_expert_offset(
-#      predfilelist = pred_file_multisp_pp_count_sm,
-#    )
-#  ),
+ #
+ #  tar_target(
+ #    pred_file_multisp_pp_count_expoff_sm_500,
+ #    add_expert_offset(
+ #      predfilelist = pred_file_multisp_pp_count_sm,
+ #    )
+ #  ),
 
  #
  # #####
@@ -1196,7 +1198,7 @@ list(
    make_distribution_plots(
      pred_dist_sm,
      model_data_spatial,
-     plot_dir = "outputs/figures/distribution_plots/distn_20260212_sm"
+     plot_dir = "outputs/figures/distribution_plots/distn_20260220_sm"
    )
  ),
 
@@ -1242,123 +1244,125 @@ list(
  #############################################################################
  #############################################################################
  # 4 species only analysis
-# need to refine this list
-# tar_target(
-#   target_species_4,
-#   target_spp_test_only()
-# ),
-#
-# tar_target(
-#   model_data_records_4,
-#   generate_model_data_records(
-#     full_data_records,
-#     target_species = target_species_4
-#   )
-# ),
-#
-#
-# tar_target(
-#   record_data_spatial_all_4,
-#   get_spatial_values(
-#     lyrs = covariate_rast_5_all,
-#     dat = model_data_records_4,
-#     project_mask_5
-#   )
-# ),
-#
-# tar_target(
-#   record_data_spatial_4,
-#   record_data_spatial_all_4 |>
-#     select(
-#       - all_of(
-#         names(covariate_rast_5_all)[
-#           !names(covariate_rast_5_all) %in%
-#             c(
-#               target_covariate_names,
-#               #offset_names,
-#               bias_names
-#             )
-#         ]
-#       ),
-#     )
-# ),
-#
-# tar_target(
-#   model_data_spatial_4,
-#   bind_rows(
-#     record_data_spatial_4 |>
-#       mutate(weight = 1),
-#     bg_kmeans_df |>
-#       mutate(
-#         data_type = "bg",
-#         presence = 0,
-#         n = 0
-#       )
-#   )
-# ),
+  # need to refine this list
+  # tar_target(
+  #   target_species_4,
+  #   target_spp_test_only()
+  # ),
+  #
+  # tar_target(
+  #   model_data_records_4,
+  #   generate_model_data_records(
+  #     full_data_records,
+  #     target_species = target_species_4
+  #   )
+  # ),
+  #
+  #
+  # tar_target(
+  #   record_data_spatial_all_4,
+  #   get_spatial_values(
+  #     lyrs = covariate_rast_5_all,
+  #     dat = model_data_records_4,
+  #     project_mask_5
+  #   )
+  # ),
+  #
+  # tar_target(
+  #   record_data_spatial_4,
+  #   record_data_spatial_all_4 |>
+  #     select(
+  #       - all_of(
+  #         names(covariate_rast_5_all)[
+  #           !names(covariate_rast_5_all) %in%
+  #             c(
+  #               target_covariate_names,
+  #               #offset_names,
+  #               bias_names
+  #             )
+  #         ]
+  #       ),
+  #     )
+  # ),
+  #
+  # tar_target(
+  #   model_data_spatial_4,
+  #   bind_rows(
+  #     record_data_spatial_4 |>
+  #       mutate(weight = 1),
+  #     bg_kmeans_df |>
+  #       mutate(
+  #         data_type = "bg",
+  #         presence = 0,
+  #         n = 0
+  #       )
+  #   )
+  # ),
 
-# ## multispecies pp count
-# ##
-#
-# # fit the model in greta
-# # save an image of the environment within function
-# # otherwise the greta model nodes become disconnected and buggered up
-# # because of some R6 nonsense with greta or whatever and the usual targets
-# # shenanigans
-# tar_target(
-#   model_fit_image_multisp_pp_count_4,
-#   fit_model_multisp_pp_count_4spp(
-#     model_data_spatial = model_data_spatial_4,
-#     target_covariate_names = target_covariate_names,
-#     target_species = target_species_4,
-#     project_mask_5,
-#     image_name = "outputs/images/4_multisp_pp_count.RData",
-#     n_burnin = 2000,
-#     n_samples = 1000,
-#     n_chains = 50
-#   )
-# ),
-#
-# # # read in image and predict out raster as a tif
-# tar_target(
-#   pred_file_multisp_pp_count_4,
-#   predict_greta_mspp_count(
-#     image_filename = model_fit_image_multisp_pp_count_4,
-#     prediction_layer = covariate_rast_5,
-#     target_species,
-#     output_file_prefix = "outputs/rasters/4_multisp_pp_count"
-#   )
-# ),
-#
-# tar_target(
-#   pred_file_multisp_pp_count_pa_expoff_4,
-#   add_expert_offset(
-#     predfilelist = pred_file_multisp_pp_count_4,
-#     #expert_offset_maps = rast("outputs/rasters/va_plots_20250718/expert_offset_aggregated.tif")
-#     expert_offset_maps = expert_offset_maps_500,
-#     pred_type = "pa"
-#   )
-# ),
-#
-# tar_target(
-#   pred_file_multisp_pp_count_count_expoff_4,
-#   add_expert_offset(
-#     predfilelist = pred_file_multisp_pp_count_4,
-#     #expert_offset_maps = rast("outputs/rasters/va_plots_20250718/expert_offset_aggregated.tif")
-#     expert_offset_maps = expert_offset_maps_500,
-#     pred_type = "count"
-#   )
-# ),
+  # ## multispecies pp count
+  # ##
+  #
+  # # fit the model in greta
+  # # save an image of the environment within function
+  # # otherwise the greta model nodes become disconnected and buggered up
+  # # because of some R6 nonsense with greta or whatever and the usual targets
+  # # shenanigans
+  # tar_target(
+  #   model_fit_image_multisp_pp_count_4,
+  #   fit_model_multisp_pp_count_4spp(
+  #     model_data_spatial = model_data_spatial_4,
+  #     target_covariate_names = target_covariate_names,
+  #     target_species = target_species_4,
+  #     project_mask_5,
+  #     image_name = "outputs/images/4_multisp_pp_count.RData",
+  #     n_burnin = 2000,
+  #     n_samples = 1000,
+  #     n_chains = 50
+  #   )
+  # ),
+  #
+  # # # read in image and predict out raster as a tif
+  # tar_target(
+  #   pred_file_multisp_pp_count_4,
+  #   predict_greta_mspp_count(
+  #     image_filename = model_fit_image_multisp_pp_count_4,
+  #     prediction_layer = covariate_rast_5,
+  #     target_species,
+  #     output_file_prefix = "outputs/rasters/4_multisp_pp_count"
+  #   )
+  # ),
+  #
+  # tar_target(
+  #   pred_file_multisp_pp_count_pa_expoff_4,
+  #   add_expert_offset(
+  #     predfilelist = pred_file_multisp_pp_count_4,
+  #     #expert_offset_maps = rast("outputs/rasters/va_plots_20250718/expert_offset_aggregated.tif")
+  #     expert_offset_maps = expert_offset_maps_500,
+  #     pred_type = "pa"
+  #   )
+  # ),
+  #
+  # tar_target(
+  #   pred_file_multisp_pp_count_count_expoff_4,
+  #   add_expert_offset(
+  #     predfilelist = pred_file_multisp_pp_count_4,
+  #     #expert_offset_maps = rast("outputs/rasters/va_plots_20250718/expert_offset_aggregated.tif")
+  #     expert_offset_maps = expert_offset_maps_500,
+  #     pred_type = "count"
+  #   )
+  # ),
 
 
 
 
  #####################
 
- tar_target(
-   so_i_dont_have_to_go_backward_and_add_commas,
-   print("Targets great in theory but kinda annoying to work with")
- )
+  tar_target(
+    so_i_dont_have_to_go_backward_and_add_commas,
+    print("Targets great in theory but kinda annoying to work with")
+  )
+
+
 
 )
 
