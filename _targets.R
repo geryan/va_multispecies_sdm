@@ -696,6 +696,17 @@ list(
    explore_full_data_records(full_data_records)
  ),
 
+ tar_target(
+   species_unique_location_records,
+   full_data_records |>
+     select(species, latitude, longitude) |>
+     distinct() |>
+     group_by(species) |>
+     summarise(n = n()) |>
+     arrange(desc(n)) |>
+     print(n = 999)
+ ),
+
  # need to refine this list
  tar_target(
    target_species,
