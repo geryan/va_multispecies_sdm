@@ -181,7 +181,8 @@ generate_model_data_records <- function(
       data_type,
       presence,
       count,
-      n
+      n,
+      inferred
     )
 
 }

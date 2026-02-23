@@ -98,18 +98,25 @@ scale_predictions <- function(
     rast()
 
 
-  fn <- sub(
-    pattern = "\\.tif",
-    replacement = "_scaled.tif",
-    x = lambda_file
-  )
 
-  writeRaster(
-    scaled_result,
-    filename = fn,
-    overwrite = TRUE
-  )
+  if(!is.null(lambda_file)){
+    fn <- sub(
+      pattern = "\\.tif",
+      replacement = "_scaled.tif",
+      x = lambda_file
+    )
 
-  rast(fn)
+    writeRaster(
+      scaled_result,
+      filename = fn,
+      overwrite = TRUE
+    )
+
+    return(rast(fn))
+
+  } else{
+    return(scaled_result)
+  }
+
 
 }
