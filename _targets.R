@@ -1151,10 +1151,38 @@ list(
    rast(preds_sm$p_cv)
  ),
 
+ tar_terra_rast(
+   pred_lambda_mean,
+   rast(preds_sm$lambda_no_offset) * offsets_avg_10
+ ),
+
+ tar_terra_rast(
+   pred_gr1,
+   app(
+     x = pred_lambda_mean,
+     fun = function(x){
+       any(x >= 0.1)
+     }
+   )
+ ),
+
+ tar_terra_rast(
+   pred_dominant,
+   get_dominant_species(
+     pred_lambda_mean,
+     target_species
+   ),
+   #datatype = "INT1U"
+   #filetype = "GTiff",
+   preserve_metadata = "zip"
+ ),
+
  # scale predicted distribution
  tar_terra_rast(
    pred_dist_scale_sm,
-   scale_predictions(lambda_rast = pred_dist_sm)
+   scale_predictions(
+     lambda_rast = pred_lambda_mean
+   )
  ),
 
  # tar_target(
