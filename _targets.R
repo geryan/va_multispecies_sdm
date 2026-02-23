@@ -722,6 +722,7 @@ list(
    # )
  ),
 
+
  tar_target(
    model_data_records,
    generate_model_data_records(
@@ -731,12 +732,39 @@ list(
  ),
 
  tar_target(
-   model_data_records_ni,
-   generate_model_data_records_no_impute(
-     full_data_records,
-     target_species = target_species
-   )
+   species_unique_presence_location_records,
+   model_data_records |>
+     filter(!inferred) |>
+     select(species, presence, latitude, longitude) |>
+     distinct() |>
+     group_by(species, presence) |>
+     summarise(n = n()) |>
+     mutate(
+       presence = ifelse(
+         presence == 1,
+         "present",
+         "absent"
+       )
+     ) |>
+     pivot_wider(
+       names_from = "presence",
+       values_from = "n"
+     ) |>
+     arrange(species) |>
+     print(n = 999)
+
  ),
+
+
+
+
+ # tar_target(
+ #   model_data_records_ni,
+ #   generate_model_data_records_no_impute(
+ #     full_data_records,
+ #     target_species = target_species
+ #   )
+ # ),
 
  # tar_target(
  #   model_data_all,
@@ -829,9 +857,11 @@ list(
    )
  ),
 
-
-
-
+ # table 2 in manuscript
+ tar_target(
+   data_summary_table,
+   make_data_summary_table(model_data_spatial),
+ ),
 
 
  tar_target(
