@@ -17,7 +17,7 @@ clean_sampling_method <- function(x){
     x == "ib" ~ "other",
     x == "larvae" ~ "larvae",
     x == "odour trap" ~  "odour",
-    x == "owt" ~ "other",
+    x == "owt" ~ "window_exit", # abbreviation from old VA data, should be replaced with win exit in final data set
     x == "ro" ~  "outdoor_resting",
     x == "ro_ani_shelter" ~  "outdoor_resting",
     x == "ro_pit" ~  "outdoor_resting",
