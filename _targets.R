@@ -151,6 +151,14 @@ list(
     get_bioregions(project_mask = project_mask_5)
   ),
 
+  tar_terra_vect(
+    bioregions_v,
+    get_bioregions(
+      project_mask = project_mask_5,
+      vect = TRUE
+    )
+  ),
+
   # this returns a stack of layers 1 bioregion each
   tar_terra_rast(
     bioregion_stack,
@@ -797,6 +805,7 @@ list(
    )
  ),
 
+ # get only the variables of interest
  tar_target(
    record_data_spatial,
    record_data_spatial_all |>
@@ -863,7 +872,8 @@ list(
    make_data_summary_table(model_data_spatial),
  ),
 
-
+ # table summary of number of records where each species
+ # was detected or not detected
  tar_target(
    pa_data_table,
    model_data_spatial |>
@@ -885,6 +895,47 @@ list(
        undetected = p0
      )
  ),
+
+ # make buffered convex hull for species without expert opn layer
+ tar_terra_vect(
+   convex_hulls,
+   make_convex_hull(
+     record_data_spatial,
+     expert_maps
+   )
+ ),
+
+ tar_terra_vect(
+   bioregion_hulls,
+   make_bioregion_hull(
+     record_data_spatial,
+     expert_maps,
+     bioregions_v
+   )
+ ),
+
+ # make offset layers from these hulls
+ #
+ #
+ tar_terra_rast(
+   convex_offset_maps,
+   make_expert_offset_maps(
+     convex_hulls,
+     project_mask_5,
+     buffer_km = 1000
+   )
+ ),
+
+ tar_terra_rast(
+   bioregion_offset_maps,
+   make_expert_offset_maps(
+     bioregion_hulls,
+     project_mask_5,
+     buffer_km = 1000
+   )
+ ),
+
+
 
  ## plots before modelling
 
