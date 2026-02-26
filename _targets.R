@@ -183,20 +183,6 @@ list(
 
   ),
 
-  # this reads in the bioregions as a single file
-  # but it's useless for passing on the categories
-  # only good if want to make a pretty picture of it
-  tar_terra_rast(
-    bioregions_all,
-    get_bioregions(project_mask = project_mask_5)
-  ),
-
-  # this returns a stack of layers 1 bioregion each
-  tar_terra_rast(
-    bioregion_stack,
-    split_bioregions(project_mask = project_mask_5)
-  ),
-
 
   # layers from Malaria Atlas Project
   #
@@ -392,7 +378,6 @@ list(
     } else{
       rast("/Users/gryan/Documents/tki_work/vector_atlas/africa_anopheles_sampling_bias/outputs/tt_by_country.tif")
     }
-    # rast("/Users/gryan/Documents/tki_work/vector_atlas/africa_anopheles_sampling_bias/outputs/tt_by_country.tif")
   ),
 
   # that this doesn't quite match the mask layer suggests I need to redo
@@ -422,13 +407,6 @@ list(
     check_no_mismatched_nas(
       proj_mask = project_mask_5,
       offsets_5[[1]],
-      # built_volume_5,
-      # evi_5,
-      # tcb_5,
-      # lst_night_5,
-      # elevation_5,
-      # soil_clay_5,
-      # footprint_5,
       landcover_covs,
       prox_to_sea,
       bias_tt_5
@@ -438,13 +416,6 @@ list(
   tar_target(
     target_covariate_names,
     c(
-      #"built_volume",
-      #"evi", # correlates with pressure_mean rainfall_mean and solrad_mean
-      #"tcb",
-      #"lst_night",
-      # "elevation",
-      # "footprint", # correlates with built_volume and cropland
-      #"soil_clay",
 
       # only use the worldcover landcover classes, in fractional cover (0-1)
       # form, excluding the obviously unsuitable habitat (bare, snow, etc)
@@ -458,33 +429,8 @@ list(
       "mangroves",
 
       # and proximity to sea, for merus and melas
-      "prox_to_sea",
+      "prox_to_sea"
 
-      # bioregions - hashed out ones unlikely to use
-      "AT02",
-      "AT05",
-      "AT06",
-      "AT07",
-      "AT08",
-      "AT09",
-      "AT10",
-      "AT11",
-      "AT12",
-      "AT13",
-      "AT14",
-      "AT15",
-      "AT16",
-      "AT17",
-      #"AT18",
-      "AT19",
-      "AT20",
-      "AT21",
-      "AT22",
-      "AT23"#,
-      #"PA23",
-      #"PA24",
-      #"PA25",
-      #"PA26"
     )
   ),
 
@@ -496,13 +442,6 @@ list(
   tar_terra_rast(
     covariate_rast_5_all,
     c(
-      # built_volume_5,
-      # evi_5,
-      # tcb_5,
-      # lst_night_5,
-      # elevation_5,
-      # soil_clay_5,
-      # footprint_5,
       landcover_covs,
       prox_to_sea,
 
@@ -1199,7 +1138,7 @@ list(
      image_filename = model_fit_image_multisp_pp_count_sm,
      prediction_layer = covariate_rast_10,
      offset = offsets_avg_10,
-     target_species,
+     target_species = target_species,
      target_covariate_names = target_covariate_names,
      subrealm_names = subrealm_names,
      bioregion_names = bioregion_names,
