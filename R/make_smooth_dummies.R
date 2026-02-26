@@ -50,7 +50,7 @@ make_smooth_dummies <- function(oneearth_spatvector,
 
   # define a smoothing window
   # sigma parameter of Gaussian window
-  sigma_km <- 100
+  sigma_km <- 25
   window <- terra::focalMat(dummies_proj,
                             # define the distance in meters
                             d = sigma_km * 1e3,
@@ -68,11 +68,19 @@ make_smooth_dummies <- function(oneearth_spatvector,
   sums <- app(dummies_proj_smoothed, sum)
   dummies_proj_smoothed_norm <- dummies_proj_smoothed / sums
 
-  # and project back to the original setup
-  dummies_smoothed_norm <- terra::project(
-    dummies_proj_smoothed_norm,
-    crs(mask)
-  )
+  # and project back to the original setup and fill in any gaps created
+  dummies_smoothed_norm <- dummies_proj_smoothed_norm |>
+    terra::project(
+      crs(mask)
+    ) |>
+    terra::resample(
+      mask
+    ) |>
+    fill_na_with_nearest_mean(
+      maxRadiusCell = 3
+    ) |>
+    mask(mask)
+
 
   # return these
   dummies_smoothed_norm

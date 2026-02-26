@@ -506,20 +506,8 @@ list(
       landcover_covs,
       prox_to_sea,
 
-      # subrealm_layers,
-      # bioregion_layers,
-
-      # this is a horrible hack because they take a long time to run, instead
-      # fix this where these things are created
-      bioregion_layers |>
-        terra::resample(project_mask_5) |>
-        fill_na_with_nearest_mean(maxRadiusCell = 3) |>
-        mask(project_mask_5),
-
-      subrealm_layers |>
-        terra::resample(project_mask_5) |>
-        fill_na_with_nearest_mean(maxRadiusCell = 3) |>
-        mask(project_mask_5),
+      subrealm_layers,
+      bioregion_layers,
 
       bias_tt_5
     )
