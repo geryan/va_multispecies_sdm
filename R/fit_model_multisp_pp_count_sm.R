@@ -433,7 +433,31 @@ fit_model_multisp_pp_count_sm <- function(
     as_data()
 
   count_data_response_expected <- exp(log_lambda_obs_count)
-  distribution(count_data_response) <- poisson(count_data_response_expected)
+
+  # # Poisson version
+  # distribution(count_data_response) <- poisson(count_data_response_expected)
+
+  # define negative binomial distribution, with penalised complexity prior on
+  # the dispersion parameter
+  # https://github.com/stan-dev/rstanarm/issues/275
+  # sqrt_inv_size <- normal(0, 0.5, truncation = c(0, Inf))
+  # size <- (1 / sqrt_inv_size) ^ 2
+  # mu <- count_data_response_expected
+  # prob_vec <- size / (size + mu)
+  # distribution(count_data_response) <- negative_binomial(size = size,
+  #                                                        prob = prob_vec)
+
+  # option with diffrent dispersion for each species
+  species_index <- model_data |>
+    filter(data_type == "count") |>
+    pull(species_id)
+  sqrt_inv_size <- normal(0, 0.5, truncation = c(0, Inf), dim = n_species)
+  mu <- count_data_response_expected
+  size <- (1 / sqrt_inv_size) ^ 2
+  size_vec <- size[species_index]
+  prob_vec <- size_vec / (size_vec + mu)
+  distribution(count_data_response) <- negative_binomial(size_vec, prob_vec)
+
 
   #### PA likelihood
 
