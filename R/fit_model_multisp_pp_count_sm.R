@@ -180,7 +180,24 @@ fit_model_multisp_pp_count_sm <- function(
   # gamma <- normal(0, intercept_sd, dim = n_species)
 
   # intercept and slopes for abundance rate
-  alpha <- normal(0, intercept_sd, dim = n_species)
+
+  # do we need a hierarchical mean for this?
+
+  # sampling_re_raw should be centred around 0 but they are mostly negative.
+  # Maybe they are compensating for a restrictive prior structure on these?
+
+  # the intercept should now not be anything like zero-mean, because it encodes
+  # abundance in the 'bare' landcover areas! The sampling res make sense to use,
+  # since they apply to all species
+  alpha_mean <- normal(0, intercept_sd)
+  alpha_sd <- normal(0, 1, truncation = c(0, Inf))
+  alpha_raw <- normal(0, 1, dim = n_species)
+  alpha <- alpha_mean + alpha_raw * alpha_sd
+  # alpha <- normal(0, intercept_sd, dim = n_species)
+
+
+
+
 
   # for each covariate, model beta as a positive-constrained spatially-varying
   # covariate. Positive so that abundance is forced to be higher in
@@ -222,6 +239,7 @@ fit_model_multisp_pp_count_sm <- function(
 
   # make these positive (median 0)
   beta_spatial_pos <- exp(beta_spatial)
+  # beta_spatial_pos <- ones(nrow(distinct_coords), n_svc)
 
   # # simulate to check there variation
   # sims <- calculate(beta_spatial[, 1], nsim = 9)
@@ -293,6 +311,7 @@ fit_model_multisp_pp_count_sm <- function(
   # add alpha to get log larval habitat for each species across all sites based
   # on env covariates
   log_lambda_larval_habitat <- sweep(x_beta_species, 2, alpha, FUN = "+")
+  # log_lambda_larval_habitat <- sweep(x %*% beta, 2, alpha, FUN = "+")
   # log_lambda_larval_habitat <- sweep(zeros(n_pixel, n_species), 2, alpha, FUN = "+")
 
 
@@ -303,11 +322,20 @@ fit_model_multisp_pp_count_sm <- function(
   # gamma_sd <- 0.1
 
   delta_sd <- 0.5
-  gamma_sd <- 0.1
+  # gamma_sd <- 0.1
 
 
-  gamma <- normal(0, gamma_sd, dim = n_species)
-  delta <- normal(1, delta_sd, dim = c(n_cov_bias), truncation = c(0, Inf))
+  # perhaps gamma should have a hierarchical mean? The posteriors are all away
+  # from 0, and this would constrain them to be similar.
+  gamma_mean <- normal(0, 10)
+  gamma_sd <- normal(0, 1, truncation = c(0, Inf))
+  gamma_raw <- normal(0, 1, dim = n_species)
+  gamma <- gamma_mean + gamma_raw * gamma_sd
+  # gamma <- normal(0, gamma_sd, dim = n_species)
+
+  delta <- normal(1, delta_sd,
+                  dim = c(n_cov_bias),
+                  truncation = c(0, Inf))
 
 
 
@@ -396,7 +424,7 @@ fit_model_multisp_pp_count_sm <- function(
 
   #### count data likelihood
 
-  log_lambda_obs_count <-log_lambda[count_data_loc_sp_idx] +
+  log_lambda_obs_count <- log_lambda[count_data_loc_sp_idx] +
     sampling_re[count_data_index$sampling_method_id]
 
   count_data_response <- model_data |>
@@ -454,7 +482,7 @@ fit_model_multisp_pp_count_sm <- function(
   log_lambda_obs_pobg <-log_lambda[pobg_data_loc_sp_idx] +
     sampling_re[pobg_data_index$sampling_method_id]
 
-  po_data_response_expected <-   exp(
+  po_data_response_expected <- exp(
     log_lambda_obs_pobg +
       log_bias_obs_pobg +
       log(area_pobg)
@@ -465,10 +493,14 @@ fit_model_multisp_pp_count_sm <- function(
   #######################
 
   # define and fit the model by MAP and MCMC
-
-  m <- model(alpha, beta, gamma, delta, sampling_re_raw, sampling_re_sd,
-             subrealm_sd, subrealm_svc_coef_raw)# ,
-             # bioregion_sd, bioregion_svc_coef_raw)
+  m <- model(alpha_mean, alpha_sd, alpha_raw,
+             gamma_mean, gamma_sd, gamma_raw,
+             delta,
+             beta,
+             subrealm_sd, subrealm_svc_coef_raw,
+             # bioregion_sd, bioregion_svc_coef_raw,
+             sampling_re_raw, sampling_re_sd,
+             sqrt_inv_size)
 
 
   ############
@@ -529,67 +561,58 @@ fit_model_multisp_pp_count_sm <- function(
   # fit model
   ###################
 
-  # # manually set some inits (from previous optimiser runs), then optimise again
+  # # # manually set some inits (from previous runs)
   # inits_manual <- initials(
-  #   # alpha = c(0, 0, 0, 0, -70, -50, -10, -10),
-  #   # alpha = c(-10, -10, -10, -10, -20, -50, -10, -10),
-  #   alpha = c(-4, -3, -8, -3, -20, -25, 0, -40),
-  #   # # set all beta main and spatial coefficients to 0
-  #   # beta = matrix(0.01, n_cov_abund, n_species),
-  #   # fill vertically (one species at a time)
-  #   beta = matrix(
-  #     c(
-  #       # arabiensis coluzzi funestus gambiae
-  #       runif(n_cov_abund * 4, 0.1, 10),
-  #       # melas - bump up distance to sea
-  #       runif(n_cov_abund, 0.1, 10) +
-  #         60 * (target_covariate_names == "prox_to_sea"),
-  #       # merus - bump up distance to sea
-  #       runif(n_cov_abund, 0.1, 10) +
-  #         40 * (target_covariate_names == "prox_to_sea"),
-  #       # moucheti & nili, slightly higher
-  #       runif(n_cov_abund * 2, 0.1, 15)
-  #     ),
-  #     n_cov_abund, n_species),
-  #   # set all raw spatial random effects to 0
-  #   subrealm_sd = 0.01,
-  #   subrealm_svc_coef_raw = array(0, dim = dim(subrealm_svc_coef_raw)),
+  #   alpha = c(0.04, -0.87, -0.75, 0.29, -77.66, -46.35, -9.74, -12.99),
+  #   beta = array(
+  #     c(0.01, 2.52, 4.01, 3.45, 0.02, 1.52, 1.17, 0.03, 0.67,
+  #       0.01, 1.19, 3.25, 2.06, 3.96, 5.52, 3.82, 0.07, 0.01, 2.97, 3.98,
+  #       2.74, 3.47, 0.05, 0.55, 5.95, 0.03, 0.02, 0.18, 0.01, 3.4, 0.8,
+  #       1.91, 2.36, 0.02, 0.07, 0.01, 0.01, 1.72, 0.06, 5.37, 0.1, 0.42,
+  #       8.71, 4.51, 76.68, 0.15, 1.79, 3.46, 5.2, 0.82, 4.97, 7.8, 14.91,
+  #       41.02, 9.06, 6.91, 0.01, 0.08, 7.56, 8.04, 10.19, 0.29, 2.77,
+  #       12.19, 8.64, 13.25, 10.85, 0.85, 0.37, 0.29, 1.12, 2.07),
+  #     dim = c(9, 8)
+  #   ),
+  #   # # set all raw spatial random effects to 0
+  #   # subrealm_sd = 0.01,
+  #   # subrealm_svc_coef_raw = array(0, dim = dim(subrealm_svc_coef_raw)),
   #   # bioregion_sd = 0.01,
   #   # bioregion_svc_coef_raw = array(0, dim = dim(bioregion_svc_coef_raw)),
-  #   # beta_spatial_variances = rep(0.1, n_svc),
-  #   gamma = c(-9.5, -8, -9, -9, -3, -2, -6, -7),
-  #   delta = 45,
-  #   sampling_re_raw = rep(0, 9) +
-  #     -2 * (sampling_methods == "other"),
-  #   sampling_re_sd = 1.5
+  #   gamma = c(-9.83, -8.16, -9.3, -8.94, -1.98, -1.45, -7.58, -7.74),
+  #   delta = 39.77,
+  #   sampling_re_raw = c(-0.5, 0.13, -0.28, -0.08, -0.17, -0.35, 0.19, -2.43,
+  #                       0.89),
+  #   sampling_re_sd = 1.2,
+  #   sqrt_inv_size = 0.001
   # )
-
-  optim <- opt(
-    m,
-    optimiser = adam(learning_rate = 0.1),
-    max_iterations = 1e5
-    # initial_values = inits_manual
-  )
+  #
+  # optim <- opt(
+  #   m,
+  #   optimiser = adam(learning_rate = 0.1),
+  #   max_iterations = 5e4
+  #   # initial_values = inits_manual
+  # )
 
   # # optim <- opt(m, max_iterations = 1e5) # with sinka species plus coluzzii this converges
   #
   # # should be 0 if converged
-  optim$convergence
-  print(
-    paste(
-      "optimiser value is",
-      optim$convergence,
-      "; it should be 0 if optimiser converged"
-    )
-  )
+  # optim$convergence
+  # print(
+  #   paste(
+  #     "optimiser value is",
+  #     optim$convergence,
+  #     "; it should be 0 if optimiser converged"
+  #   )
+  # )
   #
   #
   # # optim$par
   #
-  init_vals <- inits_from_opt(
-    optim,
-    n_chains = n_chains
-  )
+  # init_vals <- inits_from_opt(
+  #   optim,
+  #   n_chains = n_chains
+  # )
 
   # get inits using fitian method
   # doesn't work because gets gammas that are outside of range
@@ -611,21 +634,221 @@ fit_model_multisp_pp_count_sm <- function(
   #   ind = inits_fithian$delta
   # )
 
+  # post_summary_filepath <- "~/Desktop/post_summary.RDS"
+  # if (file.exists(post_summary_filepath)) {
+  #   post_summary <- readRDS(post_summary_filepath)
+  # }
+
+  # post_mean_inits <- do.call(initials, post_summary$post_mean)
+
+  # try using an importance sampling to initialise these:
+  # - sample parameters from priors
+  # - compute model log-posterior at these parameters (use code in initialiser
+  #   code)
+  # - compute estimate of the posterior mean as a posterior density-weighted
+  #   mean
+  # - draw samples from the posterior with a weighted resampling of these prior
+  #   draws
+
+  # try making this a tempering algorithm, and code it up based on the model
+
+
+  # n_sims <- 5000
+
+  # zeros_like <- function(greta_array) {
+  #   array(0, dim = dim(greta_array))
+  # }
+  #
+  # normal_like <- function(greta_array, mean = 0, sd = 1) {
+  #   dims <- dim(greta_array)
+  #   nelem <- prod(dims)
+  #   values <- rnorm(nelem, mean = mean, sd = sd)
+  #   array(values, dim = dims)
+  # }
+  #
+  # posnormal_like <- function(greta_array, mean = 0, sd = 1) {
+  #   dims <- dim(greta_array)
+  #   nelem <- prod(dims)
+  #   values <- extraDistr::rtnorm(nelem,
+  #                                mean = mean,
+  #                                sd = sd,
+  #                                a = 0,
+  #                                b = Inf)
+  #   array(values, dim = dims)
+  # }
+  #
+  #
+  # # Manually tune the importance sampler (sample parameter values from fixed
+  # # distributions) instead. Possibly setting all random effects values to 0, and
+  # # informed by posterior densities. Maybe sequential Monte Carlo
+  # # # manually set some inits (from previous runs)
+  # importance_sims <- replicate(
+  #   n_sims,
+  #   list(
+  #     alpha_mean = normal_like(alpha_mean),
+  #     alpha_sd = posnormal_like(alpha_sd),
+  #     alpha_raw = zeros_like(alpha_raw),
+  #     gamma_mean = normal_like(gamma_mean),
+  #     gamma_sd = posnormal_like(gamma_sd),
+  #     gamma_raw = zeros_like(gamma_raw),
+  #     delta = posnormal_like(delta, mean = 1, sd = delta_sd),
+  #     beta = posnormal_like(beta),
+  #     subrealm_sd = posnormal_like(subrealm_sd),
+  #     subrealm_svc_coef_raw = zeros_like(subrealm_svc_coef_raw),
+  #     bioregion_sd = posnormal_like(bioregion_sd),
+  #     bioregion_svc_coef_raw = zeros_like(bioregion_svc_coef_raw),
+  #     sampling_re_raw = zeros_like(sampling_re_raw),
+  #     sampling_re_sd = posnormal_like(sampling_re_sd),
+  #     sqrt_inv_size = posnormal_like(sqrt_inv_size, sd = 0.5)
+  #   ),
+  #   simplify = FALSE
+  # )
+  #
+  # # convert into a list of initials
+  # inits_list <- lapply(importance_sims,
+  #                      function(x) do.call(initials, x))
+
+  # # get all the variable greta arrays, to convert these back to free states
+  # variable_greta_arrays <- m$target_greta_arrays
+  #
+  # # or use posterior samples from MCMC
+  # # n_post_sim <- dim(post_summary$post_sims$alpha_mean)[1]
+  # inits_list <- lapply(seq_len(n_sims),
+  #                      make_inits,
+  #                      post_summary$post_sims,
+  #                      variable_greta_arrays)
+  #
+  # free_states <- get_free_states(inits_list,
+  #                                variable_greta_arrays,
+  #                                m)
+
+  # # Sample (valid) free states from priors, limiting the memory use with
+  # # trace_batch_size
+  # free_state_prior <- prior_sample_free_states(
+  #   mod = m,
+  #   n = 500,
+  #   trace_batch_size = 10
+  # )
+
+  # # compute the log posterior densities of these, and normalise them (in log
+  # # space) to get weights
+  # tf_log_densities <- m$dag$tf_log_prob_function_adjusted(free_states)
+  # tf <- greta:::tf
+  # tf_log_sum_densities <- tf$reduce_logsumexp(tf_log_densities)
+  # tf_log_densities_norm <- tf_log_densities - tf_log_sum_densities
+  # tf_densities_norm <- tf$exp(tf_log_densities_norm)
+  # densities_norm <- as.vector(tf_densities_norm)
+  #
+  # # compute a weighted mean of these on the free state scale (skipping those
+  # # with numerical underflow) to find a relatively high posterior density region
+  # # of parameter space
+  # valid <- densities_norm > 0
+  # sum(valid)
+  # valid_free_states <- free_states[valid, , drop = FALSE]
+  # free_state_mean <- densities_norm[valid] %*% valid_free_states
+  #
+  # # get the initial values corresponding to this point
+  # importance_inits <- initials_from_free_states(m, free_state_mean)[[1]]
+
+  n_free <- length(unlist(m$dag$example_parameters(free = TRUE)))
+
+  # n_particles_per_param <- 2
+  # n_particles <- n_particles_per_param * n_free
+
+  smc_output <- run_smc(m,
+                        n_particles = 3000,
+                        max_stages = 1000,
+                        # n_prior_samples = 5000,
+                        compute_batch_size = 100)
+
+  saveRDS(smc_output, "~/Desktop/smc_output_subrealm.RDS")
+
+  smc_mean <- colMeans(smc_output$particles)
+
+  # point mass initial values
+  inits_point <- initials_from_free_states(m, t(smc_mean))[[1]]
+
+  # # random inits per chain
+  # init_particles <- smc_output$particles[seq_len(n_chains), ]
+  # inits_random <- initials_from_free_states(m, init_particles)
+
+
+  # n_prior_samples is ignored internally and n_particles is used instead - fix
+  # that. It's working now that I reduced the model dimension to <1000, but
+  # won't in general
+
+  # memory leak that causes a crash when running with 2*n_free particles, even
+  # with 50 batch size?
+
+  # only 20% memory when running batches though - increase compute batch size?
+
+  # modify model to be linear (interactions between landcover classes and
+  # bioergeions, etc., but not bioregion main effects), and post-hoc mask by the
+  # area proportion to remove/downscale those regions
+
+  # add more regularisation to the subrealm/bioregion models, with additional
+  # variance components on interaction terms for each main covariate, and for
+  # each bioregion?
+
+  # is this creating new greta arrays and extending the dag?
+
+  # turn this into a point estimate of the posterior mean, to initialise the
+  # model
+
+  # prior simulation seems to be an issue - resulting in an invalid covariance
+  # matrix
+
   Lmax <- 10
   Lmin <- round(Lmax / 2)
+  n_burnin <- 2000
+  n_chains <- 50
   draws <- greta::mcmc(
     m,
     warmup = n_burnin,
     sampler = hmc(Lmin = Lmin, Lmax = Lmax),
     n_samples = n_samples,
     chains = n_chains,
-    initial_values = init_vals
-    # initial_values = inits_manual
+    initial_values = inits_point
   )
 
-  sry <- summary(draws)
-  post_means <- sry$statistics[, "Mean"]
-  print(summary(draws))
+  # save.image(file = "~/Desktop/image_220226.RData")
+
+  # poor convergence (due to bad tuning?), but save posterior means and sds for
+  # future inits
+  post_sims <- calculate(alpha_mean, alpha_sd, alpha_raw,
+                         gamma_mean, gamma_sd, gamma_raw,
+                         delta,
+                         beta,
+                         subrealm_sd, subrealm_svc_coef_raw,
+                         # bioregion_sd, bioregion_svc_coef_raw,
+                         sampling_re_raw, sampling_re_sd,
+                         sqrt_inv_size,
+                         values = draws,
+                         nsim = 10000,
+                         trace_batch_size = 50)
+
+  post_mean <- function(sims) {
+    apply(sims, 2:3, mean)
+  }
+  post_sd <- function(sims) {
+    apply(sims, 2:3, sd)
+  }
+  post_means <- lapply(post_sims,
+                       post_mean)
+  post_sds <- lapply(post_sims,
+                       post_sd)
+
+  post_sry <- list(
+    post_sims = post_sims,
+    post_mean = post_means,
+    post_sd = post_sds
+  )
+  saveRDS(post_sry,
+          file = "~/Desktop/post_summary.RDS")
+
+  # re-run the sampler (with fewer burnin samples) using the posterior mean as
+  # the initial values for all chains
+
 
   mcmc_trace(
     x = draws,
@@ -659,7 +882,9 @@ fit_model_multisp_pp_count_sm <- function(
     "outputs/figures/traceplots/sm_sampling.png"
   )
 
-  coda::gelman.diag(draws, autoburnin = FALSE, multivariate = FALSE)
+  coda::gelman.diag(draws,
+                    autoburnin = FALSE,
+                    multivariate = FALSE)
 
   ############
   # posterior predictive checks
