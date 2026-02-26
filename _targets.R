@@ -1205,30 +1205,19 @@ list(
    )
  ),
 
- # tar_target(
- #   pred_file_multisp_pp_count_sm,
- #   predict_greta_mspp_count_sm(
- #     image_filename = model_fit_image_multisp_pp_count_sm,
- #     prediction_layer = covariate_rast_10,
- #     offset = offsets_avg_10,
- #     target_species,
- #     output_file_prefix = "outputs/rasters/multisp_pp_count_sm"
- #   )
- # ),
- #
- # # # # read in image and predict out lambda in the absence of offset
- # # median and lower and higher bounds (2.5 and 95%iles)
- # tar_target(
- #   pred_file_lambda_no_offset_sm,
- #   pred_lambda_no_offset(
- #     image_name = model_fit_image_multisp_pp_count_sm,
- #     prediction_layer = covariate_rast_5, # use 10k for faster preds
- #     target_species,
- #     output_file_prefix = "outputs/rasters/multisp_pp_lambda_no_offset_sm",
- #     sm = TRUE, # if predict survey method
- #     nsims = 50 # lower for faster preds
- #   )
- # ),
+ tar_target(
+   pred_file_multisp_pp_count_sm,
+   predict_greta_mspp_count_sm(
+     image_filename = model_fit_image_multisp_pp_count_sm,
+     prediction_layer = covariate_rast_10,
+     offset = offsets_avg_10,
+     target_species,
+     target_covariate_names = target_covariate_names,
+     subrealm_names = subrealm_names,
+     bioregion_names = bioregion_names,
+     output_file_prefix = "outputs/rasters/multisp_pp_count_sm"
+   )
+ ),
 
  tar_target(
    preds_sm,
