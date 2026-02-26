@@ -3,6 +3,9 @@ predict_greta_mspp_count_sm <- function(
     prediction_layer,
     offset,
     target_species,
+    target_covariate_names = target_covariate_names,
+    subrealm_names = subrealm_names,
+    bioregion_names = bioregion_names,
     output_file_prefix
 ){
 
@@ -24,7 +27,35 @@ predict_greta_mspp_count_sm <- function(
 
   log_lambda_adults_predict <- log_offset_pred
 
-  log_lambda_larval_habitat_predict <- sweep(x_predict %*% beta, 2, alpha, FUN = "+")
+  x_subrealm_predict <- layer_values[!naidx, subrealm_names]
+  # x_bioregion_predict <- layer_values[!naidx, bioregion_names]
+
+
+  # convert these into the spatial variation in the betas
+  beta_eff_subrealm_predict <- x_subrealm_predict %*% subrealm_svc_coef
+  # beta_eff_bioregion_predict <- x_bioregion_predict %*% bioregion_svc_coef
+  beta_spatial_predict <- beta_eff_subrealm_predict #+ beta_eff_bioregion_predict
+
+  beta_spatial_pos_predict <- exp(beta_spatial_predict)
+
+  # make a matrix of  positive-constrained spatially-varying coefficients
+  beta_spatial_predict <- sweep(beta_spatial_pos_predict, 2, beta_vec, FUN = "*")
+
+  x_predict_tiled <- do.call(
+    cbind,
+    replicate(n_species, x_predict,
+              simplify = FALSE)
+  )
+
+  # multiply with beta elementwise
+  x_predict_beta <- x_predict_tiled * beta_spatial_predict
+
+  # get x * beta, for each species (columns), for each distinct pixel (rows)
+  x_predict_beta_species <- x_predict_beta %*% t(blocks)
+
+  log_lambda_larval_habitat_predict <- sweep(x_predict_beta_species, 2, alpha, FUN = "+")
+
+  # log_lambda_larval_habitat_predict <- sweep(x_predict %*% beta, 2, alpha, FUN = "+")
 
   log_lambda_combine_predict <- sweep(log_lambda_larval_habitat_predict, 1, log_lambda_adults_predict, "+")
 
