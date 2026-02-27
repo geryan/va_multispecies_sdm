@@ -368,6 +368,10 @@ run_smc <- function(greta_model,
   prior_mean <- colMeans(free_prior_sims)
   prior_cov <- cov(free_prior_sims)
 
+  # add some fuzz to the diagonal to enable cholesky decomposition. This also
+  # spreads out the initial distribution, but has no influence on the posterior
+  diag(prior_cov) <- diag(prior_cov) + 1e-6
+
   # pre-compute parameters of a computationally efficient MVN approximation to
   # the prior, to quickly evaluate the density
   k <- length(prior_mean)
