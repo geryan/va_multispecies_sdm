@@ -11,6 +11,7 @@
 distplotlist <- function(
     pred_dist,
     colscheme =  c(
+      "va",
       "mako",
       "rb",
       "magma",
