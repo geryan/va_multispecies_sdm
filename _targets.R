@@ -914,6 +914,37 @@ list(
    )
  ),
 
+ tar_terra_vect(
+   point_hulls_100,
+   make_point_hull(
+     record_data_spatial,
+     expert_maps,
+     buffer_width = 1e5
+   )
+ ),
+
+ tar_terra_vect(
+   point_hulls_500,
+   make_point_hull(
+     record_data_spatial,
+     expert_maps,
+     buffer_width = 5e5
+   )
+ ),
+
+ tar_terra_vect(
+   point_hulls_1000,
+   make_point_hull(
+     record_data_spatial,
+     expert_maps,
+     buffer_width = 1e6
+   )
+ ),
+
+ # make hulls with buffer around points and polygonise
+ # send vector / mapped versions with no fuzzy buffer
+ # send to MS with maps of points
+
  # make offset layers from these hulls
  #
  #
