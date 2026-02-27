@@ -50,7 +50,7 @@ make_smooth_dummies <- function(oneearth_spatvector,
 
   # define a smoothing window
   # sigma parameter of Gaussian window
-  sigma_km <- 25
+  sigma_km <- 100
   window <- terra::focalMat(dummies_proj,
                             # define the distance in meters
                             d = sigma_km * 1e3,
