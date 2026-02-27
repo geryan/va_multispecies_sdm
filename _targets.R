@@ -692,7 +692,11 @@ list(
      guess_max = 100000 # some cols are largely empty until end, so needs this
      # or will assume they are logical and break when they are not
      # NB this is longer than the entire data set (for now...)
-   )
+   ) |>
+     filter(
+       !(source_id == 1002611 & species == "moucheti"),
+       !(source_id == 4682 & species == "merus")
+     )
  ),
 
  #########################
