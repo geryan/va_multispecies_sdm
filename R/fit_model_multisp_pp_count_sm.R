@@ -45,8 +45,8 @@ fit_model_multisp_pp_count_sm <- function(
     select(
       all_of(target_covariate_names)
     ) |>
-    as.matrix() |>
-    as_data()
+    as.matrix() #|>
+    # as_data()
 
   # # get subrealm dummy values
   # x_subrealm <- model_data_spatial[distinct_idx,] |>
@@ -63,8 +63,8 @@ fit_model_multisp_pp_count_sm <- function(
     select(
       all_of(bioregion_names)
     ) |>
-    as.matrix() |>
-    as_data()
+    as.matrix() #|>
+    # as_data()
 
   # get bias values
   z <- model_data_spatial[distinct_idx,"travel_time"] |>
@@ -196,41 +196,42 @@ fit_model_multisp_pp_count_sm <- function(
   alpha <- alpha_mean + alpha_raw * alpha_sd
   # alpha <- normal(0, intercept_sd, dim = n_species)
 
-  # model bioregion effects as additive to landcover, so just expand the
-  # covariate set
-  x_all <- cbind(x, x_bioregion)
 
-  # # or, include interaction terms
+
+  # # model bioregion effects as additive to landcover, so just expand the
+  # # covariate set
+  # x_all <- cbind(x, x_bioregion)
+
+  # # model bioregion effects only as interactions with landcover, and expand
+  # the covariate set
+  x_interactions <- make_designmat_interactions(x, x_bioregion)
+  x_all <- cbind(x, x_interactions)
+
+  # # or, include main terms and interactions
   # x_interactions <- make_designmat_interactions(x, x_bioregion)
   # x_all <- cbind(x, x_bioregion, x_interactions)
 
   n_cov_abund_all <- ncol(x_all)
 
-  # regression coefficients for each species - no regularisation
-  beta <- normal(0,
-                 beta_sd,
-                 dim = c(n_cov_abund_all, n_species))
+  # # regression coefficients for each species - no regularisation
+  # beta <- normal(0,
+  #                beta_sd,
+  #                dim = c(n_cov_abund_all, n_species))
 
-  # regularised regression for some coefficients
+  # or: regularised regression for some coefficients
 
-  # non-regularised priors for the landcover main effects
-  #   beta_{X} ~ N(0, 10)
+  # non-regularised priors for the landcover main effects, but ridge regression
+  # for the bioregion main effects and any interactions, with fixed and manually
+  # tuned scale parameter to enforce potentially strong regularisation
 
-  # ridge regression for the bioregion main effects and any interactions, with
-  # fixed and manually tuned scale parameter to enforce potentially strong
-  # regularisation
-
-  #   beta_regularised_sd <- 0.5
-  #   beta_{X_other} ~ N(0, beta_scale)
-
-  # beta_regularised_sd <- 0.5
-  # beta_raw <- normal(0,
-  #                    1,
-  #                    dim = c(n_cov_abund_all, n_species))
-  # n_cov_other <- n_cov_abund_all - n_cov_abund
-  # beta_scale <- c(rep(beta_sd, n_cov_abund),
-  #                 rep(beta_regularised_sd, n_cov_other))
-  # beta <- sweep(beta_raw, 1, beta_scale, FUN = "*")
+  beta_regularised_sd <- 0.1
+  beta_raw <- normal(0,
+                     1,
+                     dim = c(n_cov_abund_all, n_species))
+  n_cov_other <- n_cov_abund_all - n_cov_abund
+  beta_scale <- c(rep(beta_sd, n_cov_abund),
+                  rep(beta_regularised_sd, n_cov_other))
+  beta <- sweep(beta_raw, 1, beta_scale, FUN = "*")
 
   x_beta_species <- x_all %*% beta
 
@@ -552,7 +553,7 @@ fit_model_multisp_pp_count_sm <- function(
   m <- model(alpha_mean, alpha_sd, alpha_raw,
              gamma_mean, gamma_sd, gamma_raw,
              delta,
-             beta,
+             beta_raw,
              # subrealm_sd, subrealm_svc_coef_raw,
              # bioregion_sd, bioregion_svc_coef_raw,
              sampling_re_raw, sampling_re_sd,
@@ -620,26 +621,31 @@ fit_model_multisp_pp_count_sm <- function(
   # use SMC to initialise the model
   # length(unlist(m$dag$example_parameters(free = TRUE)))
 
-  smc_output <- run_smc(m,
-                        n_particles = 2000,
-                        max_stages = 1000,
-                        n_prior_samples = 2000,
-                        compute_batch_size = 100)
+  # smc_output <- run_smc(m,
+  #                       n_particles = 500,
+  #                       max_stages = 100,
+  #                       n_prior_samples = 1000,
+  #                       compute_batch_size = 500)
+  #
+  # saveRDS(smc_output, "~/Desktop/smc_output.RDS")
+  # smc_output <- readRDS("~/Desktop/smc_output.RDS")
+  #
+  # smc_mean <- colMeans(smc_output$particles)
+  #
+  # # point mass initial values
+  # inits_point <- initials_from_free_states(m, t(smc_mean))[[1]]
+  #
+  # # these seem mostly good, except for variance parameters
+  # # try manually dropping those from the inits?
+  # variance_param_names <- c("alpha_sd", "gamma_sd", "sampling_re_sd", "sqrt_inv_size")
+  # variance_params_idx <- match(variance_param_names, names(inits_point))
+  # inits_point[variance_params_idx] <- NULL
 
-  saveRDS(smc_output, "~/Desktop/smc_output.RDS")
+  n_chains <- 50
 
-  smc_mean <- colMeans(smc_output$particles)
-
-  # point mass initial values
-  inits_point <- initials_from_free_states(m, t(smc_mean))[[1]]
-
-  # these seem mostly good, except for variance parameters
-
-  n_chains <- 20
-
-  # random inits per chain from the PMC particles
-  init_particles <- smc_output$particles[seq_len(n_chains), ]
-  inits_random <- initials_from_free_states(m, init_particles)
+  # # random inits per chain from the PMC particles
+  # init_particles <- smc_output$particles[seq_len(n_chains), ]
+  # inits_random <- initials_from_free_states(m, init_particles)
 
   n_burnin <- 2000
 
@@ -649,10 +655,10 @@ fit_model_multisp_pp_count_sm <- function(
   draws <- greta::mcmc(
     m,
     warmup = n_burnin,
-    # sampler = hmc(Lmin = Lmin, Lmax = Lmax),
+    sampler = hmc(Lmin = Lmin, Lmax = Lmax),
     n_samples = n_samples,
     chains = n_chains,
-    initial_values = inits_point
+    # initial_values = inits_point
   )
 
   mcmc_trace(

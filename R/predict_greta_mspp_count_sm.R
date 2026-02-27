@@ -31,29 +31,24 @@ predict_greta_mspp_count_sm <- function(
   x_bioregion_predict <- layer_values[!naidx, bioregion_names]
 
 
-  # # convert these into the spatial variation in the betas
-  # beta_eff_subrealm_predict <- x_subrealm_predict %*% subrealm_svc_coef
-  # # beta_eff_bioregion_predict <- x_bioregion_predict %*% bioregion_svc_coef
-  # beta_spatial_predict <- beta_eff_subrealm_predict #+ beta_eff_bioregion_predict
-  #
-  # beta_spatial_pos_predict <- exp(beta_spatial_predict)
-  #
-  # # make a matrix of  positive-constrained spatially-varying coefficients
-  # beta_spatial_predict <- sweep(beta_spatial_pos_predict, 2, beta_vec, FUN = "*")
-  #
-  # x_predict_tiled <- do.call(
-  #   cbind,
-  #   replicate(n_species, x_predict,
-  #             simplify = FALSE)
-  # )
-  #
-  # # multiply with beta elementwise
-  # x_predict_beta <- x_predict_tiled * beta_spatial_predict
-  #
-  # # get x * beta, for each species (columns), for each distinct pixel (rows)
-  # x_predict_beta_species <- x_predict_beta %*% t(blocks)
+  # # model bioregion effects as additive to landcover, so just expand the
+  # # covariate set
+  # x_all_predict <- cbind(x_predict, x_bioregion_predict)
 
-  x_all_predict <- cbind(x_predict, x_bioregion_predict)
+  # # model bioregion effects only as interactions with landcover, and expand
+  # the covariate set
+  x_interactions_predict <- make_designmat_interactions(x_predict,
+                                                        x_bioregion_predict)
+  x_all_predict <- cbind(x_predict, x_interactions_predict)
+  x_all_predict <- as_data(x_all_predict)
+
+  # # or, include main terms and interactions
+  # x_interactions_predict <- make_designmat_interactions(x_predict,
+  #                                                       x_bioregion_predict)
+  # x_all_predict <- cbind(x_predict,
+  #                        x_bioregion_predict,
+  #                        x_interactions_predict)
+
   x_predict_beta_species <- x_all_predict %*% beta
 
   log_lambda_larval_habitat_predict <- sweep(x_predict_beta_species, 2, alpha, FUN = "+")
