@@ -173,9 +173,24 @@ list(
     names(subrealm_layers)
   ),
 
+  # set the bioregion names, excluding some bioregions that are outside the area
+  # we are modelling
   tar_target(
     bioregion_names,
-    names(bioregion_layers)
+    names(bioregion_layers) |>
+      setdiff(
+        c(
+          "Sahel Acacia Savannas",
+          "Southern Sahara Deserts & Mountain Woodlands",
+          "South Mediterranean Mixed Woodlands & Forests",
+          "Northern Sahara Deserts, Savannas, & Marshes",
+          "Red Seas, Arabian Deserts & Salt Marshes",
+          "Seychelles & Comoros Tropical Islands",
+          "St Helena & Ascension Islands",
+          "South African Cape Shrublands & Mountain Forests"
+        )
+      )
+
   ),
 
 
