@@ -2,6 +2,7 @@ distplot <- function(
     rst,
     sp,
     colscheme = c(
+      "va",
       "mako",
       "rb",
       "magma",
@@ -33,32 +34,47 @@ distplot <- function(
       title = bquote(italic(.(spname)))
     )
 
+  limits <- switch(guide,
+                   prob = c(0, 1),
+                   none = NULL)
+
   p <- switch(
     colscheme,
+    va = p  +
+      scale_fill_gradient(
+        low = grey(0.9),
+        high = "navy",
+        na.value = "transparent",
+        limits = limits
+      ),
     mako = p  +
       scale_fill_viridis_c(
         option = "G",
         direction = -1,
-        na.value = "transparent"
+        na.value = "transparent",
+        limits = limits
       ),
     rb = p +
       scale_colour_distiller(
         palette = "RdBu",
         type = "div",
         aesthetics = c("fill"),
-        na.value = "transparent"
+        na.value = "transparent",
+        limits = limits
       ),
     magma = p +
       scale_fill_viridis_c(
         option = "A",
         direction = -1,
-        na.value = "transparent"
+        na.value = "transparent",
+        limits = limits
       ),
     rocket = p +
       scale_fill_viridis_c(
         option = "F",
         direction = -1,
-        na.value = "transparent"
+        na.value = "transparent",
+        limits = limits
       ),
     mono = p +
       scale_id_continuous(

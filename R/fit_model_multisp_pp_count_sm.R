@@ -2,13 +2,14 @@ fit_model_multisp_pp_count_sm <- function(
     model_data_spatial,
     target_covariate_names,
     target_species,
+    # subrealm_names,
+    bioregion_names,
     project_mask,
     image_name = "outputs/images/multisp_pp_count_sm.RData",
     n_burnin = 50,
     n_samples = 100,
     n_chains = 4
 ){
-
 
   model_data_spatial <- model_data_spatial |>
     filter(
@@ -33,12 +34,10 @@ fit_model_multisp_pp_count_sm <- function(
 
   distinct_coords <- model_data_spatial[distinct_idx, c("latitude", "longitude")]
 
-
   # get offset values from gambiae mechanistic model
   log_offset <- log(model_data_spatial[distinct_idx,"offset"])|>
     as.matrix() |>
     as_data()
-
 
   # get covariate values
   x <- model_data_spatial[distinct_idx,] |>
@@ -46,14 +45,31 @@ fit_model_multisp_pp_count_sm <- function(
     select(
       all_of(target_covariate_names)
     ) |>
-    as.matrix() |>
-    as_data()
+    as.matrix() #|>
+    # as_data()
+
+  # # get subrealm dummy values
+  # x_subrealm <- model_data_spatial[distinct_idx,] |>
+  #   as_tibble() |>
+  #   select(
+  #     all_of(subrealm_names)
+  #   ) |>
+  #   as.matrix() |>
+  #   as_data()
+
+  # get bioregion dummy values
+  x_bioregion <- model_data_spatial[distinct_idx,] |>
+    as_tibble() |>
+    select(
+      all_of(bioregion_names)
+    ) |>
+    as.matrix() #|>
+    # as_data()
 
   # get bias values
   z <- model_data_spatial[distinct_idx,"travel_time"] |>
     as.matrix() |>
     as_data()
-
 
   # number of cells in analysis data per Fithian model (not in raster)
   n_pixel <- nrow(x)
@@ -62,11 +78,15 @@ fit_model_multisp_pp_count_sm <- function(
   n_cov_abund <- ncol(x)
   n_cov_bias <- ncol(z)
 
+  # numbers of bioregion layers in use
+  # n_subrealm <- length(subrealm_names)
+  n_bioregion <- length(bioregion_names)
+
+
   # number of species
   n_species_with_bg <- unique(model_data_spatial$species) # includes NA
 
   n_species <- length(n_species_with_bg[!is.na(n_species_with_bg)])
-
 
   ## sampling methods
   sm_freq <- table(
@@ -165,14 +185,170 @@ fit_model_multisp_pp_count_sm <- function(
   # gamma <- normal(0, intercept_sd, dim = n_species)
 
   # intercept and slopes for abundance rate
-  alpha <- normal(0, intercept_sd, dim = n_species)
 
-  # force beta to be positive, so that abundance is forced to be higher in
-  # non-bare-gound landcover types
-  beta <- normal(0,
-                 beta_sd,
-                 dim = c(n_cov_abund, n_species),
-                 truncation = c(0, Inf))
+  # sampling_re_raw should be centred around 0 but they are mostly negative.
+  # Maybe they are compensating for a restrictive prior structure on alpha?
+
+  # the intercept should not particularly close to 0, since it encdes an average log abundance
+  alpha_mean <- normal(0, intercept_sd)
+  alpha_sd <- normal(0, 1, truncation = c(0, Inf))
+  alpha_raw <- normal(0, 1, dim = n_species)
+  alpha <- alpha_mean + alpha_raw * alpha_sd
+  # alpha <- normal(0, intercept_sd, dim = n_species)
+
+
+
+  # # model bioregion effects as additive to landcover, so just expand the
+  # # covariate set
+  # x_all <- cbind(x, x_bioregion)
+
+  # # model bioregion effects only as interactions with landcover, and expand
+  # the covariate set
+  x_interactions <- make_designmat_interactions(x, x_bioregion)
+  x_all <- cbind(x, x_interactions)
+
+  # # or, include main terms and interactions
+  # x_interactions <- make_designmat_interactions(x, x_bioregion)
+  # x_all <- cbind(x, x_bioregion, x_interactions)
+
+  n_cov_abund_all <- ncol(x_all)
+
+  # # regression coefficients for each species - no regularisation
+  # beta <- normal(0,
+  #                beta_sd,
+  #                dim = c(n_cov_abund_all, n_species))
+
+  # or: regularised regression for some coefficients
+
+  # non-regularised priors for the landcover main effects, but ridge regression
+  # for the bioregion main effects and any interactions, with fixed and manually
+  # tuned scale parameter to enforce potentially strong regularisation
+
+  beta_regularised_sd <- 0.1
+  beta_raw <- normal(0,
+                     1,
+                     dim = c(n_cov_abund_all, n_species))
+  n_cov_other <- n_cov_abund_all - n_cov_abund
+  beta_scale <- c(rep(beta_sd, n_cov_abund),
+                  rep(beta_regularised_sd, n_cov_other))
+  beta <- sweep(beta_raw, 1, beta_scale, FUN = "*")
+
+  x_beta_species <- x_all %*% beta
+
+  # # for each covariate, model beta as a positive-constrained spatially-varying
+  # # covariate. Positive so that abundance is forced to be higher in
+  # # non-bare-gound landcover types, spatially varying to account for: a)
+  # # differences in definition of landcover types in different parts of Africa
+  # # (e.g. 'grassland' in the Sahel is likely to be very different from in the
+  # # southern Congo basin), b) differences in species phenotypes across Africa,
+  # # and c) residual spatial autocorrelation in distributions (e.g. due to
+  # # dispersal limitation in the coastal species)
+  #
+  # # define the spatially varying coefficients (for each species and landcover
+  # # type) with a main effect, plus a subrealm-varying coefficient, plus a
+  # # bioregion-varying coefficient, with shrinkage applied to these increasing
+  # # levels of complexity
+  #
+  # # load the matrices of subrealm and bioregion dummy variables at the distinct locations
+  # n_svc <- n_species * n_cov_abund
+  #
+  # # define subrealm weights (one per subrealm x SVC combination)
+  # subrealm_sd <- normal(0, 1,
+  #                       truncation = c(0, Inf))
+  # subrealm_svc_coef_raw <- normal(0, 1,
+  #                                 dim = c(n_subrealm, n_svc))
+  # subrealm_svc_coef <- subrealm_svc_coef_raw * subrealm_sd
+  #
+  # # # define bioregion weights (one per bioregion x SVC combination)
+  # # bioregion_sd <- normal(0, 1,
+  # #                        truncation = c(0, Inf))
+  # # bioregion_svc_coef_raw <- normal(0, 1,
+  # #                                  dim = c(n_bioregion, n_svc))
+  # # bioregion_svc_coef <- bioregion_svc_coef_raw * bioregion_sd
+  #
+  # # convert these into the spatial variation in the betas
+  # beta_eff_subrealm <- x_subrealm %*% subrealm_svc_coef
+  # # beta_eff_bioregion <- x_bioregion %*% bioregion_svc_coef
+  # beta_spatial <- beta_eff_subrealm #+ beta_eff_bioregion
+  #
+  # # make these positive (median 0)
+  # beta_spatial_pos <- exp(beta_spatial)
+  # # beta_spatial_pos <- ones(nrow(distinct_coords), n_svc)
+  #
+  # # # simulate to check there variation
+  # # sims <- calculate(beta_spatial[, 1], nsim = 9)
+  # # par(mfrow = c(3, 3))
+  # # for(i in seq_len(9)) {
+  # #   plot(distinct_coords[, 2:1],
+  # #        pch = 16,
+  # #        cex = 0.5 * plogis(sims[[1]][i, , 1]),
+  # #        asp = 0.8)
+  # # }
+  #
+  # # model the main (species by landcover type) effects separately as
+  # # positive-constrained coefficients and combine them. Note that we could put
+  # # the log of these in the earlier model, but it is helpful to be able to
+  # # specify their positive-constrained values in this matrix orientation when
+  # # initialising
+  #
+  # # these are constrained to be positive
+  # beta <- normal(0,
+  #                beta_sd,
+  #                dim = c(n_cov_abund, n_species),
+  #                truncation = c(0, Inf))
+  #
+  # # make them as a matrix for plotting code, but flatten for combining into SVCs
+  # beta_vec <- beta
+  # dim(beta_vec) <- c(n_svc, 1)
+  #
+  # # make a matrix of  positive-constrained spatially-varying coefficients
+  # beta_spatial <- sweep(beta_spatial_pos, 2, beta_vec, FUN = "*")
+  #
+  # # now we need to combine them with the covariates to model
+  # # log_lambda_larval_habitat spatially
+  #
+  # # duplicate x horizontally, n_species times
+  # x_tiled <- do.call(
+  #   cbind,
+  #   replicate(n_species, x,
+  #             simplify = FALSE)
+  # )
+  #
+  # # multiply with beta elementwise
+  # x_beta <- x_tiled * beta_spatial
+  #
+  # # collapse down into n_pixels by n_species matrix, by
+  # # matrix multiplying by a block matrix?
+  # blocks <- matrix(0,
+  #                  n_species,
+  #                  n_species * n_cov_abund)
+  # for (species in seq_len(n_species)) {
+  #   cols <- (species - 1) * n_cov_abund + seq_len(n_cov_abund)
+  #   blocks[species, cols] <- 1
+  # }
+  #
+  # # get x * beta, for each species (columns), for each distinct pixel (rows)
+  # x_beta_species <- x_beta %*% t(blocks)
+  #
+  # # # the code above is doing the following, but faster
+  # # res <- matrix(NA,
+  # #               nrow = n_pixels,
+  # #               ncol = n_species)
+  # # for (species in seq_len(n_species)) {
+  # #   cols <- (species - 1) * n_cov_abund + seq_len(n_cov_abund)
+  # #   res[, species] <- rowSums(x_beta[, cols])
+  # # }
+  # # # check
+  # # identical(res, x_beta_species)
+
+
+  # add alpha to get log larval habitat for each species across all sites based
+  # on env covariates
+  log_lambda_larval_habitat <- sweep(x_beta_species, 2, alpha, FUN = "+")
+  # log_lambda_larval_habitat <- sweep(x %*% beta, 2, alpha, FUN = "+")
+  # log_lambda_larval_habitat <- sweep(zeros(n_pixel, n_species), 2, alpha, FUN = "+")
+
+
 
   # informative priors on gamma and delta so exp(log_bias), i.e., bias,
   # has range around (0, 1) for z in (0, 1)
@@ -180,16 +356,20 @@ fit_model_multisp_pp_count_sm <- function(
   # gamma_sd <- 0.1
 
   delta_sd <- 0.5
-  gamma_sd <- 0.1
+  # gamma_sd <- 0.1
 
 
-  gamma <- normal(0, gamma_sd, dim = n_species)
-  delta <- normal(1, delta_sd, dim = c(n_cov_bias), truncation = c(0, Inf))
+  # give gamma a hierarchical mean, to share information across them in
+  # reporting bias for resence-only data
+  gamma_mean <- normal(0, 10)
+  gamma_sd <- normal(0, 1, truncation = c(0, Inf))
+  gamma_raw <- normal(0, 1, dim = n_species)
+  gamma <- gamma_mean + gamma_raw * gamma_sd
+  # gamma <- normal(0, gamma_sd, dim = n_species)
 
-  # log rates across all sites
-  # larval habitat based on env covariates
-  log_lambda_larval_habitat <- sweep(x %*% beta, 2, alpha, FUN = "+")
-  # log_lambda_larval_habitat <- sweep(zeros(n_pixel, n_species), 2, alpha, FUN = "+")
+  delta <- normal(1, delta_sd,
+                  dim = c(n_cov_bias),
+                  truncation = c(0, Inf))
 
 
   # offset from calculated gambiae adult survival given habitat
@@ -277,7 +457,7 @@ fit_model_multisp_pp_count_sm <- function(
 
   #### count data likelihood
 
-  log_lambda_obs_count <-log_lambda[count_data_loc_sp_idx] +
+  log_lambda_obs_count <- log_lambda[count_data_loc_sp_idx] +
     sampling_re[count_data_index$sampling_method_id]
 
   count_data_response <- model_data |>
@@ -286,7 +466,31 @@ fit_model_multisp_pp_count_sm <- function(
     as_data()
 
   count_data_response_expected <- exp(log_lambda_obs_count)
-  distribution(count_data_response) <- poisson(count_data_response_expected)
+
+  # # Poisson version
+  # distribution(count_data_response) <- poisson(count_data_response_expected)
+
+  # define negative binomial distribution, with penalised complexity prior on
+  # the dispersion parameter
+  # https://github.com/stan-dev/rstanarm/issues/275
+  # sqrt_inv_size <- normal(0, 0.5, truncation = c(0, Inf))
+  # size <- (1 / sqrt_inv_size) ^ 2
+  # mu <- count_data_response_expected
+  # prob_vec <- size / (size + mu)
+  # distribution(count_data_response) <- negative_binomial(size = size,
+  #                                                        prob = prob_vec)
+
+  # option with diffrent dispersion for each species
+  species_index <- model_data |>
+    filter(data_type == "count") |>
+    pull(species_id)
+  sqrt_inv_size <- normal(0, 0.5, truncation = c(0, Inf), dim = n_species)
+  mu <- count_data_response_expected
+  size <- (1 / sqrt_inv_size) ^ 2
+  size_vec <- size[species_index]
+  prob_vec <- size_vec / (size_vec + mu)
+  distribution(count_data_response) <- negative_binomial(size_vec, prob_vec)
+
 
   #### PA likelihood
 
@@ -335,7 +539,7 @@ fit_model_multisp_pp_count_sm <- function(
   log_lambda_obs_pobg <-log_lambda[pobg_data_loc_sp_idx] +
     sampling_re[pobg_data_index$sampling_method_id]
 
-  po_data_response_expected <-   exp(
+  po_data_response_expected <- exp(
     log_lambda_obs_pobg +
       log_bias_obs_pobg +
       log(area_pobg)
@@ -346,8 +550,14 @@ fit_model_multisp_pp_count_sm <- function(
   #######################
 
   # define and fit the model by MAP and MCMC
-
-  m <- model(alpha, beta, gamma, delta, sampling_re_raw, sampling_re_sd)
+  m <- model(alpha_mean, alpha_sd, alpha_raw,
+             gamma_mean, gamma_sd, gamma_raw,
+             delta,
+             beta_raw,
+             # subrealm_sd, subrealm_svc_coef_raw,
+             # bioregion_sd, bioregion_svc_coef_raw,
+             sampling_re_raw, sampling_re_sd,
+             sqrt_inv_size)
 
 
   ############
@@ -404,70 +614,52 @@ fit_model_multisp_pp_count_sm <- function(
     output_prefix = "outputs/figures/ppc_sm/prior"
   )
 
-
-
-
   ###################
   # fit model
   ###################
 
+  # use SMC to initialise the model
+  # length(unlist(m$dag$example_parameters(free = TRUE)))
 
-  optim <- opt(
-    m,
-    optimiser = adam(learning_rate = 0.01),
-    max_iterations = 5e4
-  )
-
-  #optim <- opt(m, max_iterations = 1e5) # with sinka species plus coluzzii this converges
-
-  # should be 0 if converged
-  optim$convergence
-  print(
-    paste(
-      "optimiser value is",
-      optim$convergence,
-      "; it should be 0 if optimiser converged"
-    )
-  )
+  # smc_output <- run_smc(m,
+  #                       n_particles = 500,
+  #                       max_stages = 100,
+  #                       n_prior_samples = 1000,
+  #                       compute_batch_size = 500)
   #
+  # saveRDS(smc_output, "~/Desktop/smc_output.RDS")
+  # smc_output <- readRDS("~/Desktop/smc_output.RDS")
   #
-  #optim$par
-
-  init_vals <- inits_from_opt(
-    optim,
-    n_chains = n_chains
-  )
-
-  # get inits using fitian method
-  # doesn't work because gets gammas that are outside of range
-  # of priors
-  # # fixed by setting delta as > 0 but not yet tested
-  # inits_fithian <- fithian_inits(
-  #   dat = model_data,
-  #   target_species = target_species,
-  #   n_pixel = n_pixel
-  # )
+  # smc_mean <- colMeans(smc_output$particles)
   #
-  # init_vals <- inits(
-  #   n_chains = n_chains,
-  #   nsp = length(target_species),
-  #   ncv = length(target_covariate_names),
-  #   ina = inits_fithian$alpha,
-  #   inb = inits_fithian$beta,
-  #   ing = inits_fithian$gamma,
-  #   ind = inits_fithian$delta
-  # )
+  # # point mass initial values
+  # inits_point <- initials_from_free_states(m, t(smc_mean))[[1]]
+  #
+  # # these seem mostly good, except for variance parameters
+  # # try manually dropping those from the inits?
+  # variance_param_names <- c("alpha_sd", "gamma_sd", "sampling_re_sd", "sqrt_inv_size")
+  # variance_params_idx <- match(variance_param_names, names(inits_point))
+  # inits_point[variance_params_idx] <- NULL
 
+  n_chains <- 50
+
+  # # random inits per chain from the PMC particles
+  # init_particles <- smc_output$particles[seq_len(n_chains), ]
+  # inits_random <- initials_from_free_states(m, init_particles)
+
+  n_burnin <- 2000
+
+  Lmax <- 20
+  Lmin <- round(Lmax / 2)
 
   draws <- greta::mcmc(
     m,
     warmup = n_burnin,
+    sampler = hmc(Lmin = Lmin, Lmax = Lmax),
     n_samples = n_samples,
     chains = n_chains,
-    initial_values = init_vals
+    # initial_values = inits_point
   )
-
-  print(summary(draws))
 
   mcmc_trace(
     x = draws,
@@ -501,7 +693,9 @@ fit_model_multisp_pp_count_sm <- function(
     "outputs/figures/traceplots/sm_sampling.png"
   )
 
-  coda::gelman.diag(draws, autoburnin = FALSE)
+  coda::gelman.diag(draws,
+                    autoburnin = FALSE,
+                    multivariate = FALSE)
 
   ############
   # posterior predictive checks

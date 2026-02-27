@@ -3,6 +3,9 @@ predict_greta_mspp_count_sm <- function(
     prediction_layer,
     offset,
     target_species,
+    target_covariate_names = target_covariate_names,
+    # subrealm_names = subrealm_names,
+    bioregion_names = bioregion_names,
     output_file_prefix
 ){
 
@@ -24,7 +27,33 @@ predict_greta_mspp_count_sm <- function(
 
   log_lambda_adults_predict <- log_offset_pred
 
-  log_lambda_larval_habitat_predict <- sweep(x_predict %*% beta, 2, alpha, FUN = "+")
+  # x_subrealm_predict <- layer_values[!naidx, subrealm_names]
+  x_bioregion_predict <- layer_values[!naidx, bioregion_names]
+
+
+  # # model bioregion effects as additive to landcover, so just expand the
+  # # covariate set
+  # x_all_predict <- cbind(x_predict, x_bioregion_predict)
+
+  # # model bioregion effects only as interactions with landcover, and expand
+  # the covariate set
+  x_interactions_predict <- make_designmat_interactions(x_predict,
+                                                        x_bioregion_predict)
+  x_all_predict <- cbind(x_predict, x_interactions_predict)
+  x_all_predict <- as_data(x_all_predict)
+
+  # # or, include main terms and interactions
+  # x_interactions_predict <- make_designmat_interactions(x_predict,
+  #                                                       x_bioregion_predict)
+  # x_all_predict <- cbind(x_predict,
+  #                        x_bioregion_predict,
+  #                        x_interactions_predict)
+
+  x_predict_beta_species <- x_all_predict %*% beta
+
+  log_lambda_larval_habitat_predict <- sweep(x_predict_beta_species, 2, alpha, FUN = "+")
+
+  # log_lambda_larval_habitat_predict <- sweep(x_predict %*% beta, 2, alpha, FUN = "+")
 
   log_lambda_combine_predict <- sweep(log_lambda_larval_habitat_predict, 1, log_lambda_adults_predict, "+")
 
