@@ -445,7 +445,7 @@ list(
       landcover_covs,
       prox_to_sea,
 
-      subrealm_layers,
+      # subrealm_layers,
       bioregion_layers,
 
       bias_tt_5
@@ -457,7 +457,7 @@ list(
     subset_covariate_rast(
       covariate_rast_5_all,
       target_covariate_names = target_covariate_names,
-      subrealm_names = subrealm_names,
+      # subrealm_names = subrealm_names,
       bioregion_names = bioregion_names,
       bias_names = bias_names
     )
@@ -790,7 +790,7 @@ list(
            !names(covariate_rast_5_all) %in%
              c(
                target_covariate_names,
-               subrealm_names,
+               # subrealm_names,
                bioregion_names,
                #offset_names,
                bias_names
@@ -1122,7 +1122,7 @@ list(
      model_data_spatial = model_data_spatial,
      target_covariate_names = target_covariate_names,
      target_species = target_species,
-     subrealm_names = subrealm_names,
+     # subrealm_names = subrealm_names,
      bioregion_names = bioregion_names,
      project_mask = project_mask_5,
      image_name = "outputs/images/multisp_pp_count_sm.RData",
@@ -1140,7 +1140,7 @@ list(
      offset = offsets_avg_10,
      target_species = target_species,
      target_covariate_names = target_covariate_names,
-     subrealm_names = subrealm_names,
+     # subrealm_names = subrealm_names,
      bioregion_names = bioregion_names,
      output_file_prefix = "outputs/rasters/multisp_pp_count_sm"
    )

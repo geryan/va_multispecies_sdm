@@ -2,7 +2,7 @@ fit_model_multisp_pp_count_sm <- function(
     model_data_spatial,
     target_covariate_names,
     target_species,
-    subrealm_names,
+    # subrealm_names,
     bioregion_names,
     project_mask,
     image_name = "outputs/images/multisp_pp_count_sm.RData",
@@ -79,7 +79,7 @@ fit_model_multisp_pp_count_sm <- function(
   n_cov_bias <- ncol(z)
 
   # numbers of bioregion layers in use
-  n_subrealm <- length(subrealm_names)
+  # n_subrealm <- length(subrealm_names)
   n_bioregion <- length(bioregion_names)
 
 

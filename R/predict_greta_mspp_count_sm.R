@@ -4,7 +4,7 @@ predict_greta_mspp_count_sm <- function(
     offset,
     target_species,
     target_covariate_names = target_covariate_names,
-    subrealm_names = subrealm_names,
+    # subrealm_names = subrealm_names,
     bioregion_names = bioregion_names,
     output_file_prefix
 ){
