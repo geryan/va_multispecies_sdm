@@ -669,7 +669,7 @@ list(
  tar_target(
    raw_data_file,
    #"data/tabular/VA_FULL_DATA_20250716.csv",
-   "data/tabular/VA_DATA_20260202.csv",
+   "data/tabular/VA_DATA_20260218.csv",
    format = "file"
  ),
 
@@ -913,6 +913,37 @@ list(
      bioregions_v
    )
  ),
+
+ tar_terra_vect(
+   point_hulls_100,
+   make_point_hull(
+     record_data_spatial,
+     expert_maps,
+     buffer_width = 1e5
+   )
+ ),
+
+ tar_terra_vect(
+   point_hulls_500,
+   make_point_hull(
+     record_data_spatial,
+     expert_maps,
+     buffer_width = 5e5
+   )
+ ),
+
+ tar_terra_vect(
+   point_hulls_1000,
+   make_point_hull(
+     record_data_spatial,
+     expert_maps,
+     buffer_width = 1e6
+   )
+ ),
+
+ # make hulls with buffer around points and polygonise
+ # send vector / mapped versions with no fuzzy buffer
+ # send to MS with maps of points
 
  # make offset layers from these hulls
  #

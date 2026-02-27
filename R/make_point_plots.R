@@ -1,9 +1,16 @@
 make_point_plots <- function(
     model_data_spatial,
     expert_maps,
-    new_mask
+    new_mask,
+    plot_species = NULL,
+    dir = "outputs/figures/point_plots"
 ){
 
+
+  if(!is.null(plot_species)){
+    model_data_spatial <- model_data_spatial |>
+      filter(species %in% plot_species)
+  }
 
   # prepare data for plotting, nest by species
 
@@ -40,7 +47,8 @@ make_point_plots <- function(
 
       ggsave(
         filename = sprintf(
-          "outputs/figures/point_plots/points_%s.png",
+          "%s/points_%s.png",
+          dir,
           sp
         ),
         plot = p,
@@ -66,17 +74,26 @@ make_point_plots <- function(
 
   exsp <- expert_maps$species
 
+  if(!is.null(plot_species)){
+    map_type <- case_when(
+      alsp %in% exsp ~ "exp",
+      "gambiae" %in% exsp & alsp %in% c("coluzzii", "gambiae_complex") ~ "exp",
+      TRUE ~ "plain"
+    )
+
+    map_exp_sp <- ifelse(
+      alsp %in% c("coluzzii", "gambiae_complex"),
+      "gambiae",
+      alsp
+    )
+  }
+
   map_type <- case_when(
     alsp %in% exsp ~ "exp",
-    "gambiae" %in% exsp & alsp %in% c("coluzzii", "gambiae_complex") ~ "exp",
     TRUE ~ "plain"
   )
 
-  map_exp_sp <- ifelse(
-    alsp %in% c("coluzzii", "gambiae_complex"),
-    "gambiae",
-    alsp
-  )
+  map_exp_sp <- alsp
 
 
   mapply(
@@ -100,7 +117,8 @@ make_point_plots <- function(
 
         ggsave(
           filename = sprintf(
-            "outputs/figures/point_plots/exp_points_%s.png",
+            "%s/exp_points_%s.png",
+            dir,
             sp
           ),
           plot = p,
