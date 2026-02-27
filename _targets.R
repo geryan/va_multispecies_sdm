@@ -632,7 +632,7 @@ list(
 
   tar_target(
     n_bg,
-    2000
+    250
   ),
 
   tar_target(
@@ -846,7 +846,7 @@ list(
        data_type,
        sampling_method
      ) |>
-     slice_sample(prop = 0.5) |>
+     # slice_sample(prop = 0.5) |>
      ungroup()
  ),
 
