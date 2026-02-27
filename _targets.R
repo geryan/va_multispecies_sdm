@@ -219,6 +219,27 @@ list(
 
   ),
 
+  # this reads in the bioregions as a single file
+  # but it's useless for passing on the categories
+  # only good if want to make a pretty picture of it
+  tar_terra_rast(
+    bioregions_all,
+    get_bioregions(project_mask = project_mask_5)
+  ),
+
+  tar_terra_vect(
+    bioregions_v,
+    get_bioregions(
+      project_mask = project_mask_5,
+      vect = TRUE
+    )
+  ),
+
+  # this returns a stack of layers 1 bioregion each
+  tar_terra_rast(
+    bioregion_stack,
+    split_bioregions(project_mask = project_mask_5)
+  ),
 
   # layers from Malaria Atlas Project
   #
@@ -681,7 +702,7 @@ list(
  tar_target(
    raw_data_file,
    #"data/tabular/VA_FULL_DATA_20250716.csv",
-   "data/tabular/VA_DATA_20260202.csv",
+   "data/tabular/VA_DATA_20260218.csv",
    format = "file"
  ),
 
@@ -821,6 +842,7 @@ list(
    )
  ),
 
+ # get only the variables of interest
  tar_target(
    record_data_spatial,
    record_data_spatial_all |>
@@ -889,7 +911,8 @@ list(
    make_data_summary_table(model_data_spatial),
  ),
 
-
+ # table summary of number of records where each species
+ # was detected or not detected
  tar_target(
    pa_data_table,
    model_data_spatial |>
@@ -911,6 +934,78 @@ list(
        undetected = p0
      )
  ),
+
+ # make buffered convex hull for species without expert opn layer
+ tar_terra_vect(
+   convex_hulls,
+   make_convex_hull(
+     record_data_spatial,
+     expert_maps
+   )
+ ),
+
+ tar_terra_vect(
+   bioregion_hulls,
+   make_bioregion_hull(
+     record_data_spatial,
+     expert_maps,
+     bioregions_v
+   )
+ ),
+
+ tar_terra_vect(
+   point_hulls_100,
+   make_point_hull(
+     record_data_spatial,
+     expert_maps,
+     buffer_width = 1e5
+   )
+ ),
+
+ tar_terra_vect(
+   point_hulls_500,
+   make_point_hull(
+     record_data_spatial,
+     expert_maps,
+     buffer_width = 5e5
+   )
+ ),
+
+ tar_terra_vect(
+   point_hulls_1000,
+   make_point_hull(
+     record_data_spatial,
+     expert_maps,
+     buffer_width = 1e6
+   )
+ ),
+
+ # make hulls with buffer around points and polygonise
+ # send vector / mapped versions with no fuzzy buffer
+ # send to MS with maps of points
+
+ # make offset layers from these hulls
+ #
+ #
+ tar_terra_rast(
+   convex_offset_maps,
+   make_expert_offset_maps(
+     convex_hulls,
+     project_mask_5,
+     buffer_km = 1000
+   )
+ ),
+
+ tar_terra_rast(
+   bioregion_offset_maps,
+   make_expert_offset_maps(
+     bioregion_hulls,
+     project_mask_5,
+     buffer_km = 1000
+   )
+ ),
+
+
 
  ## plots before modelling
 
