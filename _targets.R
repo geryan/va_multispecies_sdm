@@ -669,7 +669,7 @@ list(
  tar_target(
    raw_data_file,
    #"data/tabular/VA_FULL_DATA_20250716.csv",
-   "data/tabular/VA_DATA_20260202.csv",
+   "data/tabular/VA_DATA_20260218.csv",
    format = "file"
  ),
 
