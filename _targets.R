@@ -87,6 +87,27 @@ list(
     )
   ),
 
+  # load the bare landcover
+  tar_terra_rast(
+    landcover_bare_raw,
+    get_landcovers(
+      vars = c(
+        "bare"
+      ),
+      path = "data/raster/geodata/"
+    )
+  ),
+
+  tar_terra_rast(
+    landcover_bare,
+    landcover_bare_raw |>
+      aggregate(fact = 5) |>
+      crop(y = project_mask_5) |>
+      resample(y = project_mask_5) |>
+      fill_na_with_nearest_mean(maxRadiusCell = 50) |>
+      mask(mask = project_mask_5)
+  ),
+
   tar_terra_rast(
     water_mask_5,
     make_water_mask(
