@@ -22,6 +22,10 @@ add_pa_points_list <- function(
           species == x,
           data_type != presence
         ) |>
+        # plot 1s on top
+        arrange(
+          presence
+        ) |>
         mutate(
           detected = case_when(
             presence == 1 ~ "Detected",
