@@ -16,13 +16,13 @@ make_distribution_plots <- function(
 ) {
 
 
-  dist_plots_mako <- distplotlist(
+  dist_plots_va <- distplotlist(
     pred_dist,
-    colscheme = "mako"
+    colscheme = "va"
   )
 
   saveplotlist(
-    dist_plots_mako,
+    dist_plots_va,
     dir = plot_dir,
     prefix = "distribution"
   )
@@ -39,13 +39,13 @@ make_distribution_plots <- function(
   )
 
 
-  dist_plots_mako_points <- add_pa_points_list(
-    dist_plots_mako,
+  dist_plots_va_points <- add_pa_points_list(
+    dist_plots_va,
     model_data_spatial
   )
 
   saveplotlist(
-    dist_plots_mako_points,
+    dist_plots_va_points,
     dir = plot_dir,
     prefix = "distpoints"
   )
@@ -62,7 +62,6 @@ make_distribution_plots <- function(
     dir = plot_dir,
     prefix = "distpoints_rb"
   )
-
 
 
 }

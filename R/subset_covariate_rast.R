@@ -12,10 +12,18 @@
 subset_covariate_rast <- function(
   covariate_rast_all,
   target_covariate_names = NULL,
+  # subrealm_names = NULL,
+  bioregion_names = NULL,
   offset_names = NULL,
   bias_names = NULL
 ) {
 
-  covariate_rast_all[[c(offset_names, target_covariate_names, bias_names)]]
+  covariate_rast_all[[c(
+    target_covariate_names,
+    # subrealm_names,
+    bioregion_names,
+    offset_names,
+    bias_names
+  )]]
 
 }
