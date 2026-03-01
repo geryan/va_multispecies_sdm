@@ -647,6 +647,7 @@ list(
     )
   ),
 
+
   tar_seed_set(
     tar_seed_create("bg_points")
   ),
@@ -876,6 +877,7 @@ list(
      ungroup()
  ),
 
+ # put together with background data
  tar_target(
    model_data_spatial_no_offset,
    bind_rows(
@@ -938,6 +940,7 @@ list(
  # make buffered convex hull for species without expert opn layer
  tar_terra_vect(
    convex_hulls,
+   # consider adding buffer to hull before buffering
    make_convex_hull(
      record_data_spatial,
      expert_maps
@@ -980,6 +983,8 @@ list(
    )
  ),
 
+
+
  # make hulls with buffer around points and polygonise
  # send vector / mapped versions with no fuzzy buffer
  # send to MS with maps of points
@@ -1005,7 +1010,15 @@ list(
    )
  ),
 
-
+ tar_terra_rast(
+   range_offsets,
+   combine_range_maps(
+     expert_offset_maps,
+     non_expert_offset_maps = bioregion_offset_maps,
+     target_species,
+     project_mask = project_mask_5
+   )
+ ),
 
  ## plots before modelling
 
