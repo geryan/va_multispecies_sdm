@@ -5,19 +5,19 @@ target_spp <- function(){
   c(
     "arabiensis", # in sinka 2010
     "coluzzii",
-    "coustani",
+    # "coustani",
     "funestus", # in sinka 2010
     "gambiae",  # in sinka 2010
-    "maculipalpis",
+    # "maculipalpis",
     "melas", # in sinka 2010
     "merus", # in sinka 2010
     "moucheti", # in sinka 2010
-    "nili",  # in sinka 2010
-    "pharoensis",
-    "quadriannulatus",
-    "rufipes",
-    "squamosus",
-    "ziemanni"#, # up to here have >100 unique locations (and >=68 presences)
+    "nili"  # in sinka 2010
+    # "pharoensis",
+    # "quadriannulatus",
+    # "rufipes",
+    # "squamosus",
+    # "ziemanni"#, # up to here have >100 unique locations (and >=68 presences)
     # "pretoriensis", # here down have >30 unique locations (and >20 unique site presences)
     # "rivulorum",
     # "leesoni",

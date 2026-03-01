@@ -87,6 +87,27 @@ list(
     )
   ),
 
+  # load the bare landcover
+  tar_terra_rast(
+    landcover_bare_raw,
+    get_landcovers(
+      vars = c(
+        "bare"
+      ),
+      path = "data/raster/geodata/"
+    )
+  ),
+
+  tar_terra_rast(
+    landcover_bare,
+    landcover_bare_raw |>
+      aggregate(fact = 5) |>
+      crop(y = project_mask_5) |>
+      resample(y = project_mask_5) |>
+      fill_na_with_nearest_mean(maxRadiusCell = 50) |>
+      mask(mask = project_mask_5)
+  ),
+
   tar_terra_rast(
     water_mask_5,
     make_water_mask(
@@ -117,6 +138,61 @@ list(
       dist_from_sea
     )
   ),
+
+  # One Earth Bioregions SpatVector file
+  tar_terra_vect(
+    oneearth_vect,
+    make_oneearth(
+      mask = project_mask_5
+    )
+  ),
+
+  # multiband raster of smoothed dummy variables for bioregions
+  tar_terra_rast(
+    bioregion_layers,
+    make_smooth_dummies(
+      oneearth_vect,
+      mask = project_mask_5,
+      level = "bioregion"
+    )
+  ),
+
+  # multiband raster of smoothed dummy variables for subrealms
+  tar_terra_rast(
+    subrealm_layers,
+    make_smooth_dummies(
+      oneearth_vect,
+      mask = project_mask_5,
+      level = "subrealm"
+    )
+  ),
+
+  # the names of the dummy variables
+  tar_target(
+    subrealm_names,
+    names(subrealm_layers)
+  ),
+
+  # set the bioregion names, excluding some bioregions that are outside the area
+  # we are modelling
+  tar_target(
+    bioregion_names,
+    names(bioregion_layers) |>
+      setdiff(
+        c(
+          "Sahel Acacia Savannas",
+          "Southern Sahara Deserts & Mountain Woodlands",
+          "South Mediterranean Mixed Woodlands & Forests",
+          "Northern Sahara Deserts, Savannas, & Marshes",
+          "Red Seas, Arabian Deserts & Salt Marshes",
+          "Seychelles & Comoros Tropical Islands",
+          "St Helena & Ascension Islands",
+          "South African Cape Shrublands & Mountain Forests"
+        )
+      )
+
+  ),
+
 
   # cleaning to fills NAs within continent with very small number
   tar_terra_rast(
@@ -164,7 +240,6 @@ list(
     bioregion_stack,
     split_bioregions(project_mask = project_mask_5)
   ),
-
 
   # layers from Malaria Atlas Project
   #
@@ -360,7 +435,6 @@ list(
     } else{
       rast("/Users/gryan/Documents/tki_work/vector_atlas/africa_anopheles_sampling_bias/outputs/tt_by_country.tif")
     }
-    # rast("/Users/gryan/Documents/tki_work/vector_atlas/africa_anopheles_sampling_bias/outputs/tt_by_country.tif")
   ),
 
   # that this doesn't quite match the mask layer suggests I need to redo
@@ -390,13 +464,6 @@ list(
     check_no_mismatched_nas(
       proj_mask = project_mask_5,
       offsets_5[[1]],
-      # built_volume_5,
-      # evi_5,
-      # tcb_5,
-      # lst_night_5,
-      # elevation_5,
-      # soil_clay_5,
-      # footprint_5,
       landcover_covs,
       prox_to_sea,
       bias_tt_5
@@ -406,13 +473,6 @@ list(
   tar_target(
     target_covariate_names,
     c(
-      #"built_volume",
-      #"evi", # correlates with pressure_mean rainfall_mean and solrad_mean
-      #"tcb",
-      #"lst_night",
-      # "elevation",
-      # "footprint", # correlates with built_volume and cropland
-      #"soil_clay",
 
       # only use the worldcover landcover classes, in fractional cover (0-1)
       # form, excluding the obviously unsuitable habitat (bare, snow, etc)
@@ -426,33 +486,8 @@ list(
       "mangroves",
 
       # and proximity to sea, for merus and melas
-      "prox_to_sea",
+      "prox_to_sea"
 
-      # bioregions - hashed out ones unlikely to use
-      "AT02",
-      "AT05",
-      "AT06",
-      "AT07",
-      "AT08",
-      "AT09",
-      "AT10",
-      "AT11",
-      "AT12",
-      "AT13",
-      "AT14",
-      "AT15",
-      "AT16",
-      "AT17",
-      #"AT18",
-      "AT19",
-      "AT20",
-      "AT21",
-      "AT22",
-      "AT23"#,
-      #"PA23",
-      #"PA24",
-      #"PA25",
-      #"PA26"
     )
   ),
 
@@ -464,16 +499,12 @@ list(
   tar_terra_rast(
     covariate_rast_5_all,
     c(
-      # built_volume_5,
-      # evi_5,
-      # tcb_5,
-      # lst_night_5,
-      # elevation_5,
-      # soil_clay_5,
-      # footprint_5,
       landcover_covs,
       prox_to_sea,
-      bioregion_stack,
+
+      # subrealm_layers,
+      bioregion_layers,
+
       bias_tt_5
     )
   ),
@@ -482,8 +513,10 @@ list(
     covariate_rast_5,
     subset_covariate_rast(
       covariate_rast_5_all,
-      target_covariate_names,
-      bias_names
+      target_covariate_names = target_covariate_names,
+      # subrealm_names = subrealm_names,
+      bioregion_names = bioregion_names,
+      bias_names = bias_names
     )
   ),
 
@@ -620,7 +653,7 @@ list(
 
   tar_target(
     n_bg,
-    2000
+    250
   ),
 
   tar_target(
@@ -680,7 +713,11 @@ list(
      guess_max = 100000 # some cols are largely empty until end, so needs this
      # or will assume they are logical and break when they are not
      # NB this is longer than the entire data set (for now...)
-   )
+   ) |>
+     filter(
+       !(source_id == 1002611 & species == "moucheti"),
+       !(source_id == 4682 & species == "merus")
+     )
  ),
 
  #########################
@@ -815,6 +852,8 @@ list(
            !names(covariate_rast_5_all) %in%
              c(
                target_covariate_names,
+               # subrealm_names,
+               bioregion_names,
                #offset_names,
                bias_names
              )
@@ -833,7 +872,7 @@ list(
        data_type,
        sampling_method
      ) |>
-     slice_sample(prop = 0.5) |>
+     # slice_sample(prop = 0.5) |>
      ungroup()
  ),
 
@@ -1218,6 +1257,8 @@ list(
      model_data_spatial = model_data_spatial,
      target_covariate_names = target_covariate_names,
      target_species = target_species,
+     # subrealm_names = subrealm_names,
+     bioregion_names = bioregion_names,
      project_mask = project_mask_5,
      image_name = "outputs/images/multisp_pp_count_sm.RData",
      n_burnin = 1000,
@@ -1226,30 +1267,19 @@ list(
    )
  ),
 
- # tar_target(
- #   pred_file_multisp_pp_count_sm,
- #   predict_greta_mspp_count_sm(
- #     image_filename = model_fit_image_multisp_pp_count_sm,
- #     prediction_layer = covariate_rast_10,
- #     offset = offsets_avg_10,
- #     target_species,
- #     output_file_prefix = "outputs/rasters/multisp_pp_count_sm"
- #   )
- # ),
- #
- # # # # read in image and predict out lambda in the absence of offset
- # # median and lower and higher bounds (2.5 and 95%iles)
- # tar_target(
- #   pred_file_lambda_no_offset_sm,
- #   pred_lambda_no_offset(
- #     image_name = model_fit_image_multisp_pp_count_sm,
- #     prediction_layer = covariate_rast_5, # use 10k for faster preds
- #     target_species,
- #     output_file_prefix = "outputs/rasters/multisp_pp_lambda_no_offset_sm",
- #     sm = TRUE, # if predict survey method
- #     nsims = 50 # lower for faster preds
- #   )
- # ),
+ tar_target(
+   pred_file_multisp_pp_count_sm,
+   predict_greta_mspp_count_sm(
+     image_filename = model_fit_image_multisp_pp_count_sm,
+     prediction_layer = covariate_rast_10,
+     offset = offsets_avg_10,
+     target_species = target_species,
+     target_covariate_names = target_covariate_names,
+     # subrealm_names = subrealm_names,
+     bioregion_names = bioregion_names,
+     output_file_prefix = "outputs/rasters/multisp_pp_count_sm"
+   )
+ ),
 
  tar_target(
    preds_sm,

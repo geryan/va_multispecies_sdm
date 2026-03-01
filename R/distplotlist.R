@@ -11,6 +11,7 @@
 distplotlist <- function(
     pred_dist,
     colscheme =  c(
+      "va",
       "mako",
       "rb",
       "magma",
@@ -33,7 +34,7 @@ distplotlist <- function(
       distplot(pred_dist, x, colscheme)
     },
     pred_dist,
-    colscheme
-  )
+    colscheme,
+    simplify = FALSE)
 
 }
