@@ -2,7 +2,7 @@ target_spp <- function(){
 
   # latest 20241108
 
-  c(
+  spp <- c(
     "arabiensis", # in sinka 2010
     "coluzzii",
     # "coustani",
@@ -37,6 +37,8 @@ target_spp <- function(){
     # "bwambae",
     # "vaneedeni"
   )
+
+  spp[order(spp)]
 
 
 }
