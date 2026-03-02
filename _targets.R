@@ -151,8 +151,8 @@ list(
   tar_terra_rast(
     bioregion_layers,
     make_smooth_dummies(
-      oneearth_vect,
-      mask = project_mask_5,
+      oneearth_spatvector = oneearth_vect,
+      mask_lyr = project_mask_5,
       level = "bioregion"
     )
   ),
