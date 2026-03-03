@@ -552,6 +552,7 @@ list(
       target_covariate_names = target_covariate_names,
       # subrealm_names = subrealm_names,
       bioregion_names = bioregion_names,
+      soiltype_names = soiltype_names,
       bias_names = bias_names
     )
   ),
@@ -793,15 +794,6 @@ list(
  tar_target(
    target_species,
    target_spp()
-   #target_spp_test_only()
-   # c(
-   #   "arabiensis", # in sinka 2010
-   #   "coluzzii",
-   #   "funestus", # in sinka 2010
-   #   "gambiae",  # in sinka 2010
-   #   "moucheti", # in sinka 2010
-   #   "nili"#,  # in sinka 2010
-   # )
  ),
 
 
@@ -891,6 +883,7 @@ list(
                target_covariate_names,
                # subrealm_names,
                bioregion_names,
+               soiltype_names,
                #offset_names,
                bias_names
              )
@@ -909,7 +902,7 @@ list(
        data_type,
        sampling_method
      ) |>
-     # slice_sample(prop = 0.5) |>
+     slice_sample(prop = 0.5) |>
      ungroup()
  ),
 
