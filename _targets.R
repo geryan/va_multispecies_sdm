@@ -1305,6 +1305,7 @@ list(
      target_species = target_species,
      # subrealm_names = subrealm_names,
      bioregion_names = bioregion_names,
+     soiltype_names = soiltype_names,
      project_mask = project_mask_5,
      image_name = "outputs/images/multisp_pp_count_sm.RData",
      n_burnin = 1000,

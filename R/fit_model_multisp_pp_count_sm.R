@@ -4,6 +4,7 @@ fit_model_multisp_pp_count_sm <- function(
     target_species,
     # subrealm_names,
     bioregion_names,
+    soiltype_names,
     project_mask,
     image_name = "outputs/images/multisp_pp_count_sm.RData",
     n_burnin = 50,
@@ -65,6 +66,15 @@ fit_model_multisp_pp_count_sm <- function(
     ) |>
     as.matrix() #|>
     # as_data()
+
+  # get soil type dummy values
+  x_soiltype <- model_data_spatial[distinct_idx,] |>
+    as_tibble() |>
+    select(
+      all_of(soiltype_names)
+    ) |>
+    as.matrix() #|>
+  # as_data()
 
   # get bias values
   z <- model_data_spatial[distinct_idx,"travel_time"] |>
@@ -204,6 +214,7 @@ fit_model_multisp_pp_count_sm <- function(
 
   # # model bioregion effects only as interactions with landcover, and expand
   # the covariate set
+  x_intercovs <- cbind(x_bioregion, x_soiltype)
   x_interactions <- make_designmat_interactions(x, x_bioregion)
   x_all <- cbind(x, x_interactions)
 
