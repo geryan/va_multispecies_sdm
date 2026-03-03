@@ -1104,38 +1104,38 @@ list(
  #   )
  # ),
 
- ######
- # PCA Covariate layers
- ######
- tar_terra_rast(
-   pca_covariate_layers,
-   make_pca_covariate_layers(
-     covariate_rast_5,
-     target_covariate_names,
-     model_data_spatial
-   )
- ),
-
- tar_target(
-   model_data_spatial_pca,
-   get_spatial_values(
-     pca_covariate_layers,
-     model_data_spatial,
-     project_mask_5
-   ) |>
-     select(
-       - all_of(target_covariate_names),
-     )
- ),
-
- tar_target(
-   covs_plots_pca,
-   make_covariate_plots(
-     model_data_spatial_pca,
-     cvnames = names(pca_covariate_layers),
-     fname = "outputs/figures/cov_violins_pca.png"
-   )
- ),
+ # ######
+ # # PCA Covariate layers
+ # ######
+ # tar_terra_rast(
+ #   pca_covariate_layers,
+ #   make_pca_covariate_layers(
+ #     covariate_rast_5,
+ #     target_covariate_names,
+ #     model_data_spatial
+ #   )
+ # ),
+ #
+ # tar_target(
+ #   model_data_spatial_pca,
+ #   get_spatial_values(
+ #     pca_covariate_layers,
+ #     model_data_spatial,
+ #     project_mask_5
+ #   ) |>
+ #     select(
+ #       - all_of(target_covariate_names),
+ #     )
+ # ),
+ #
+ # tar_target(
+ #   covs_plots_pca,
+ #   make_covariate_plots(
+ #     model_data_spatial_pca,
+ #     cvnames = names(pca_covariate_layers),
+ #     fname = "outputs/figures/cov_violins_pca.png"
+ #   )
+ # ),
 
 
  # # write out to process from monthly on MAP AWS
