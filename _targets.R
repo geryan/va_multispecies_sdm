@@ -375,19 +375,48 @@ list(
   # soil clay
 
   tar_terra_rast(
-    soil_clay_filled,
-    get_soil_af() |>
-      set_layer_names("soil_clay")
+    soiltype_clay_filled,
+    get_soil_af(var = "clay") |>
+      set_layer_names("clay")
   ),
 
   tar_terra_rast(
-    soil_clay_5,
-    soil_clay_filled |>
+    soiltype_clay_5,
+    soiltype_clay_filled |>
       aggregate(fact = 5) |>
       crop(y = project_mask_5) |>
       resample(y = project_mask_5) |>
       mask(mask = project_mask_5) |>
       scale()
+  ),
+
+  tar_terra_rast(
+    soiltype_silt_filled,
+    get_soil_af(var = "silt") |>
+      set_layer_names("silt")
+  ),
+
+  tar_terra_rast(
+    soiltype_silt_5,
+    soiltype_silt_filled |>
+      aggregate(fact = 5) |>
+      crop(y = project_mask_5) |>
+      resample(y = project_mask_5) |>
+      mask(mask = project_mask_5) |>
+      scale()
+  ),
+
+  tar_terra_rast(
+    soiltype_layers,
+    c(
+      soiltype_clay_5,
+      soiltype_silt_5
+    )
+  ),
+
+  tar_target(
+    soiltype_names,
+    names(soiltype_layers)
   ),
 
   # footprint
@@ -501,6 +530,10 @@ list(
     c(
       landcover_covs,
       prox_to_sea,
+
+      soiltype_layers,
+
+      footprint_5,
 
       # subrealm_layers,
       bioregion_layers,

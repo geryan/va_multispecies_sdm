@@ -1,8 +1,9 @@
 get_soil_af <- function(
+    var = "clay"
 ){
 
   soil_raw <- geodata::soil_af(
-    var = "clay",
+    var = var,
     depth = 5,
     path = "data/raster/geodata"
   )
