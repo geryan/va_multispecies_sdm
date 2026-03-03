@@ -514,6 +514,9 @@ list(
       "wetland",
       "mangroves",
 
+      # also footprint for anthropophilic/anthropophagic spp
+      "footprint",
+
       # and proximity to sea, for merus and melas
       "prox_to_sea"
 
