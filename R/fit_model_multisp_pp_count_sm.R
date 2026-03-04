@@ -652,13 +652,15 @@ fit_model_multisp_pp_count_sm <- function(
   # variance_params_idx <- match(variance_param_names, names(inits_point))
   # inits_point[variance_params_idx] <- NULL
 
-  n_chains <- 50
+  #n_chains <- 50
 
   # # random inits per chain from the PMC particles
   # init_particles <- smc_output$particles[seq_len(n_chains), ]
   # inits_random <- initials_from_free_states(m, init_particles)
 
-  n_burnin <- 2000
+
+  #n_burnin <- 200
+  #n_samples <- 100
 
   Lmax <- 20
   Lmin <- round(Lmax / 2)
