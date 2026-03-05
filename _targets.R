@@ -896,14 +896,14 @@ list(
  # development
  tar_target(
    record_data_spatial_subsample,
-   record_data_spatial |>
-     group_by(
-       species,
-       data_type,
-       sampling_method
-     ) |>
-     slice_sample(prop = 0.5) |>
-     ungroup()
+   record_data_spatial #|>
+     # group_by(
+     #   species,
+     #   data_type,
+     #   sampling_method
+     # ) |>
+     # slice_sample(prop = 0.5) |>
+     # ungroup()
  ),
 
  # put together with background data
@@ -1304,8 +1304,8 @@ list(
      soiltype_names = soiltype_names,
      project_mask = project_mask_5,
      image_name = "outputs/images/multisp_pp_count_sm.RData",
-     n_burnin = 1000,
-     n_samples = 500,
+     n_burnin = 5000,
+     n_samples = 1000,
      n_chains = 50
    )
  ),
@@ -1320,6 +1320,7 @@ list(
      target_covariate_names = target_covariate_names,
      # subrealm_names = subrealm_names,
      bioregion_names = bioregion_names,
+     soiltype_names = soiltype_names,
      output_file_prefix = "outputs/rasters/multisp_pp_count_sm"
    )
  ),
