@@ -215,7 +215,7 @@ fit_model_multisp_pp_count_sm <- function(
   # # model bioregion effects only as interactions with landcover, and expand
   # the covariate set
   x_intercovs <- cbind(x_bioregion, x_soiltype)
-  x_interactions <- make_designmat_interactions(x, x_bioregion)
+  x_interactions <- make_designmat_interactions(x, x_intercovs)
   x_all <- cbind(x, x_interactions)
 
   # # or, include main terms and interactions
