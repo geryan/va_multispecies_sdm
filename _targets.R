@@ -1,12 +1,12 @@
 library(targets)
 library(geotargets)
-library(targets.utils) # remotes::install_github("geryan/targets.utils")
+# library(targets.utils) #
 
 tar_option_set(
   packages = c(
-    "tibble",
+    #"tibble",
     "dplyr",
-    "sdmtools",  # remotes::install_github("idem-lab/sdmtools)
+    "sdmtools",  # remotes::install_github("idem-lab/sdmtools@no_malariaAtlas")
     "readr",
     "tidyr",
     "terra",
@@ -44,6 +44,11 @@ list(
     Sys.info()[["user"]] == "nick"
   ),
 
+  tar_target(
+    user_is_gerry_spartan,
+    Sys.info()[["user"]] == "ryange"
+  ),
+
   # read in offset layers
 
   # all raw layers
@@ -53,7 +58,11 @@ list(
       odir = ifelse(
         user_is_nick,
         "../mosmicrosim/processing/vector_rasters",
-        "/Users/gryan/Dropbox/vector_rasters/"
+        ifelse(
+          user_is_gerry_spartan,
+          "/data/gpfs/projects/punim1422/vector_rasters/",
+          "/Users/gryan/Dropbox/vector_rasters/"
+        )
       )
     )
   ),
@@ -67,11 +76,34 @@ list(
       set_layer_names("project_mask")
   ),
 
+
   # read in other layers and match to offset size shape and extent
-  #
+
+  # tar_terra_rast(
+  #   landcover_raw,
+  #   get_landcovers(
+  #     vars = c(
+  #       "trees",
+  #       "grassland",
+  #       "shrubs",
+  #       "cropland",
+  #       "built",
+  #       #"bare",
+  #       "water",
+  #       "wetland",
+  #       "mangroves"
+  #     ),
+  #     path = ifelse(
+  #       user_is_gerry_spartan,
+  #       "/data/gpfs/projects/punim1422/va_multispecies_sdm/data/raster/geodata/",
+  #       "data/raster/geodata/"
+  #     )
+  #   )
+  # ),
+
   tar_terra_rast(
     landcover_raw,
-    get_landcovers(
+    gt_lndcvr(
       vars = c(
         "trees",
         "grassland",
@@ -83,18 +115,64 @@ list(
         "wetland",
         "mangroves"
       ),
-      path = "data/raster/geodata/"
+      path = ifelse(
+        user_is_gerry_spartan,
+        "/data/gpfs/projects/punim1422/va_multispecies_sdm/data/raster/geodata/",
+        "data/raster/geodata/"
+      )
     )
   ),
 
+  # tar_terra_rast(
+  #   landcover_raw,
+  #   sapply(
+  #     X = c(
+  #       "trees",
+  #       "grassland",
+  #       "shrubs",
+  #       "cropland",
+  #       "built",
+  #       #"bare",
+  #       "water",
+  #       "wetland",
+  #       "mangroves"
+  #     ),
+  #     FUN = function(x, path){
+  #       landcover(x, path = path)
+  #     },
+  #     ifelse(
+  #       user_is_gerry_spartan,
+  #       "/data/gpfs/projects/punim1422/va_multispecies_sdm/data/raster/geodata/",
+  #       "data/raster/geodata/"
+  #     )
+  #   ) |>
+  #     rast()
+  # ),
+
+
+
+
   # load the bare landcover
+  # tar_terra_rast(
+  #   landcover_bare_raw,
+  #   get_landcovers(
+  #     vars = c(
+  #       "bare"
+  #     ),
+  #     path = "data/raster/geodata/"
+  #   )
+  # ),
   tar_terra_rast(
     landcover_bare_raw,
-    get_landcovers(
+    gt_lndcvr(
       vars = c(
         "bare"
       ),
-      path = "data/raster/geodata/"
+      ifelse(
+        user_is_gerry_spartan,
+        "/data/gpfs/projects/punim1422/va_multispecies_sdm/data/raster/geodata/",
+        "data/raster/geodata/"
+      )
     )
   ),
 
@@ -459,7 +537,7 @@ list(
 
   tar_terra_rast(
     bias_tt_raw,
-    if (user_is_nick) {
+    if (user_is_nick | user_is_gerry_spartan) {
       rast("data/raster/tt_by_country.tif")
     } else{
       rast("/Users/gryan/Documents/tki_work/vector_atlas/africa_anopheles_sampling_bias/outputs/tt_by_country.tif")
