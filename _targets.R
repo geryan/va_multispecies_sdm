@@ -1310,20 +1310,27 @@ list(
    )
  ),
 
- tar_target(
-   pred_file_multisp_pp_count_sm,
-   predict_greta_mspp_count_sm(
-     image_filename = model_fit_image_multisp_pp_count_sm,
-     prediction_layer = covariate_rast_10,
-     offset = offsets_avg_10,
-     target_species = target_species,
-     target_covariate_names = target_covariate_names,
-     # subrealm_names = subrealm_names,
-     bioregion_names = bioregion_names,
-     soiltype_names = soiltype_names,
-     output_file_prefix = "outputs/rasters/multisp_pp_count_sm"
-   )
- ),
+ # tar_target(
+ #   pred_file_multisp_pp_count_sm,
+ #   predict_greta_mspp_count_sm(
+ #     image_filename = model_fit_image_multisp_pp_count_sm,
+ #     prediction_layer = covariate_rast_10,
+ #     offset = offsets_avg_10,
+ #     target_species = target_species,
+ #     # NB the image above is loaded with load()
+ #     # which may cause problems with these _names args if they are
+ #     # different from in the fit function.
+ #     # Though they should be the same anyway - can't think of a situation
+ #     # where we could provide different ones to predict from fit anyway
+ #     # leaving with this note but commentint out this function as
+ #     # predict_lambda is the better one to use.
+ #     target_covariate_names = target_covariate_names,
+ #     # subrealm_names = subrealm_names,
+ #     bioregion_names = bioregion_names,
+ #     soiltype_names = soiltype_names,
+ #     output_file_prefix = "outputs/rasters/multisp_pp_count_sm"
+ #   )
+ # ),
 
  tar_target(
    preds_sm,
