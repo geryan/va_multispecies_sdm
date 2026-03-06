@@ -215,7 +215,7 @@ fit_model_multisp_pp_count_sm <- function(
   # # model bioregion effects only as interactions with landcover, and expand
   # the covariate set
   x_intercovs <- cbind(x_bioregion, x_soiltype)
-  x_interactions <- make_designmat_interactions(x, x_bioregion)
+  x_interactions <- make_designmat_interactions(x, x_intercovs)
   x_all <- cbind(x, x_interactions)
 
   # # or, include main terms and interactions
@@ -571,59 +571,59 @@ fit_model_multisp_pp_count_sm <- function(
              sqrt_inv_size)
 
 
-  ############
-  # prior predictive checks
-  ############
-
-  # prepare data - it's in greta format so get it out
-
-  # convert list to vectors / matrices
-  po_dat <- po_data_response |>
-    as.numeric()
-  pa_dat <- pa_data_response |>
-    as.numeric()
-  count_dat <- count_data_response |>
-    as.numeric()
-
-  # make list for passing to checks
-  dat <- list(
-    pa_dat = pa_dat,
-    po_dat = po_dat,
-    count_dat = count_dat
-  )
-
-  # simulate data from prior
-  prior_preds_calc <- calculate(
-    po_data_response,
-    pa_data_response,
-    count_data_response,
-    nsim = 100
-  )
-
-  # convert into matrices
-  po_pred_prior <- prior_preds_calc$po_data_response[,,1] |>
-    as.matrix()
-  pa_pred_prior <- prior_preds_calc$pa_data_response[,,1] |>
-    as.matrix()
-  count_pred_prior <- prior_preds_calc$count_data_response[,,1] |>
-    as.matrix()
-
-  # make list for passing to checks
-  preds_prior <- list(
-    po_pred = po_pred_prior |>
-      as.matrix(),
-    pa_pred = pa_pred_prior |>
-      as.matrix(),
-    count_pred = count_pred_prior |>
-      as.matrix()
-  )
-
-  # pass data to checks
-  predictive_checks(
-    preds = preds_prior,
-    dat = dat,
-    output_prefix = "outputs/figures/ppc_sm/prior"
-  )
+  # ############
+  # # prior predictive checks
+  # ############
+  #
+  # # prepare data - it's in greta format so get it out
+  #
+  # # convert list to vectors / matrices
+  # po_dat <- po_data_response |>
+  #   as.numeric()
+  # pa_dat <- pa_data_response |>
+  #   as.numeric()
+  # count_dat <- count_data_response |>
+  #   as.numeric()
+  #
+  # # make list for passing to checks
+  # dat <- list(
+  #   pa_dat = pa_dat,
+  #   po_dat = po_dat,
+  #   count_dat = count_dat
+  # )
+  #
+  # # simulate data from prior
+  # prior_preds_calc <- calculate(
+  #   po_data_response,
+  #   pa_data_response,
+  #   count_data_response,
+  #   nsim = 100
+  # )
+  #
+  # # convert into matrices
+  # po_pred_prior <- prior_preds_calc$po_data_response[,,1] |>
+  #   as.matrix()
+  # pa_pred_prior <- prior_preds_calc$pa_data_response[,,1] |>
+  #   as.matrix()
+  # count_pred_prior <- prior_preds_calc$count_data_response[,,1] |>
+  #   as.matrix()
+  #
+  # # make list for passing to checks
+  # preds_prior <- list(
+  #   po_pred = po_pred_prior |>
+  #     as.matrix(),
+  #   pa_pred = pa_pred_prior |>
+  #     as.matrix(),
+  #   count_pred = count_pred_prior |>
+  #     as.matrix()
+  # )
+  #
+  # # pass data to checks
+  # predictive_checks(
+  #   preds = preds_prior,
+  #   dat = dat,
+  #   output_prefix = "outputs/figures/ppc_sm/prior"
+  # )
 
   ###################
   # fit model
@@ -674,89 +674,89 @@ fit_model_multisp_pp_count_sm <- function(
     # initial_values = inits_point
   )
 
-  mcmc_trace(
-    x = draws,
-    regex_pars = "alpha"
-  )
-  ggsave(
-    "outputs/figures/traceplots/sm_alpha.png"
-  )
+  # mcmc_trace(
+  #   x = draws,
+  #   regex_pars = "alpha"
+  # )
+  # ggsave(
+  #   "outputs/figures/traceplots/sm_alpha.png"
+  # )
+  #
+  # # mcmc_trace(
+  # #   x = draws,
+  # #   regex_pars = "beta"
+  # # )
+  # # ggsave(
+  # #   "outputs/figures/traceplots/sm_beta.png"
+  # # )
+  #
+  # mcmc_trace(
+  #   x = draws,
+  #   regex_pars = c("delta", "gamma")
+  # )
+  # ggsave(
+  #   "outputs/figures/traceplots/sm_delta_gamma.png"
+  # )
+  #
+  # mcmc_trace(
+  #   x = draws,
+  #   regex_pars = "sampling"
+  # )
+  # ggsave(
+  #   "outputs/figures/traceplots/sm_sampling.png"
+  # )
 
-  mcmc_trace(
-    x = draws,
-    regex_pars = "beta"
-  )
-  ggsave(
-    "outputs/figures/traceplots/sm_beta.png"
-  )
+  # coda::gelman.diag(draws,
+  #                   autoburnin = FALSE,
+  #                   multivariate = FALSE)
 
-  mcmc_trace(
-    x = draws,
-    regex_pars = c("delta", "gamma")
-  )
-  ggsave(
-    "outputs/figures/traceplots/sm_delta_gamma.png"
-  )
-
-  mcmc_trace(
-    x = draws,
-    regex_pars = "sampling"
-  )
-  ggsave(
-    "outputs/figures/traceplots/sm_sampling.png"
-  )
-
-  coda::gelman.diag(draws,
-                    autoburnin = FALSE,
-                    multivariate = FALSE)
-
-  ############
-  # posterior predictive checks
-  ############
-
-  # simulate data from posterior
-  posterior_calc <- calculate(
-    po_data_response,
-    pa_data_response,
-    count_data_response,
-    values = draws,
-    nsim = 100
-  )
-
-  # convert into matrices
-  po_pred_post <- posterior_calc$po_data_response[,,1] |>
-    as.matrix()
-  pa_pred_post <- posterior_calc$pa_data_response[,,1] |>
-    as.matrix()
-  count_pred_post <- posterior_calc$count_data_response[,,1] |>
-    as.matrix()
-
-  # make list for passing to checks
-  preds_posterior <- list(
-    po_pred = po_pred_post |>
-      as.matrix(),
-    pa_pred = pa_pred_post |>
-      as.matrix(),
-    count_pred = count_pred_post |>
-      as.matrix()
-  )
-
-  # pass data to checks
-  predictive_checks(
-    preds = preds_posterior,
-    dat = dat,
-    output_prefix = "outputs/figures/ppc_sm/posterior"
-  )
+  # ############
+  # # posterior predictive checks
+  # ############
+  #
+  # # simulate data from posterior
+  # posterior_calc <- calculate(
+  #   po_data_response,
+  #   pa_data_response,
+  #   count_data_response,
+  #   values = draws,
+  #   nsim = 100
+  # )
+  #
+  # # convert into matrices
+  # po_pred_post <- posterior_calc$po_data_response[,,1] |>
+  #   as.matrix()
+  # pa_pred_post <- posterior_calc$pa_data_response[,,1] |>
+  #   as.matrix()
+  # count_pred_post <- posterior_calc$count_data_response[,,1] |>
+  #   as.matrix()
+  #
+  # # make list for passing to checks
+  # preds_posterior <- list(
+  #   po_pred = po_pred_post |>
+  #     as.matrix(),
+  #   pa_pred = pa_pred_post |>
+  #     as.matrix(),
+  #   count_pred = count_pred_post |>
+  #     as.matrix()
+  # )
+  #
+  # # pass data to checks
+  # predictive_checks(
+  #   preds = preds_posterior,
+  #   dat = dat,
+  #   output_prefix = "outputs/figures/ppc_sm/posterior"
+  # )
 
 
   ###### Plot parameter estimates
 
-  interval_plots(
-    draws = draws,
-    target_species = target_species,
-    target_covariate_names = target_covariate_names,
-    sampling_methods = sampling_methods
-  )
+  # interval_plots(
+  #   draws = draws,
+  #   target_species = target_species,
+  #   target_covariate_names = target_covariate_names,
+  #   sampling_methods = sampling_methods
+  # )
 
 
 

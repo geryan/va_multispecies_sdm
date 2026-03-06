@@ -974,14 +974,14 @@ list(
  # development
  tar_target(
    record_data_spatial_subsample,
-   record_data_spatial |>
-     group_by(
-       species,
-       data_type,
-       sampling_method
-     ) |>
-     slice_sample(prop = 0.5) |>
-     ungroup()
+   record_data_spatial #|>
+     # group_by(
+     #   species,
+     #   data_type,
+     #   sampling_method
+     # ) |>
+     # slice_sample(prop = 0.5) |>
+     # ungroup()
  ),
 
  # put together with background data
@@ -1382,25 +1382,33 @@ list(
      soiltype_names = soiltype_names,
      project_mask = project_mask_5,
      image_name = "outputs/images/multisp_pp_count_sm.RData",
-     n_burnin = 1000,
-     n_samples = 500,
+     n_burnin = 5000,
+     n_samples = 1000,
      n_chains = 50
    )
  ),
 
- tar_target(
-   pred_file_multisp_pp_count_sm,
-   predict_greta_mspp_count_sm(
-     image_filename = model_fit_image_multisp_pp_count_sm,
-     prediction_layer = covariate_rast_10,
-     offset = offsets_avg_10,
-     target_species = target_species,
-     target_covariate_names = target_covariate_names,
-     # subrealm_names = subrealm_names,
-     bioregion_names = bioregion_names,
-     output_file_prefix = "outputs/rasters/multisp_pp_count_sm"
-   )
- ),
+ # tar_target(
+ #   pred_file_multisp_pp_count_sm,
+ #   predict_greta_mspp_count_sm(
+ #     image_filename = model_fit_image_multisp_pp_count_sm,
+ #     prediction_layer = covariate_rast_10,
+ #     offset = offsets_avg_10,
+ #     target_species = target_species,
+ #     # NB the image above is loaded with load()
+ #     # which may cause problems with these _names args if they are
+ #     # different from in the fit function.
+ #     # Though they should be the same anyway - can't think of a situation
+ #     # where we could provide different ones to predict from fit anyway
+ #     # leaving with this note but commentint out this function as
+ #     # predict_lambda is the better one to use.
+ #     target_covariate_names = target_covariate_names,
+ #     # subrealm_names = subrealm_names,
+ #     bioregion_names = bioregion_names,
+ #     soiltype_names = soiltype_names,
+ #     output_file_prefix = "outputs/rasters/multisp_pp_count_sm"
+ #   )
+ # ),
 
  tar_target(
    preds_sm,
