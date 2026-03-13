@@ -36,7 +36,12 @@ fit_model_multisp_pp_count_sm <- function(
   distinct_coords <- model_data_spatial[distinct_idx, c("latitude", "longitude")]
 
   # get offset values from gambiae mechanistic model
-  log_offset <- log(model_data_spatial[distinct_idx,"offset"])|>
+  log_offset <- log(model_data_spatial[distinct_idx, "offset"])|>
+    as.matrix() |>
+    as_data()
+
+  # get modifying offset for temperature
+  offset_temp <- model_data_spatial[distinct_idx, "offset_temp"] |>
     as.matrix() |>
     as_data()
 
@@ -246,6 +251,17 @@ fit_model_multisp_pp_count_sm <- function(
 
   x_beta_species <- x_all %*% beta
 
+  offset_beta_raw <- normal(
+    0,
+    1,
+    dim = c(1, n_species)
+  )
+
+  offset_beta_scale <- beta_sd
+  offset_beta <- sweep(offset_beta_raw, 1, offset_beta_scale, FUN = "*")
+
+  log_offset_mod <- offset_temp %*% offset_beta
+
   # # for each covariate, model beta as a positive-constrained spatially-varying
   # # covariate. Positive so that abundance is forced to be higher in
   # # non-bare-gound landcover types, spatially varying to account for: a)
@@ -384,13 +400,15 @@ fit_model_multisp_pp_count_sm <- function(
 
 
   # offset from calculated gambiae adult survival given habitat
-  log_lambda_adults <- log_offset
+  #log_lambda_adults <- log_offset
+  log_lambda_adults <- sweep(log_offset_mod, 1, log_offset, "+")
   # this turns offset off instead of above line
   # log_lambda_adults <- rep(0, times = dim(log_offset)[[1]]) |>
   #  as_data()
 
   # combine larval habitat and adult life cycle offset
-  log_lambda <- sweep(log_lambda_larval_habitat, 1, log_lambda_adults, "+")
+   #log_lambda <- sweep(log_lambda_larval_habitat, 1, log_lambda_adults, "+")
+   log_lambda <- log_lambda_larval_habitat + log_lambda_adults
 
   # can easily replace this model with something more interesting, like a low-rank
   # GP on covariate space or something mechanistic
@@ -577,7 +595,7 @@ fit_model_multisp_pp_count_sm <- function(
   #
   # # prepare data - it's in greta format so get it out
   #
-  # # convert list to vectors / matrices
+  # convert list to vectors / matrices
   # po_dat <- po_data_response |>
   #   as.numeric()
   # pa_dat <- pa_data_response |>
