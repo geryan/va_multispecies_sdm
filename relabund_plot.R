@@ -80,13 +80,15 @@ names(tmp)
 log_offset <- log(offsets_avg_10)
 
 library(geodata)
-vap <- geodata::worldclim_global("vapr", res = 10, path = "~")
-tav <- geodata::worldclim_global("tavg", res = 10, path = "~")
+geodata_path("data/raster/geodata/")
+vap <- geodata::worldclim_global("vapr", res = 10)
+tav <- geodata::worldclim_global("tavg", res = 10)
 
 vap_mean <- mean(vap)
 tav_mean <- mean(tav)
 vap_mean_af <- crop(vap_mean, log_offset)
 tav_mean_af <- crop(tav_mean, log_offset)
+
 plot(vap_mean_af)
 plot(tav_mean_af)
 plot(log_offset)
