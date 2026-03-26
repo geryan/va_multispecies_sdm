@@ -526,7 +526,8 @@ list(
       crop(y = project_mask_5) |>
       resample(y = project_mask_5) |>
       mask(mask = project_mask_5) |>
-      scale()
+      #scale()
+      scale_rast_to_1()
   ),
 
   # tar_terra_rast(
@@ -539,6 +540,11 @@ list(
   #     mask(mask = project_mask_5) |>
   #     scale()
   # ),
+
+  tar_terra_rast(
+    offset_temp_5,
+    make_temperature_offset(project_mask_5)
+  ),
 
   #
   # bias
@@ -569,6 +575,8 @@ list(
       mask(mask = project_mask_5) |>
       `names<-`("travel_time")
   ),
+
+
 
 
   #
@@ -617,6 +625,11 @@ list(
     "travel_time"
   ),
 
+  tar_target(
+    offset_names,
+    "offset_temp"
+  ),
+
   tar_terra_rast(
     covariate_rast_5_all,
     c(
@@ -630,6 +643,8 @@ list(
       # subrealm_layers,
       bioregion_layers,
 
+      offset_temp_5,
+
       bias_tt_5
     )
   ),
@@ -642,6 +657,7 @@ list(
       # subrealm_names = subrealm_names,
       bioregion_names = bioregion_names,
       soiltype_names = soiltype_names,
+      offset_names = offset_names,
       bias_names = bias_names
     )
   ),
@@ -973,7 +989,7 @@ list(
                # subrealm_names,
                bioregion_names,
                soiltype_names,
-               #offset_names,
+               offset_names,
                bias_names
              )
          ]
@@ -1430,7 +1446,7 @@ list(
      output_file_prefix = "outputs/rasters/multisp_pp_sm",
      offset = offsets_avg_10,
      sm = TRUE, # if predict survey method
-     nsims = 50 # lower for faster preds
+     nsims = 100 # lower for faster preds
    )
  ),
 
@@ -1522,7 +1538,7 @@ list(
    make_distribution_plots(
      pred_dist_sm,
      model_data_spatial,
-     plot_dir = "outputs/figures/distribution_plots/distn_20260220_sm"
+     plot_dir = "outputs/figures/distribution_plots/distn_20260310_sm"
    )
  ),
 

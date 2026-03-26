@@ -22,7 +22,8 @@ pred_file_multisp_pp_count_sm <- list(
   count = "outputs/rasters/multisp_pp_count_sm_count.tif"
 )
 
-lambda <- rast(pred_file_multisp_pp_count_sm$count)
+#lambda <- rast(pred_file_multisp_pp_count_sm$count)
+lambda <- pred_lambda_mean
 
 # load the expert opinion masks
 tar_load(expert_offset_maps_500)
@@ -84,6 +85,11 @@ model_data_spatial <- match_offset_data(
 make_distribution_plots(
   pred_dist_masked, # raster stack
   model_data_spatial, # data with points in it
-  plot_dir = "outputs/figures/distribution_plots/distn_20260227" # output directory
+  plot_dir = "outputs/figures/distribution_plots/distn_offset_20260313" # output directory
+)
+
+writeRaster(
+  x = pred_dist_masked,
+  filename = "outputs/rasters/dist_with_offset_20260313.tif"
 )
 
