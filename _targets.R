@@ -282,6 +282,17 @@ list(
     )
   ),
 
+  tar_terra_rast(
+    offsets_10,
+    aggregate(
+      offsets_5,
+      fact = 2,
+      fun = "mean",
+      na.rm = TRUE,
+      cores = 4
+    )
+  ),
+
   ## landcover vars from worldcover
   tar_terra_rast(
     landcover_covs,
