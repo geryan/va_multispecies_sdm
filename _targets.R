@@ -1,12 +1,12 @@
 library(targets)
 library(geotargets)
-# library(targets.utils) #
+library(targets.utils) #
 
 tar_option_set(
   packages = c(
     #"tibble",
     "dplyr",
-    "sdmtools",  # remotes::install_github("idem-lab/sdmtools@no_malariaAtlas")
+    "sdmtools",  # remotes::install_github("idem-lab/sdmtools@no_malariaAtlas") #this version is lighter and does everything needed without importing malariaAtlas and multispeciesPP
     "readr",
     "tidyr",
     "terra",
@@ -1425,17 +1425,20 @@ list(
 
  tar_terra_rast(
    pred_dist_sm,
-   rast(preds_sm$p)
+   #rast(preds_sm$p)
+   rast("outputs/rasters/via_spartan/multisp_pp_sm_p.tif")
  ),
 
  tar_terra_rast(
    pred_dcv_sm,
-   rast(preds_sm$p_cv)
+   #rast(preds_sm$p_cv)
+   rast("outputs/rasters/via_spartan/multisp_pp_sm_p_cv.tif")
  ),
 
  tar_terra_rast(
    pred_lambda_mean,
-   rast(preds_sm$lambda_no_offset) * offsets_avg_10
+   #rast(preds_sm$lambda_no_offset) * offsets_avg_10
+   rast("outputs/rasters/via_spartan/multisp_pp_sm.tif") * offsets_avg_10
  ),
 
  tar_terra_rast(
