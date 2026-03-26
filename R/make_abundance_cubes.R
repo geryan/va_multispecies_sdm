@@ -5,8 +5,16 @@ make_abundance_cubes <- function(
     write_dir
 ){
 
+  if(is.character(lambda_no_offset_file)){
+    lambda_no_offset <- rast(lambda_no_offset_file)
+  } else {
+    lambda_no_offset <- lambda_no_offset_file
+  }
 
-  lambda_no_offset <- rast(lambda_no_offset_file)
+  if(!dir.exists(write_dir)){
+    dir.create(write_dir)
+  }
+
 
   sapply(
     X = target_species,
