@@ -770,6 +770,11 @@ list(
     )
   ),
 
+  tar_terra_vect(
+    pharoensis_expert_map,
+    get_pharoensis_expert_map()
+  ),
+
   # extent of this is too small?
   tar_terra_rast(
     expert_offset_maps,
