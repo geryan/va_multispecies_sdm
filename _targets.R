@@ -890,6 +890,15 @@ list(
  ),
 
  tar_target(
+   presences_outside_expert_range,
+   get_presences_outside_expert_range(
+     full_data_records,
+     expert_maps
+   )
+ ),
+
+
+ tar_target(
    species_unique_location_records,
    full_data_records |>
      select(species, latitude, longitude) |>
