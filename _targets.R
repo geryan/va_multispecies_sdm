@@ -889,10 +889,18 @@ list(
    explore_full_data_records(full_data_records)
  ),
 
- tar_target(
+ tar_terra_vect(
    presences_outside_expert_range,
    get_presences_outside_expert_range(
      full_data_records,
+     expert_maps
+   )
+ ),
+
+ tar_target(
+   presences_outside_expert_range_plot,
+   plot_presences_outside_expert_range(
+     presences_outside_expert_range,
      expert_maps
    )
  ),
