@@ -46,6 +46,14 @@ clean_full_data_records <- function(
       # create unique row id in case needed for later
       raw_data_row_id = row_number()
     ) |>
+    # remove sus gambiae records
+    # see extras/gambiae_outside_range_check.R
+    filter(
+      !(
+        (source_id %in% c(1000207, 1001328, 1001472, 1002196)) &
+          species == "gambiae"
+      )
+    ) |>
     # rename samping_occurrence_n and occurrence_n_n cols
     # to replace first _ with . so that it doesn't bugger up the next
     # step which uses the _ to split the variable name from the id number
