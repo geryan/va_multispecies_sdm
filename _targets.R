@@ -1439,7 +1439,7 @@ list(
  ),
 
  tar_target(
-   validation_fit_image_multisp_pp_count_sm,
+   resids_multisp_pp_count_sm,
    validation_and_checking(
      model_fit_image_multisp_pp_count_sm,
      nsims = 100

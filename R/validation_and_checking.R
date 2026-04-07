@@ -670,6 +670,6 @@ validation_and_checking <- function(
     sampling_methods = sampling_methods
   )
 
-  NULL
+  all_data_resids
 
 }
