@@ -10,7 +10,8 @@
 #' @export
 validation_and_checking <- function(
     model_fit_image_multisp_pp_count_sm,
-    nsims = 100
+    nsims = 100,
+    plotdir = "outputs/figures/ppc_sm"
   ) {
 
 
@@ -68,7 +69,10 @@ validation_and_checking <- function(
   predictive_checks(
     preds = preds_prior,
     dat = dat,
-    output_prefix = "outputs/figures/ppc_sm/prior"
+    output_prefix = sprintf(
+      "%s/prior",
+      plotdir
+    )
   )
 
 
@@ -109,12 +113,15 @@ validation_and_checking <- function(
   predictive_checks(
     preds = preds_posterior,
     dat = dat,
-    output_prefix = "outputs/figures/ppc_sm/posterior"
+    output_prefix = sprintf(
+      "%s/posterior",
+      plotdir
+    )
   )
 
 
   ####
-  # using DHARMA
+  # using DHARMa
   ####
 
   counts_resid <- DHARMa::createDHARMa(
@@ -136,6 +143,15 @@ validation_and_checking <- function(
   )
 
   # plot the residuals overall (aiming for uniform distribution)
+  png(
+    sprintf(
+      "%s/residuals.png",
+      plotdir
+    ),
+    width = 1000,
+    height = 1000,
+    res = 150
+  )
   par(mfrow = c(3, 1))
   hist(counts_resid$scaledResiduals,
        main = "count data")
@@ -143,6 +159,7 @@ validation_and_checking <- function(
        main = "presence/absence data")
   hist(po_resid$scaledResiduals,
        main = "presence/background data")
+  dev.off()
 
   # subset the information (the same way as in fit_model_multisp_pp_count to make
   # the observation data) and add residuals
@@ -198,6 +215,12 @@ validation_and_checking <- function(
       scales = "free_y"
     ) +
     theme_minimal()
+  ggsave(
+    filename = sprintf(
+      "%s/redids_spp_by_type.png",
+      plotdir
+    )
+  )
 
   # Mass close to 0: data at the lower value end of the posterior, so
   # overpredicting
@@ -223,6 +246,12 @@ validation_and_checking <- function(
       scales = "free_y"
     ) +
     theme_minimal()
+  ggsave(
+    filename = sprintf(
+      "%s/redids_sampling_by_type.png",
+      plotdir
+    )
+  )
 
   # not much evidence for misfitting by sampling method
 
@@ -243,6 +272,13 @@ validation_and_checking <- function(
     ) +
     theme_minimal()
   count_plot
+  ggsave(
+    filename = sprintf(
+      "%s/redids_count_spp_by_sampling.png",
+      plotdir
+    ),
+    plot = count_plot
+  )
 
   # for count data, detailed sampling methods are the same as reduced?
 
@@ -268,6 +304,14 @@ validation_and_checking <- function(
     theme_minimal()
   pa_plot
 
+  ggsave(
+    filename = sprintf(
+      "%s/redids_pa_spp_by_sampling.png",
+      plotdir
+    ),
+    plot = pa_plot
+  )
+
   # larval PA data overdispersed, especially for arabiensis and coluzzi and
   # gambiae
 
@@ -286,6 +330,15 @@ validation_and_checking <- function(
     ) +
     theme_minimal()
   po_plot
+
+  ggsave(
+    filename = sprintf(
+      "%s/redids_po_spp_by_sampling.png",
+      plotdir
+    ),
+    plot = po_plot
+  )
+
 
   # detection covariate
   po_data_resids |>
@@ -307,6 +360,13 @@ validation_and_checking <- function(
       scales = "free_y"
     ) +
     theme_minimal()
+
+  ggsave(
+    filename = sprintf(
+      "%s/redids_po_detection_by_species.png",
+      plotdir
+    )
+  )
 
   # po/bg predictions are underpredicting for very high values of travel time
 
@@ -332,6 +392,12 @@ validation_and_checking <- function(
       scales = "free_y"
     ) +
     theme_minimal()
+  ggsave(
+    filename = sprintf(
+      "%s/redids_count_month.png",
+      plotdir
+    )
+  )
 
   # possible underprediction in some months, but it doesn't seem systematic re.
   # month. Note also that this would be more meaningful splot by region (different
@@ -365,8 +431,16 @@ validation_and_checking <- function(
       low = "forestgreen",
       high = "purple"
     ) +
-    ggtitle("count data",
-            "green = overprediction, purple = underprediction")
+    ggtitle(
+      "count data",
+      "green = overprediction, purple = underprediction"
+    )
+  ggsave(
+    filename = sprintf(
+      "%s/redids_count_spp_spatial.png",
+      plotdir
+    )
+  )
 
 
   pa_data_resids |>
@@ -395,8 +469,17 @@ validation_and_checking <- function(
       low = "forestgreen",
       high = "purple"
     ) +
-    ggtitle("presence-absence data",
-            "green = overprediction, purple = underprediction")
+    ggtitle(
+      "presence-absence data",
+      "green = overprediction, purple = underprediction"
+    )
+
+  ggsave(
+    filename = sprintf(
+      "%s/redids_pa_spp_spatial.png",
+      plotdir
+    )
+  )
 
 
   po_data_resids |>
@@ -425,8 +508,17 @@ validation_and_checking <- function(
       low = "forestgreen",
       high = "purple"
     ) +
-    ggtitle("presence-background data",
-            "green = overprediction, purple = underprediction")
+    ggtitle(
+      "presence-background data",
+      "green = overprediction, purple = underprediction"
+    )
+
+  ggsave(
+    filename = sprintf(
+      "%s/redids_po_spp_spatial.png",
+      plotdir
+    )
+  )
 
 
   # plot these against covariate values
@@ -450,6 +542,15 @@ validation_and_checking <- function(
       scales = "free_y"
     ) +
     theme_minimal()
+
+  ggsave(
+    filename = sprintf(
+      "%s/redids_spp_by_cov.png",
+      plotdir
+    )
+  )
+
+
 
   # no very obvious residual (non-linear) relationships for included covariates.
 
@@ -494,6 +595,13 @@ validation_and_checking <- function(
     ) +
     ggtitle("count data",
             "green = overprediction, purple = underprediction")
+
+  ggsave(
+    filename = sprintf(
+      "%s/redids_count_spatial_arabiensis_funestus.png",
+      plotdir
+    )
+  )
 
 
 
@@ -557,6 +665,6 @@ validation_and_checking <- function(
     sampling_methods = sampling_methods
   )
 
-
+  NULL
 
 }
