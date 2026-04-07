@@ -644,20 +644,25 @@ validation_and_checking <- function(
     "outputs/figures/traceplots/sm_sampling.png"
   )
 
+
+  # generate and write out rhat for each param
   rhats <- coda::gelman.diag(draws,
                     autoburnin = FALSE,
                     multivariate = FALSE)
 
   write_csv(
-    rhats,
-    file = "outputs/last_rhats.csv"
+    cbind(
+      par = rownames(rhats$psrf),
+      rhats$psrf |>
+        as.data.frame()
+    ),
+    file = "outputs/last_rhats.csv",
   )
 
 
   ###### Plot parameter estimates
 
-  # EDIT SO IT DOESNT DO ALL THE FUCKING BETAS
-  # specify pars
+  # beta plots turned off by default as too many of them
   interval_plots(
     draws = draws,
     target_species = target_species,
