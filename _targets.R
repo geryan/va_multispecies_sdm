@@ -24,8 +24,9 @@ tar_option_set(
     "magrittr",
     "stringr",
     "bayesplot",
-    "patchwork"
+    "patchwork",
     # "see"
+    "MCMCvis"
   ),
   workspace_on_error = TRUE
 )
