@@ -13,13 +13,16 @@ get_landcovers <- function(
     path = "data/raster/geodata/"
   ) {
 
-  sapply(
+  rl <- sapply(
     X = vars,
     FUN = function(x, path){
-      landcover(x, path = path)
+      geodata::landcover(x, path = path)
     },
     path
-  ) |>
-    rast()
+  )
+
+  r <- rast(rl)
+
+  return(r)
 
 }

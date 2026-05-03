@@ -1,12 +1,12 @@
 library(targets)
 library(geotargets)
-library(targets.utils) # remotes::install_github("geryan/targets.utils")
+library(targets.utils) ## pak::pak("geryan/targets.utils")
 
 tar_option_set(
   packages = c(
-    "tibble",
+    #"tibble",
     "dplyr",
-    "sdmtools",  # remotes::install_github("idem-lab/sdmtools)
+    "sdmtools",  # remotes::install_github("idem-lab/sdmtools@no_malariaAtlas") #this version is lighter and does everything needed without importing malariaAtlas and multispeciesPP
     "readr",
     "tidyr",
     "terra",
@@ -24,8 +24,9 @@ tar_option_set(
     "magrittr",
     "stringr",
     "bayesplot",
-    "patchwork"
+    "patchwork",
     # "see"
+    "MCMCvis"
   ),
   workspace_on_error = TRUE
 )
@@ -44,6 +45,11 @@ list(
     Sys.info()[["user"]] == "nick"
   ),
 
+  tar_target(
+    user_is_gerry_spartan,
+    Sys.info()[["user"]] == "ryange"
+  ),
+
   # read in offset layers
 
   # all raw layers
@@ -53,7 +59,11 @@ list(
       odir = ifelse(
         user_is_nick,
         "../mosmicrosim/processing/vector_rasters",
-        "/Users/gryan/Dropbox/vector_rasters/"
+        ifelse(
+          user_is_gerry_spartan,
+          "/data/gpfs/projects/punim1422/vector_rasters/",
+          "/Users/gryan/Dropbox/vector_rasters/"
+        )
       )
     )
   ),
@@ -67,11 +77,34 @@ list(
       set_layer_names("project_mask")
   ),
 
+
   # read in other layers and match to offset size shape and extent
-  #
+
+  # tar_terra_rast(
+  #   landcover_raw,
+  #   get_landcovers(
+  #     vars = c(
+  #       "trees",
+  #       "grassland",
+  #       "shrubs",
+  #       "cropland",
+  #       "built",
+  #       #"bare",
+  #       "water",
+  #       "wetland",
+  #       "mangroves"
+  #     ),
+  #     path = ifelse(
+  #       user_is_gerry_spartan,
+  #       "/data/gpfs/projects/punim1422/va_multispecies_sdm/data/raster/geodata/",
+  #       "data/raster/geodata/"
+  #     )
+  #   )
+  # ),
+
   tar_terra_rast(
     landcover_raw,
-    get_landcovers(
+    gt_lndcvr(
       vars = c(
         "trees",
         "grassland",
@@ -83,18 +116,64 @@ list(
         "wetland",
         "mangroves"
       ),
-      path = "data/raster/geodata/"
+      path = ifelse(
+        user_is_gerry_spartan,
+        "/data/gpfs/projects/punim1422/va_multispecies_sdm/data/raster/geodata/",
+        "data/raster/geodata/"
+      )
     )
   ),
 
+  # tar_terra_rast(
+  #   landcover_raw,
+  #   sapply(
+  #     X = c(
+  #       "trees",
+  #       "grassland",
+  #       "shrubs",
+  #       "cropland",
+  #       "built",
+  #       #"bare",
+  #       "water",
+  #       "wetland",
+  #       "mangroves"
+  #     ),
+  #     FUN = function(x, path){
+  #       landcover(x, path = path)
+  #     },
+  #     ifelse(
+  #       user_is_gerry_spartan,
+  #       "/data/gpfs/projects/punim1422/va_multispecies_sdm/data/raster/geodata/",
+  #       "data/raster/geodata/"
+  #     )
+  #   ) |>
+  #     rast()
+  # ),
+
+
+
+
   # load the bare landcover
+  # tar_terra_rast(
+  #   landcover_bare_raw,
+  #   get_landcovers(
+  #     vars = c(
+  #       "bare"
+  #     ),
+  #     path = "data/raster/geodata/"
+  #   )
+  # ),
   tar_terra_rast(
     landcover_bare_raw,
-    get_landcovers(
+    gt_lndcvr(
       vars = c(
         "bare"
       ),
-      path = "data/raster/geodata/"
+      ifelse(
+        user_is_gerry_spartan,
+        "/data/gpfs/projects/punim1422/va_multispecies_sdm/data/raster/geodata/",
+        "data/raster/geodata/"
+      )
     )
   ),
 
@@ -151,8 +230,8 @@ list(
   tar_terra_rast(
     bioregion_layers,
     make_smooth_dummies(
-      oneearth_vect,
-      mask = project_mask_5,
+      oneearth_spatvector = oneearth_vect,
+      mask_lyr = project_mask_5,
       level = "bioregion"
     )
   ),
@@ -201,6 +280,17 @@ list(
       offsets_raw,
       project_mask_5,
       replacement = .Machine$double.eps
+    )
+  ),
+
+  tar_terra_rast(
+    offsets_10,
+    aggregate(
+      offsets_5,
+      fact = 2,
+      fun = "mean",
+      na.rm = TRUE,
+      cores = 4
     )
   ),
 
@@ -375,19 +465,48 @@ list(
   # soil clay
 
   tar_terra_rast(
-    soil_clay_filled,
-    get_soil_af() |>
-      set_layer_names("soil_clay")
+    soiltype_clay_filled,
+    get_soil_af(var = "clay") |>
+      set_layer_names("clay")
   ),
 
   tar_terra_rast(
-    soil_clay_5,
-    soil_clay_filled |>
+    soiltype_clay_5,
+    soiltype_clay_filled |>
       aggregate(fact = 5) |>
       crop(y = project_mask_5) |>
       resample(y = project_mask_5) |>
       mask(mask = project_mask_5) |>
       scale()
+  ),
+
+  tar_terra_rast(
+    soiltype_silt_filled,
+    get_soil_af(var = "silt") |>
+      set_layer_names("silt")
+  ),
+
+  tar_terra_rast(
+    soiltype_silt_5,
+    soiltype_silt_filled |>
+      aggregate(fact = 5) |>
+      crop(y = project_mask_5) |>
+      resample(y = project_mask_5) |>
+      mask(mask = project_mask_5) |>
+      scale()
+  ),
+
+  tar_terra_rast(
+    soiltype_layers,
+    c(
+      soiltype_clay_5,
+      soiltype_silt_5
+    )
+  ),
+
+  tar_target(
+    soiltype_names,
+    names(soiltype_layers)
   ),
 
   # footprint
@@ -408,7 +527,8 @@ list(
       crop(y = project_mask_5) |>
       resample(y = project_mask_5) |>
       mask(mask = project_mask_5) |>
-      scale()
+      #scale()
+      scale_rast_to_1()
   ),
 
   # tar_terra_rast(
@@ -422,6 +542,11 @@ list(
   #     scale()
   # ),
 
+  tar_terra_rast(
+    offset_temp_5,
+    make_temperature_offset(project_mask_5)
+  ),
+
   #
   # bias
   # travel time from research facilities
@@ -430,7 +555,7 @@ list(
 
   tar_terra_rast(
     bias_tt_raw,
-    if (user_is_nick) {
+    if (user_is_nick | user_is_gerry_spartan) {
       rast("data/raster/tt_by_country.tif")
     } else{
       rast("/Users/gryan/Documents/tki_work/vector_atlas/africa_anopheles_sampling_bias/outputs/tt_by_country.tif")
@@ -451,6 +576,8 @@ list(
       mask(mask = project_mask_5) |>
       `names<-`("travel_time")
   ),
+
+
 
 
   #
@@ -485,6 +612,9 @@ list(
       "wetland",
       "mangroves",
 
+      # also footprint for anthropophilic/anthropophagic spp
+      "footprint",
+
       # and proximity to sea, for merus and melas
       "prox_to_sea"
 
@@ -496,14 +626,25 @@ list(
     "travel_time"
   ),
 
+  tar_target(
+    offset_names,
+    "offset_temp"
+  ),
+
   tar_terra_rast(
     covariate_rast_5_all,
     c(
       landcover_covs,
       prox_to_sea,
 
+      soiltype_layers,
+
+      footprint_5,
+
       # subrealm_layers,
       bioregion_layers,
+
+      offset_temp_5,
 
       bias_tt_5
     )
@@ -516,6 +657,8 @@ list(
       target_covariate_names = target_covariate_names,
       # subrealm_names = subrealm_names,
       bioregion_names = bioregion_names,
+      soiltype_names = soiltype_names,
+      offset_names = offset_names,
       bias_names = bias_names
     )
   ),
@@ -628,6 +771,11 @@ list(
     )
   ),
 
+  tar_terra_vect(
+    pharoensis_expert_map,
+    get_pharoensis_expert_map()
+  ),
+
   # extent of this is too small?
   tar_terra_rast(
     expert_offset_maps,
@@ -703,7 +851,8 @@ list(
  tar_target(
    raw_data_file,
    #"data/tabular/VA_FULL_DATA_20250716.csv",
-   "data/tabular/VA_DATA_20260218.csv",
+   #"data/tabular/VA_DATA_20260218.csv",
+   "data/tabular/va.data_20260427.csv",
    format = "file"
  ),
 
@@ -742,6 +891,23 @@ list(
    explore_full_data_records(full_data_records)
  ),
 
+ tar_terra_vect(
+   presences_outside_expert_range,
+   get_presences_outside_expert_range(
+     full_data_records,
+     expert_maps
+   )
+ ),
+
+ tar_target(
+   presences_outside_expert_range_plot,
+   plot_presences_outside_expert_range(
+     presences_outside_expert_range,
+     expert_maps
+   )
+ ),
+
+
  tar_target(
    species_unique_location_records,
    full_data_records |>
@@ -757,15 +923,6 @@ list(
  tar_target(
    target_species,
    target_spp()
-   #target_spp_test_only()
-   # c(
-   #   "arabiensis", # in sinka 2010
-   #   "coluzzii",
-   #   "funestus", # in sinka 2010
-   #   "gambiae",  # in sinka 2010
-   #   "moucheti", # in sinka 2010
-   #   "nili"#,  # in sinka 2010
-   # )
  ),
 
 
@@ -855,7 +1012,8 @@ list(
                target_covariate_names,
                # subrealm_names,
                bioregion_names,
-               #offset_names,
+               soiltype_names,
+               offset_names,
                bias_names
              )
          ]
@@ -867,14 +1025,14 @@ list(
  # development
  tar_target(
    record_data_spatial_subsample,
-   record_data_spatial |>
-     group_by(
-       species,
-       data_type,
-       sampling_method
-     ) |>
+   record_data_spatial #|>
+     # group_by(
+     #   species,
+     #   data_type,
+     #   sampling_method
+     # ) |>
      # slice_sample(prop = 0.5) |>
-     ungroup()
+     # ungroup()
  ),
 
  # put together with background data
@@ -1071,38 +1229,38 @@ list(
  #   )
  # ),
 
- ######
- # PCA Covariate layers
- ######
- tar_terra_rast(
-   pca_covariate_layers,
-   make_pca_covariate_layers(
-     covariate_rast_5,
-     target_covariate_names,
-     model_data_spatial
-   )
- ),
-
- tar_target(
-   model_data_spatial_pca,
-   get_spatial_values(
-     pca_covariate_layers,
-     model_data_spatial,
-     project_mask_5
-   ) |>
-     select(
-       - all_of(target_covariate_names),
-     )
- ),
-
- tar_target(
-   covs_plots_pca,
-   make_covariate_plots(
-     model_data_spatial_pca,
-     cvnames = names(pca_covariate_layers),
-     fname = "outputs/figures/cov_violins_pca.png"
-   )
- ),
+ # ######
+ # # PCA Covariate layers
+ # ######
+ # tar_terra_rast(
+ #   pca_covariate_layers,
+ #   make_pca_covariate_layers(
+ #     covariate_rast_5,
+ #     target_covariate_names,
+ #     model_data_spatial
+ #   )
+ # ),
+ #
+ # tar_target(
+ #   model_data_spatial_pca,
+ #   get_spatial_values(
+ #     pca_covariate_layers,
+ #     model_data_spatial,
+ #     project_mask_5
+ #   ) |>
+ #     select(
+ #       - all_of(target_covariate_names),
+ #     )
+ # ),
+ #
+ # tar_target(
+ #   covs_plots_pca,
+ #   make_covariate_plots(
+ #     model_data_spatial_pca,
+ #     cvnames = names(pca_covariate_layers),
+ #     fname = "outputs/figures/cov_violins_pca.png"
+ #   )
+ # ),
 
 
  # # write out to process from monthly on MAP AWS
@@ -1139,125 +1297,125 @@ list(
  ## models
  ################
 
- ## multispecies pp count
- ##
-
- # fit the model in greta
- # save an image of the environment within function
- # otherwise the greta model nodes become disconnected and buggered up
- # because of some R6 nonsense with greta or whatever and the usual targets
- # shenanigans
- tar_target(
-   model_fit_image_multisp_pp_count,
-   fit_model_multisp_pp_count(
-     model_data_spatial = model_data_spatial,
-     target_covariate_names = target_covariate_names,
-     target_species = target_species,
-     project_mask = project_mask_5,
-     image_name = "outputs/images/multisp_pp_count.RData",
-     n_burnin = 1000,
-     n_samples = 500,
-     n_chains = 20
-   )
- ),
-
- # # read in image and predict out raster as a tif
- tar_target(
-   pred_file_multisp_pp_count,
-   predict_greta_mspp_count(
-     image_filename = model_fit_image_multisp_pp_count,
-     prediction_layer = covariate_rast_10,
-     offset = offsets_avg_10,
-     target_species,
-     target_covariate_names,
-     output_file_prefix = "outputs/rasters/multisp_pp_count"
-   )
- ),
-
+ # ## multispecies pp count
+ # ##
+ #
+ # # fit the model in greta
+ # # save an image of the environment within function
+ # # otherwise the greta model nodes become disconnected and buggered up
+ # # because of some R6 nonsense with greta or whatever and the usual targets
+ # # shenanigans
  # tar_target(
- #   pred_file_multisp_pp_count_pa_expoff,
- #   add_expert_offset(
- #     predfilelist = pred_file_multisp_pp_count,
- #     #expert_offset_maps = rast("outputs/rasters/va_plots_20250718/expert_offset_aggregated.tif")
- #     expert_offset_maps = expert_offset_maps_500,
- #     pred_type = "pa"
+ #   model_fit_image_multisp_pp_count,
+ #   fit_model_multisp_pp_count(
+ #     model_data_spatial = model_data_spatial,
+ #     target_covariate_names = target_covariate_names,
+ #     target_species = target_species,
+ #     project_mask = project_mask_5,
+ #     image_name = "outputs/images/multisp_pp_count.RData",
+ #     n_burnin = 1000,
+ #     n_samples = 500,
+ #     n_chains = 20
+ #   )
+ # ),
+ #
+ # # # read in image and predict out raster as a tif
+ # tar_target(
+ #   pred_file_multisp_pp_count,
+ #   predict_greta_mspp_count(
+ #     image_filename = model_fit_image_multisp_pp_count,
+ #     prediction_layer = covariate_rast_10,
+ #     offset = offsets_avg_10,
+ #     target_species,
+ #     target_covariate_names,
+ #     output_file_prefix = "outputs/rasters/multisp_pp_count"
+ #   )
+ # ),
+ #
+ # # tar_target(
+ # #   pred_file_multisp_pp_count_pa_expoff,
+ # #   add_expert_offset(
+ # #     predfilelist = pred_file_multisp_pp_count,
+ # #     #expert_offset_maps = rast("outputs/rasters/va_plots_20250718/expert_offset_aggregated.tif")
+ # #     expert_offset_maps = expert_offset_maps_500,
+ # #     pred_type = "pa"
+ # #   )
+ # # ),
+ # #
+ # # tar_target(
+ # #   pred_file_multisp_pp_count_count_expoff,
+ # #   add_expert_offset(
+ # #     predfilelist = pred_file_multisp_pp_count,
+ # #     #expert_offset_maps = rast("outputs/rasters/va_plots_20250718/expert_offset_aggregated.tif")
+ # #     expert_offset_maps = expert_offset_maps_500,
+ # #     pred_type = "count"
+ # #   )
+ # # ),
+ #
+ #
+ # #
+ # # #####
+ # #
+ # # distribution plots
+ #
+ # # this is the temporary thang until the above are tidied
+ # tar_terra_rast(
+ #   pred_dist,
+ #   rast(x = pred_file_multisp_pp_count$pa)
+ # ),
+ #
+ # tar_target(
+ #   distribution_plots,
+ #   make_distribution_plots(
+ #     pred_dist,
+ #     model_data_spatial,
+ #     plot_dir = "outputs/figures/distribution_plots/distn_20260211"
+ #   )
+ # ),
+ #
+ # ## relative abundance
+ #
+ #
+ # # this is making the gambiae-coluzzii layer inside this function
+ # # if we get the hierarchical species complex model in, be sure to still do this
+ # # as the gam-col layer would (should :grimace:) only be the shared complex
+ # # thingies, not the joint species level ones
+ # tar_terra_rast(
+ #   rel_abund_rgb,
+ #   make_rel_abund_rgb(
+ #     #x = pred_dist_rgb,
+ #     x = pred_dist,
+ #     threshold = 0.05
+ #   ),
+ #   datatype = "INT1U"
+ # ),
+ #
+ # tar_target(
+ #   rel_abund_plots,
+ #   make_rel_abund_rgb_plot(
+ #     rel_abund_rgb,
+ #     project_mask_5,
+ #     filename = "outputs/figures/rgb_relative_abundance_20251219.png"
+ #   )
+ # ),
+ #
+ # ## variance scaling
+ #
+ # tar_terra_rast(
+ #   pred_dist_scale,
+ #   scale_predictions(
+ #     lambda_file = pred_file_multisp_pp_count_count_expoff
  #   )
  # ),
  #
  # tar_target(
- #   pred_file_multisp_pp_count_count_expoff,
- #   add_expert_offset(
- #     predfilelist = pred_file_multisp_pp_count,
- #     #expert_offset_maps = rast("outputs/rasters/va_plots_20250718/expert_offset_aggregated.tif")
- #     expert_offset_maps = expert_offset_maps_500,
- #     pred_type = "count"
+ #   distribution_plots_scale,
+ #   make_distribution_plots(
+ #     pred_dist_scale,
+ #     model_data_spatial,
+ #     plot_dir = "outputs/figures/distribution_plots/distn_20251219_scale"
  #   )
  # ),
-
-
- #
- # #####
- #
- # distribution plots
-
- # this is the temporary thang until the above are tidied
- tar_terra_rast(
-   pred_dist,
-   rast(x = pred_file_multisp_pp_count$pa)
- ),
-
- tar_target(
-   distribution_plots,
-   make_distribution_plots(
-     pred_dist,
-     model_data_spatial,
-     plot_dir = "outputs/figures/distribution_plots/distn_20260211"
-   )
- ),
-
- ## relative abundance
-
-
- # this is making the gambiae-coluzzii layer inside this function
- # if we get the hierarchical species complex model in, be sure to still do this
- # as the gam-col layer would (should :grimace:) only be the shared complex
- # thingies, not the joint species level ones
- tar_terra_rast(
-   rel_abund_rgb,
-   make_rel_abund_rgb(
-     #x = pred_dist_rgb,
-     x = pred_dist,
-     threshold = 0.05
-   ),
-   datatype = "INT1U"
- ),
-
- tar_target(
-   rel_abund_plots,
-   make_rel_abund_rgb_plot(
-     rel_abund_rgb,
-     project_mask_5,
-     filename = "outputs/figures/rgb_relative_abundance_20251219.png"
-   )
- ),
-
- ## variance scaling
-
- tar_terra_rast(
-   pred_dist_scale,
-   scale_predictions(
-     lambda_file = pred_file_multisp_pp_count_count_expoff
-   )
- ),
-
- tar_target(
-   distribution_plots_scale,
-   make_distribution_plots(
-     pred_dist_scale,
-     model_data_spatial,
-     plot_dir = "outputs/figures/distribution_plots/distn_20251219_scale"
-   )
- ),
 
 
  ###########
@@ -1272,27 +1430,45 @@ list(
      target_species = target_species,
      # subrealm_names = subrealm_names,
      bioregion_names = bioregion_names,
+     soiltype_names = soiltype_names,
      project_mask = project_mask_5,
      image_name = "outputs/images/multisp_pp_count_sm.RData",
-     n_burnin = 1000,
-     n_samples = 500,
+     n_burnin = 5000,
+     n_samples = 1000,
      n_chains = 50
    )
  ),
 
  tar_target(
-   pred_file_multisp_pp_count_sm,
-   predict_greta_mspp_count_sm(
-     image_filename = model_fit_image_multisp_pp_count_sm,
-     prediction_layer = covariate_rast_10,
-     offset = offsets_avg_10,
-     target_species = target_species,
-     target_covariate_names = target_covariate_names,
-     # subrealm_names = subrealm_names,
-     bioregion_names = bioregion_names,
-     output_file_prefix = "outputs/rasters/multisp_pp_count_sm"
+   resids_multisp_pp_count_sm,
+   validation_and_checking(
+     model_fit_image_multisp_pp_count_sm,
+     nsims = 100
    )
  ),
+
+
+ # tar_target(
+ #   pred_file_multisp_pp_count_sm,
+ #   predict_greta_mspp_count_sm(
+ #     image_filename = model_fit_image_multisp_pp_count_sm,
+ #     prediction_layer = covariate_rast_10,
+ #     offset = offsets_avg_10,
+ #     target_species = target_species,
+ #     # NB the image above is loaded with load()
+ #     # which may cause problems with these _names args if they are
+ #     # different from in the fit function.
+ #     # Though they should be the same anyway - can't think of a situation
+ #     # where we could provide different ones to predict from fit anyway
+ #     # leaving with this note but commentint out this function as
+ #     # predict_lambda is the better one to use.
+ #     target_covariate_names = target_covariate_names,
+ #     # subrealm_names = subrealm_names,
+ #     bioregion_names = bioregion_names,
+ #     soiltype_names = soiltype_names,
+ #     output_file_prefix = "outputs/rasters/multisp_pp_count_sm"
+ #   )
+ # ),
 
  tar_target(
    preds_sm,
@@ -1303,23 +1479,26 @@ list(
      output_file_prefix = "outputs/rasters/multisp_pp_sm",
      offset = offsets_avg_10,
      sm = TRUE, # if predict survey method
-     nsims = 50 # lower for faster preds
+     nsims = 100 # lower for faster preds
    )
  ),
 
  tar_terra_rast(
    pred_dist_sm,
-   rast(preds_sm$p)
+   #rast(preds_sm$p)
+   rast("outputs/rasters/via_spartan/multisp_pp_sm_p.tif")
  ),
 
  tar_terra_rast(
    pred_dcv_sm,
-   rast(preds_sm$p_cv)
+   #rast(preds_sm$p_cv)
+   rast("outputs/rasters/via_spartan/multisp_pp_sm_p_cv.tif")
  ),
 
  tar_terra_rast(
    pred_lambda_mean,
-   rast(preds_sm$lambda_no_offset) * offsets_avg_10
+   #rast(preds_sm$lambda_no_offset) * offsets_avg_10
+   rast("outputs/rasters/via_spartan/multisp_pp_sm.tif") * offsets_avg_10
  ),
 
  tar_terra_rast(
@@ -1392,7 +1571,7 @@ list(
    make_distribution_plots(
      pred_dist_sm,
      model_data_spatial,
-     plot_dir = "outputs/figures/distribution_plots/distn_20260220_sm"
+     plot_dir = "outputs/figures/distribution_plots/distn_20260310_sm"
    )
  ),
 

@@ -4,6 +4,7 @@ fit_model_multisp_pp_count_sm <- function(
     target_species,
     # subrealm_names,
     bioregion_names,
+    soiltype_names,
     project_mask,
     image_name = "outputs/images/multisp_pp_count_sm.RData",
     n_burnin = 50,
@@ -35,7 +36,12 @@ fit_model_multisp_pp_count_sm <- function(
   distinct_coords <- model_data_spatial[distinct_idx, c("latitude", "longitude")]
 
   # get offset values from gambiae mechanistic model
-  log_offset <- log(model_data_spatial[distinct_idx,"offset"])|>
+  log_offset <- log(model_data_spatial[distinct_idx, "offset"])|>
+    as.matrix() |>
+    as_data()
+
+  # get modifying offset for temperature
+  offset_temp <- model_data_spatial[distinct_idx, "offset_temp"] |>
     as.matrix() |>
     as_data()
 
@@ -65,6 +71,15 @@ fit_model_multisp_pp_count_sm <- function(
     ) |>
     as.matrix() #|>
     # as_data()
+
+  # get soil type dummy values
+  x_soiltype <- model_data_spatial[distinct_idx,] |>
+    as_tibble() |>
+    select(
+      all_of(soiltype_names)
+    ) |>
+    as.matrix() #|>
+  # as_data()
 
   # get bias values
   z <- model_data_spatial[distinct_idx,"travel_time"] |>
@@ -204,7 +219,8 @@ fit_model_multisp_pp_count_sm <- function(
 
   # # model bioregion effects only as interactions with landcover, and expand
   # the covariate set
-  x_interactions <- make_designmat_interactions(x, x_bioregion)
+  x_intercovs <- cbind(x_bioregion, x_soiltype)
+  x_interactions <- make_designmat_interactions(x, x_intercovs)
   x_all <- cbind(x, x_interactions)
 
   # # or, include main terms and interactions
@@ -234,6 +250,17 @@ fit_model_multisp_pp_count_sm <- function(
   beta <- sweep(beta_raw, 1, beta_scale, FUN = "*")
 
   x_beta_species <- x_all %*% beta
+
+  offset_beta_raw <- normal(
+    0,
+    1,
+    dim = c(1, n_species)
+  )
+
+  offset_beta_scale <- beta_sd
+  offset_beta <- sweep(offset_beta_raw, 1, offset_beta_scale, FUN = "*")
+
+  log_offset_mod <- offset_temp %*% offset_beta
 
   # # for each covariate, model beta as a positive-constrained spatially-varying
   # # covariate. Positive so that abundance is forced to be higher in
@@ -373,13 +400,15 @@ fit_model_multisp_pp_count_sm <- function(
 
 
   # offset from calculated gambiae adult survival given habitat
-  log_lambda_adults <- log_offset
+  #log_lambda_adults <- log_offset
+  log_lambda_adults <- sweep(log_offset_mod, 1, log_offset, "+")
   # this turns offset off instead of above line
   # log_lambda_adults <- rep(0, times = dim(log_offset)[[1]]) |>
   #  as_data()
 
   # combine larval habitat and adult life cycle offset
-  log_lambda <- sweep(log_lambda_larval_habitat, 1, log_lambda_adults, "+")
+   #log_lambda <- sweep(log_lambda_larval_habitat, 1, log_lambda_adults, "+")
+   log_lambda <- log_lambda_larval_habitat + log_lambda_adults
 
   # can easily replace this model with something more interesting, like a low-rank
   # GP on covariate space or something mechanistic
@@ -559,61 +588,6 @@ fit_model_multisp_pp_count_sm <- function(
              sampling_re_raw, sampling_re_sd,
              sqrt_inv_size)
 
-
-  ############
-  # prior predictive checks
-  ############
-
-  # prepare data - it's in greta format so get it out
-
-  # convert list to vectors / matrices
-  po_dat <- po_data_response |>
-    as.numeric()
-  pa_dat <- pa_data_response |>
-    as.numeric()
-  count_dat <- count_data_response |>
-    as.numeric()
-
-  # make list for passing to checks
-  dat <- list(
-    pa_dat = pa_dat,
-    po_dat = po_dat,
-    count_dat = count_dat
-  )
-
-  # simulate data from prior
-  prior_preds_calc <- calculate(
-    po_data_response,
-    pa_data_response,
-    count_data_response,
-    nsim = 100
-  )
-
-  # convert into matrices
-  po_pred_prior <- prior_preds_calc$po_data_response[,,1] |>
-    as.matrix()
-  pa_pred_prior <- prior_preds_calc$pa_data_response[,,1] |>
-    as.matrix()
-  count_pred_prior <- prior_preds_calc$count_data_response[,,1] |>
-    as.matrix()
-
-  # make list for passing to checks
-  preds_prior <- list(
-    po_pred = po_pred_prior |>
-      as.matrix(),
-    pa_pred = pa_pred_prior |>
-      as.matrix(),
-    count_pred = count_pred_prior |>
-      as.matrix()
-  )
-
-  # pass data to checks
-  predictive_checks(
-    preds = preds_prior,
-    dat = dat,
-    output_prefix = "outputs/figures/ppc_sm/prior"
-  )
-
   ###################
   # fit model
   ###################
@@ -641,13 +615,15 @@ fit_model_multisp_pp_count_sm <- function(
   # variance_params_idx <- match(variance_param_names, names(inits_point))
   # inits_point[variance_params_idx] <- NULL
 
-  n_chains <- 50
+  #n_chains <- 50
 
   # # random inits per chain from the PMC particles
   # init_particles <- smc_output$particles[seq_len(n_chains), ]
   # inits_random <- initials_from_free_states(m, init_particles)
 
-  n_burnin <- 2000
+
+  #n_burnin <- 200
+  #n_samples <- 100
 
   Lmax <- 20
   Lmin <- round(Lmax / 2)
@@ -660,91 +636,6 @@ fit_model_multisp_pp_count_sm <- function(
     chains = n_chains,
     # initial_values = inits_point
   )
-
-  mcmc_trace(
-    x = draws,
-    regex_pars = "alpha"
-  )
-  ggsave(
-    "outputs/figures/traceplots/sm_alpha.png"
-  )
-
-  mcmc_trace(
-    x = draws,
-    regex_pars = "beta"
-  )
-  ggsave(
-    "outputs/figures/traceplots/sm_beta.png"
-  )
-
-  mcmc_trace(
-    x = draws,
-    regex_pars = c("delta", "gamma")
-  )
-  ggsave(
-    "outputs/figures/traceplots/sm_delta_gamma.png"
-  )
-
-  mcmc_trace(
-    x = draws,
-    regex_pars = "sampling"
-  )
-  ggsave(
-    "outputs/figures/traceplots/sm_sampling.png"
-  )
-
-  coda::gelman.diag(draws,
-                    autoburnin = FALSE,
-                    multivariate = FALSE)
-
-  ############
-  # posterior predictive checks
-  ############
-
-  # simulate data from posterior
-  posterior_calc <- calculate(
-    po_data_response,
-    pa_data_response,
-    count_data_response,
-    values = draws,
-    nsim = 100
-  )
-
-  # convert into matrices
-  po_pred_post <- posterior_calc$po_data_response[,,1] |>
-    as.matrix()
-  pa_pred_post <- posterior_calc$pa_data_response[,,1] |>
-    as.matrix()
-  count_pred_post <- posterior_calc$count_data_response[,,1] |>
-    as.matrix()
-
-  # make list for passing to checks
-  preds_posterior <- list(
-    po_pred = po_pred_post |>
-      as.matrix(),
-    pa_pred = pa_pred_post |>
-      as.matrix(),
-    count_pred = count_pred_post |>
-      as.matrix()
-  )
-
-  # pass data to checks
-  predictive_checks(
-    preds = preds_posterior,
-    dat = dat,
-    output_prefix = "outputs/figures/ppc_sm/posterior"
-  )
-
-
-  ###### Plot parameter estimates
-
-  interval_plots(
-    draws = draws,
-    target_species = target_species,
-    target_covariate_names = target_covariate_names,
-    sampling_methods = sampling_methods
-  )
-
 
 
   ############

@@ -9,19 +9,22 @@
 #' @author Nick Golding
 #' @export
 make_smooth_dummies <- function(oneearth_spatvector,
-                                mask,
+                                mask_lyr,
                                 level = c("bioregion", "subrealm", "realm")) {
 
   level <- match.arg(level)
 
+  mf <- terraOptions()$memfrac
+  terraOptions(memfrac = 0.9)
+
   # make factor raster of this level of the classification
   factor_rast <- oneearth_spatvector |>
     terra::rasterize(
-      mask,
+      mask_lyr,
       field = level
     ) |>
     terra::mask(
-      mask
+      mask_lyr
     ) |>
     terra::droplevels()
 
@@ -44,7 +47,7 @@ make_smooth_dummies <- function(oneearth_spatvector,
   )
 
   mask_proj <- terra::project(
-    mask,
+    mask_lyr,
     crs("+proj=eqearth")
   )
 
@@ -71,16 +74,17 @@ make_smooth_dummies <- function(oneearth_spatvector,
   # and project back to the original setup and fill in any gaps created
   dummies_smoothed_norm <- dummies_proj_smoothed_norm |>
     terra::project(
-      crs(mask)
+      crs(mask_lyr)
     ) |>
     terra::resample(
-      mask
+      mask_lyr
     ) |>
     fill_na_with_nearest_mean(
       maxRadiusCell = 3
     ) |>
-    mask(mask)
+    mask(mask_lyr)
 
+  terraOptions(memfrac = mf)
 
   # return these
   dummies_smoothed_norm

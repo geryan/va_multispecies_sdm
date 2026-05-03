@@ -6,6 +6,7 @@ predict_greta_mspp_count_sm <- function(
     target_covariate_names = target_covariate_names,
     # subrealm_names = subrealm_names,
     bioregion_names = bioregion_names,
+    soiltype_names = soiltype_names,
     output_file_prefix
 ){
 
@@ -30,6 +31,8 @@ predict_greta_mspp_count_sm <- function(
   # x_subrealm_predict <- layer_values[!naidx, subrealm_names]
   x_bioregion_predict <- layer_values[!naidx, bioregion_names]
 
+  x_soiltype_predict <- layer_values[!naidx, soiltype_names]
+
 
   # # model bioregion effects as additive to landcover, so just expand the
   # # covariate set
@@ -37,8 +40,12 @@ predict_greta_mspp_count_sm <- function(
 
   # # model bioregion effects only as interactions with landcover, and expand
   # the covariate set
-  x_interactions_predict <- make_designmat_interactions(x_predict,
-                                                        x_bioregion_predict)
+  #
+  x_intercovs_predict <- cbind(x_bioregion_predict, x_soiltype_predict)
+  x_interactions_predict <- make_designmat_interactions(
+    x_predict,
+    x_intercovs_predict
+  )
   x_all_predict <- cbind(x_predict, x_interactions_predict)
   x_all_predict <- as_data(x_all_predict)
 

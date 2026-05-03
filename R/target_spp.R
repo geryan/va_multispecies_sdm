@@ -2,7 +2,7 @@ target_spp <- function(){
 
   # latest 20241108
 
-  c(
+  spp <- c(
     "arabiensis", # in sinka 2010
     "coluzzii",
     # "coustani",
@@ -12,12 +12,12 @@ target_spp <- function(){
     "melas", # in sinka 2010
     "merus", # in sinka 2010
     "moucheti", # in sinka 2010
-    "nili"  # in sinka 2010
+    "nili"#,  # in sinka 2010
     # "pharoensis",
     # "quadriannulatus",
     # "rufipes",
     # "squamosus",
-    # "ziemanni"#, # up to here have >100 unique locations (and >=68 presences)
+    # "ziemanni" #, # up to here have >100 unique locations (and >=68 presences)
     # "pretoriensis", # here down have >30 unique locations (and >20 unique site presences)
     # "rivulorum",
     # "leesoni",
@@ -37,6 +37,8 @@ target_spp <- function(){
     # "bwambae",
     # "vaneedeni"
   )
+
+  spp[order(spp)]
 
 
 }
