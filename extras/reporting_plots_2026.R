@@ -18,7 +18,7 @@ eo_dist <- pred_dist_sm * eo
 make_distribution_plots(
     eo_dist,
     model_data_spatial,
-    plot_dir = "outputs/figures/distribution_plots/distn_20260320_sm"
+    plot_dir = "outputs/figures/distribution_plots/distn_20260320_sm_alt"
   )
 )
 
