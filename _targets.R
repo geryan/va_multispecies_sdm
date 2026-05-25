@@ -249,7 +249,14 @@ list(
   # the names of the dummy variables
   tar_target(
     subrealm_names,
-    names(subrealm_layers)
+    names(subrealm_layers)  |>
+      setdiff(
+        c(
+          "Greater Arabian Peninsula",
+          "North Africa",
+          "Southern Afrotropics"
+        )
+      )
   ),
 
   # set the bioregion names, excluding some bioregions that are outside the area
@@ -641,7 +648,7 @@ list(
 
       footprint_5,
 
-      # subrealm_layers,
+      subrealm_layers,
       bioregion_layers,
 
       offset_temp_5,
@@ -655,7 +662,7 @@ list(
     subset_covariate_rast(
       covariate_rast_5_all,
       target_covariate_names = target_covariate_names,
-      # subrealm_names = subrealm_names,
+      subrealm_names = subrealm_names,
       bioregion_names = bioregion_names,
       soiltype_names = soiltype_names,
       offset_names = offset_names,
@@ -1010,7 +1017,7 @@ list(
            !names(covariate_rast_5_all) %in%
              c(
                target_covariate_names,
-               # subrealm_names,
+               subrealm_names,
                bioregion_names,
                soiltype_names,
                offset_names,
@@ -1485,20 +1492,20 @@ list(
 
  tar_terra_rast(
    pred_dist_sm,
-   #rast(preds_sm$p)
-   rast("outputs/rasters/via_spartan/multisp_pp_sm_p.tif")
+   rast(preds_sm$p)
+   #rast("outputs/rasters/via_spartan/multisp_pp_sm_p.tif")
  ),
 
  tar_terra_rast(
    pred_dcv_sm,
-   #rast(preds_sm$p_cv)
-   rast("outputs/rasters/via_spartan/multisp_pp_sm_p_cv.tif")
+   rast(preds_sm$p_cv)
+   #rast("outputs/rasters/via_spartan/multisp_pp_sm_p_cv.tif")
  ),
 
  tar_terra_rast(
    pred_lambda_mean,
-   #rast(preds_sm$lambda_no_offset) * offsets_avg_10
-   rast("outputs/rasters/via_spartan/multisp_pp_sm.tif") * offsets_avg_10
+   rast(preds_sm$lambda_no_offset) * offsets_avg_10
+   #rast("outputs/rasters/via_spartan/multisp_pp_sm.tif") * offsets_avg_10
  ),
 
  tar_terra_rast(

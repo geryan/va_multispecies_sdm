@@ -12,7 +12,7 @@
 subset_covariate_rast <- function(
   covariate_rast_all,
   target_covariate_names = NULL,
-  # subrealm_names = NULL,
+  subrealm_names = NULL,
   bioregion_names = NULL,
   soiltype_names = NULL,
   offset_names = NULL,
@@ -21,7 +21,7 @@ subset_covariate_rast <- function(
 
   covariate_rast_all[[c(
     target_covariate_names,
-    # subrealm_names,
+    subrealm_names,
     bioregion_names,
     soiltype_names,
     offset_names,
