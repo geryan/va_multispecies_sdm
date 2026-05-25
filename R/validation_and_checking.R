@@ -73,7 +73,7 @@ validation_and_checking <- function(
       "%s/prior",
       plotdir
     )
-  )
+  ) |> try()
 
 
   ############
