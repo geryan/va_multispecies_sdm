@@ -650,14 +650,14 @@ validation_and_checking <- function(
                     autoburnin = FALSE,
                     multivariate = FALSE)
 
-  write_csv(
-    cbind(
-      par = rownames(rhats$psrf),
-      rhats$psrf |>
-        as.data.frame()
-    ),
-    file = "outputs/last_rhats.csv",
-  )
+  # write_csv(
+  #   cbind(
+  #     par = rownames(rhats$psrf),
+  #     rhats$psrf |>
+  #       as.data.frame()
+  #   ),
+  #   file = "outputs/last_rhats.csv",
+  # )
 
 
   ###### Plot parameter estimates
@@ -670,6 +670,13 @@ validation_and_checking <- function(
     sampling_methods = sampling_methods
   )
 
-  all_data_resids
+  list(
+    rhats = cbind(
+      par = rownames(rhats$psrf),
+      rhats$psrf |>
+        as.data.frame()
+    ),
+    resids = all_data_resids
+  )
 
 }
