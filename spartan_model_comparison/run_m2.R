@@ -10,7 +10,7 @@ n_samples <- 1000
 n_chains  <- 50
 n_sims    <- 100
 
-model_name <- "m1"
+model_name <- "m2"
 
 model_dir <- sprintf(
   "spartan_model_comparison/%s",
@@ -22,7 +22,7 @@ library(targets)
 tar_load_globals()
 tar_load_everything()
 
-m1_fit <- fit_m1(
+m2_fit <- fit_m2(
   model_data_spatial = model_data_spatial,
   target_covariate_names = target_covariate_names,
   target_species = target_species,
@@ -40,15 +40,15 @@ m1_fit <- fit_m1(
   n_chains = n_chains
 )
 
-resids_m1 <- validation_and_checking(
-  m1_fit,
+resids_m2 <- validation_and_checking(
+  m2_fit,
   nsims = n_sims,
   plotdir = model_dir
 )
 
 
-pred_lambda <- predict_lambda_m1(
-  image_name = m1_fit,
+pred_lambda <- predict_lambda_m2(
+  image_name = m2_fit,
   prediction_layer = covariate_rast_10, # use 10k for faster preds
   target_species,
   output_file_prefix = sprintf(

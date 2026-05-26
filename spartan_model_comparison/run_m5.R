@@ -1,16 +1,16 @@
-# run m1
+# run m5
 
 # spartan stuff
 #.libPaths("/home/ryange/R/gr_lib")
 .libPaths("~/R/gr_lib")
 
 
-n_burnin  <- 2000
-n_samples <- 1000
+n_burnin  <- 1000
+n_samples <- 500
 n_chains  <- 50
 n_sims    <- 100
 
-model_name <- "m1"
+model_name <- "m5"
 
 model_dir <- sprintf(
   "spartan_model_comparison/%s",
@@ -22,7 +22,7 @@ library(targets)
 tar_load_globals()
 tar_load_everything()
 
-m1_fit <- fit_m1(
+m5_fit <- fit_m5(
   model_data_spatial = model_data_spatial,
   target_covariate_names = target_covariate_names,
   target_species = target_species,
@@ -40,15 +40,15 @@ m1_fit <- fit_m1(
   n_chains = n_chains
 )
 
-resids_m1 <- validation_and_checking(
-  m1_fit,
+resids_m5 <- validation_and_checking(
+  m5_fit,
   nsims = n_sims,
   plotdir = model_dir
 )
 
 
-pred_lambda <- predict_lambda_m1(
-  image_name = m1_fit,
+pred_lambda <- predict_lambda_m5(
+  image_name = m5_fit,
   prediction_layer = covariate_rast_10, # use 10k for faster preds
   target_species,
   output_file_prefix = sprintf(
