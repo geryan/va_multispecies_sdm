@@ -14,3 +14,13 @@ rm(list = ls())
 source("spartan_model_comparison/run_m4.R")
 gc()
 rm(list = ls())
+
+
+gc()
+rm(list = ls())
+
+source("spartan_model_comparison/run_m6.R")
+gc()
+rm(list = ls())
+
+source("spartan_model_comparison/run_m7.R")
