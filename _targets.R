@@ -1479,8 +1479,9 @@ list(
 
  tar_target(
    preds_sm,
-   predict_lambda(
-     image_name = model_fit_image_multisp_pp_count_sm,
+   predict_lambda_m6(
+     #image_name = model_fit_image_multisp_pp_count_sm,
+     image_name = "spartan_model_comparison/m6_long/m6.RData",
      prediction_layer = covariate_rast_10, # use 10k for faster preds
      target_species,
      output_file_prefix = "outputs/rasters/multisp_pp_sm",
@@ -1492,8 +1493,8 @@ list(
 
  tar_terra_rast(
    pred_dist_sm,
-   rast(preds_sm$p)
-   #rast("outputs/rasters/via_spartan/multisp_pp_sm_p.tif")
+   #rast(preds_sm$p)
+   rast("outputs/")
  ),
 
  tar_terra_rast(
