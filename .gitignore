@@ -16,3 +16,4 @@ outputs
 *.pdf
 _targets/meta/meta
 .positai
+*.csv
