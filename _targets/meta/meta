@@ -1,4 +1,5 @@
 name|type|data|command|depend|seed|path|time|size|bytes|format|repository|iteration|parent|children|seconds|warnings|error
+<<<<<<< Updated upstream
 resids_multisp_pp_count_sm|stem|e7498694f0dd501c|d531b1828c5b3b6a|49df8b54124e5608|1003180063||t20597.9950377499s|s1245374b|1245374|rds|local|vector|||507.269|Removed 5036 rows containing non-finite outside the scale range (`stat_density()`).. Removed 820 rows containing non-finite outside the scale range (`stat_density()`).. Removed 5036 rows containing non-finite outside the scale range (`stat_ecdf()`).. Removed 820 rows containing non-finite outside the scale range (`stat_ecdf()`).. number of columns of result is not a multiple of vector length (arg 1). Using `size` aesthetic for lines was deprecated in ggplot2 3.4.0. ℹ Please use `linewidth` instead. ℹ The deprecated feature was likely used in the bayesplot package.   Please report the issue at <https://github.com/stan-dev/bayesplot/issues/>.. Removed 11185 rows containing missing values or values outside the scale range (`geom_tile()`).. Removed 11183 rows containing missing values or values outside the scale range (`geom_smooth()`).. Removed 12165 rows containing missing values or values outside the scale range (`geom_tile()`).. Removed 12163 rows containing missing values or values outside the scale range (`geom_smooth()`).. There were 2 warnings in `mutate()`. The first warning was: ℹ In argument: `idx1 = as.integer(...)`. Caused by warning: ! NAs introduced by coercion ℹ Run `dplyr::last_dplyr_warnings()` to see the 1 remaining warning.|
 abundance_cubes|stem|3ef0648ad674b0f1|9e72b0b4ee9e048b|4242178185abea29|705660323||t20504.235668226s|s189b|189|rds|local|vector|||17.358||
 bg_points|stem|e6467302d0118646|5ab3f349852ce216|7da45c4d61801ce8|1048788436||t20441.223471339s|s3312b|3312|rds|local|vector|||0.473||
@@ -83,6 +84,63 @@ m6_fit|stem|3db0839ec69a030f|01f7a01142ebe05b|45d2f7c2ae806a61|-1470817554||t206
 covariate_rast_5_all|stem|6e5b68c28553e465|325569babd75d612|c88800813a243993|252520625||t20598.2378562882s||103689976|format_custom&read=dGVycmE6OnJhc3QocGF0aCk&write=ewogICAgZG8uY2FsbCh0ZXJyYTo6d3JpdGVSYXN0ZXIsIGMobGlzdChvYmplY3QsIGZpbGVuYW1lID0gcGF0aCwgCiAgICAgICAgZmlsZXR5cGUgPSAiR1RpZmYiLCBvdmVyd3JpdGUgPSBUUlVFLCBnZGFsID0gTlVMTCksIGxpc3QoKSkpCn0&marshal=dGVycmE6OndyYXAob2JqZWN0KQ&unmarshal=dGVycmE6OnVud3JhcChvYmplY3Qp&convert=&copy=&repository=|local|list|||0.003||object 'soiltype_layers' not found
 resids_m6|stem|9454f0f4852606c7|a4ee7d6b12bdd274|b8dcc30fc2002b63|962700210||t20609.0137316872s|s1327797b|1327797|rds|local|vector|||107.953|Removed 1 row containing non-finite outside the scale range (`stat_density()`).. Removed 491369 rows containing non-finite outside the scale range (`stat_density()`).. Removed 820 rows containing non-finite outside the scale range (`stat_density()`).. Removed 1 row containing non-finite outside the scale range (`stat_ecdf()`).. Removed 491369 rows containing non-finite outside the scale range (`stat_ecdf()`).. Removed 820 rows containing non-finite outside the scale range (`stat_ecdf()`).. number of columns of result is not a multiple of vector length (arg 1). Using `size` aesthetic for lines was deprecated in ggplot2 3.4.0. ℹ Please use `linewidth` instead. ℹ The deprecated feature was likely used in the bayesplot package.   Please report the issue at <https://github.com/stan-dev/bayesplot/issues/>.. Removed 11378 rows containing missing values or values outside the scale range (`geom_tile()`).. Removed 11376 rows containing missing values or values outside the scale range (`geom_smooth()`).. Removed 12358 rows containing missing values or values outside the scale range (`geom_tile()`).. Removed 12356 rows containing missing values or values outside the scale range (`geom_smooth()`).. Removed 5089 rows containing non-finite outside the scale range (`stat_density()`).. Removed 820 rows containing non-finite outside the scale range (`stat_density()`).. Removed 5089 rows containing non-finite outside the scale range (`stat_ecdf()`).. Removed 820 rows containing non-finite outside the scale range (`stat_ecdf()`).. number of columns of result is not a multiple of vector length (arg 1). Removed 11171 rows containing missing values or values outside the scale range (`geom_tile()`).. Removed 11169 rows containing missing values or values outside the scale range (`geom_smooth()`).. Removed 12151 rows containing mi|
 landscape_mask_10|stem|ffdc2473cb0ac39e|98bab86081af8f9d|3bfb3b8f4874d93d|-2103182381||t20609.2080170995s|s1005873b|1005873|format_custom&read=dGVycmE6OnJhc3QocGF0aCk&write=ewogICAgZG8uY2FsbCh0ZXJyYTo6d3JpdGVSYXN0ZXIsIGMobGlzdChvYmplY3QsIGZpbGVuYW1lID0gcGF0aCwgCiAgICAgICAgZmlsZXR5cGUgPSAiR1RpZmYiLCBvdmVyd3JpdGUgPSBUUlVFLCBnZGFsID0gTlVMTCksIGxpc3QoKSkpCn0&marshal=dGVycmE6OndyYXAob2JqZWN0KQ&unmarshal=dGVycmE6OnVud3JhcChvYmplY3Qp&convert=&copy=&repository=|local|list|||0.015||
+=======
+n_bg|stem|6587a20b5c6af390|002f55d84e724561|2c530c1562a7fbd1|1960745550||t20595.0189668673s|s51b|51|rds|local|vector|||13.425||
+target_covariate_names|stem|61e36b2c01763817|0449bd7b004881ed|2c530c1562a7fbd1|1989916434||t20595.0189691226s|s137b|137|rds|local|vector|||0||
+footprint_raw|stem|2097422276409cc2|1dcdb3e3847c330c|fd3fdd3390e6fdb8|-1397492943||t20595.0192120002s|s61362877b|61362877|format_custom&read=dGVycmE6OnJhc3QocGF0aCk&write=ewogICAgZG8uY2FsbCh0ZXJyYTo6d3JpdGVSYXN0ZXIsIGMobGlzdChvYmplY3QsIGZpbGVuYW1lID0gcGF0aCwgCiAgICAgICAgZmlsZXR5cGUgPSAiR1RpZmYiLCBvdmVyd3JpdGUgPSBUUlVFLCBnZGFsID0gTlVMTCksIGxpc3QoKSkpCn0&marshal=dGVycmE6OndyYXAob2JqZWN0KQ&unmarshal=dGVycmE6OnVud3JhcChvYmplY3Qp&convert=&copy=&repository=|local|list|||0.085||
+soiltype_clay_filled|stem|a1d64945a308cc06|0056cf26f430aa37|43d42a8a3e23c5d6|-106397677||t20595.0193459002s|s48520745b|48520745|format_custom&read=dGVycmE6OnJhc3QocGF0aCk&write=ewogICAgZG8uY2FsbCh0ZXJyYTo6d3JpdGVSYXN0ZXIsIGMobGlzdChvYmplY3QsIGZpbGVuYW1lID0gcGF0aCwgCiAgICAgICAgZmlsZXR5cGUgPSAiR1RpZmYiLCBvdmVyd3JpdGUgPSBUUlVFLCBnZGFsID0gTlVMTCksIGxpc3QoKSkpCn0&marshal=dGVycmE6OndyYXAob2JqZWN0KQ&unmarshal=dGVycmE6OnVud3JhcChvYmplY3Qp&convert=&copy=&repository=|local|list|||9.245||
+target_species|stem|c882213d718026f2|5b6a4c229505afcc|f9479891e92e374b|1280782395||t20595.0193464778s|s119b|119|rds|local|vector|||0||
+bias_names|stem|738aeedbefb53021|00386986cc333f8d|2c530c1562a7fbd1|-256087789||t20595.0193466353s|s63b|63|rds|local|vector|||0.001||
+offset_names|stem|e8dd001aa7a7f98b|1b3df4c080294c03|2c530c1562a7fbd1|2906735||t20595.0193467895s|s63b|63|rds|local|vector|||0||
+user_is_gerry_spartan|stem|b41efa4c1ba9a3e7|b907d18418ea331f|2c530c1562a7fbd1|-1129245285||t20595.0193469505s|s46b|46|rds|local|vector|||0.001||
+soiltype_silt_filled|stem|25226065cc5a6a93|eae3541aeea5d599|43d42a8a3e23c5d6|493653222||t20595.019465341s|s65196857b|65196857|format_custom&read=dGVycmE6OnJhc3QocGF0aCk&write=ewogICAgZG8uY2FsbCh0ZXJyYTo6d3JpdGVSYXN0ZXIsIGMobGlzdChvYmplY3QsIGZpbGVuYW1lID0gcGF0aCwgCiAgICAgICAgZmlsZXR5cGUgPSAiR1RpZmYiLCBvdmVyd3JpdGUgPSBUUlVFLCBnZGFsID0gTlVMTCksIGxpc3QoKSkpCn0&marshal=dGVycmE6OndyYXAob2JqZWN0KQ&unmarshal=dGVycmE6OnVud3JhcChvYmplY3Qp&convert=&copy=&repository=|local|list|||7.99||
+user_is_nick|stem|b689c3c206d2241e|1af3ec0efe85def2|2c530c1562a7fbd1|575849623||t20595.0194659809s|s46b|46|rds|local|vector|||0||
+landcover_raw|stem|d50c7edfc6f758a2|7f9c9f1b97274be5|bd1a8f08d3611788|-1550043478||t20595.0484586635s|s2289421578b|2289421578|format_custom&read=dGVycmE6OnJhc3QocGF0aCk&write=ewogICAgZG8uY2FsbCh0ZXJyYTo6d3JpdGVSYXN0ZXIsIGMobGlzdChvYmplY3QsIGZpbGVuYW1lID0gcGF0aCwgCiAgICAgICAgZmlsZXR5cGUgPSAiR1RpZmYiLCBvdmVyd3JpdGUgPSBUUlVFLCBnZGFsID0gTlVMTCksIGxpc3QoKSkpCn0&marshal=dGVycmE6OndyYXAob2JqZWN0KQ&unmarshal=dGVycmE6OnVud3JhcChvYmplY3Qp&convert=&copy=&repository=|local|list|||0.453||
+offsets_raw|stem|995f27a2fe0b088f|cfd0c54d1847593f|a128742fe8d63387|-1932113517||t20595.0521560743s|s2113420159b|2113420159|format_custom&read=dGVycmE6OnJhc3QocGF0aCk&write=ewogICAgZG8uY2FsbCh0ZXJyYTo6d3JpdGVSYXN0ZXIsIGMobGlzdChvYmplY3QsIGZpbGVuYW1lID0gcGF0aCwgCiAgICAgICAgZmlsZXR5cGUgPSAiR1RpZmYiLCBvdmVyd3JpdGUgPSBUUlVFLCBnZGFsID0gTlVMTCksIGxpc3QoKSkpCn0&marshal=dGVycmE6OndyYXAob2JqZWN0KQ&unmarshal=dGVycmE6OnVud3JhcChvYmplY3Qp&convert=&copy=&repository=|local|list|||10.302||
+bias_tt_raw|stem|426f93dde528fc6a|79c18b27e82bdc40|15c2533cfde0da51|1803517966||t20595.0522364961s|s169908250b|169908250|format_custom&read=dGVycmE6OnJhc3QocGF0aCk&write=ewogICAgZG8uY2FsbCh0ZXJyYTo6d3JpdGVSYXN0ZXIsIGMobGlzdChvYmplY3QsIGZpbGVuYW1lID0gcGF0aCwgCiAgICAgICAgZmlsZXR5cGUgPSAiR1RpZmYiLCBvdmVyd3JpdGUgPSBUUlVFLCBnZGFsID0gTlVMTCksIGxpc3QoKSkpCn0&marshal=dGVycmE6OndyYXAob2JqZWN0KQ&unmarshal=dGVycmE6OnVud3JhcChvYmplY3Qp&convert=&copy=&repository=|local|list|||0.043||
+project_mask_5_outline|stem|ad4a912aa5e79ba4|fa94f7ec7ea4b5df|d9bf7dc18b6a7d91|109059265||t20595.052906672s|s661989b|661989|format_custom&read=dGVycmE6OnJhc3QocGF0aCk&write=ewogICAgZG8uY2FsbCh0ZXJyYTo6d3JpdGVSYXN0ZXIsIGMobGlzdChvYmplY3QsIGZpbGVuYW1lID0gcGF0aCwgCiAgICAgICAgZmlsZXR5cGUgPSAiR1RpZmYiLCBvdmVyd3JpdGUgPSBUUlVFLCBnZGFsID0gTlVMTCksIGxpc3QoKSkpCn0&marshal=dGVycmE6OndyYXAob2JqZWN0KQ&unmarshal=dGVycmE6OnVud3JhcChvYmplY3Qp&convert=&copy=&repository=|local|list|||48.58||
+water_mask_5|stem|28fadb35f709b38a|4ec5637f2113c5ed|886c6879a3704ff3|1374550677||t20595.0532957829s|s499504b|499504|format_custom&read=dGVycmE6OnJhc3QocGF0aCk&write=ewogICAgZG8uY2FsbCh0ZXJyYTo6d3JpdGVSYXN0ZXIsIGMobGlzdChvYmplY3QsIGZpbGVuYW1lID0gcGF0aCwgCiAgICAgICAgZmlsZXR5cGUgPSAiR1RpZmYiLCBvdmVyd3JpdGUgPSBUUlVFLCBnZGFsID0gTlVMTCksIGxpc3QoKSkpCn0&marshal=dGVycmE6OndyYXAob2JqZWN0KQ&unmarshal=dGVycmE6OnVud3JhcChvYmplY3Qp&convert=&copy=&repository=|local|list|||29.64||
+project_mask_5|stem|bc39bc450b55960a|f4c60adc66e7ebf4|6d73e17582faf423|2079336262||t20595.053297815s|s664443b|664443|format_custom&read=dGVycmE6OnJhc3QocGF0aCk&write=ewogICAgZG8uY2FsbCh0ZXJyYTo6d3JpdGVSYXN0ZXIsIGMobGlzdChvYmplY3QsIGZpbGVuYW1lID0gcGF0aCwgCiAgICAgICAgZmlsZXR5cGUgPSAiR1RpZmYiLCBvdmVyd3JpdGUgPSBUUlVFLCBnZGFsID0gTlVMTCksIGxpc3QoKSkpCn0&marshal=dGVycmE6OndyYXAob2JqZWN0KQ&unmarshal=dGVycmE6OnVud3JhcChvYmplY3Qp&convert=&copy=&repository=|local|list|||0.086||
+soiltype_clay_5|stem|7dc80518f82bdb2d|7bf8894ec8c27eec|b44a489f69c25ce3|1033316666||t20595.0533186709s|s5315276b|5315276|format_custom&read=dGVycmE6OnJhc3QocGF0aCk&write=ewogICAgZG8uY2FsbCh0ZXJyYTo6d3JpdGVSYXN0ZXIsIGMobGlzdChvYmplY3QsIGZpbGVuYW1lID0gcGF0aCwgCiAgICAgICAgZmlsZXR5cGUgPSAiR1RpZmYiLCBvdmVyd3JpdGUgPSBUUlVFLCBnZGFsID0gTlVMTCksIGxpc3QoKSkpCn0&marshal=dGVycmE6OndyYXAob2JqZWN0KQ&unmarshal=dGVycmE6OnVud3JhcChvYmplY3Qp&convert=&copy=&repository=|local|list|||1.656||
+soiltype_silt_5|stem|c42efc1e21d317ef|7f3fe241bf3fda71|5c0522a995fba490|1285888912||t20595.0533365358s|s5286224b|5286224|format_custom&read=dGVycmE6OnJhc3QocGF0aCk&write=ewogICAgZG8uY2FsbCh0ZXJyYTo6d3JpdGVSYXN0ZXIsIGMobGlzdChvYmplY3QsIGZpbGVuYW1lID0gcGF0aCwgCiAgICAgICAgZmlsZXR5cGUgPSAiR1RpZmYiLCBvdmVyd3JpdGUgPSBUUlVFLCBnZGFsID0gTlVMTCksIGxpc3QoKSkpCn0&marshal=dGVycmE6OndyYXAob2JqZWN0KQ&unmarshal=dGVycmE6OnVud3JhcChvYmplY3Qp&convert=&copy=&repository=|local|list|||1.393||
+offset_temp_5|stem|d6f8da4d765e9c8d|bc8c6808187ad1d9|a5c1d9f7d4d09b6b|-562853353||t20595.0533528794s|s6433877b|6433877|format_custom&read=dGVycmE6OnJhc3QocGF0aCk&write=ewogICAgZG8uY2FsbCh0ZXJyYTo6d3JpdGVSYXN0ZXIsIGMobGlzdChvYmplY3QsIGZpbGVuYW1lID0gcGF0aCwgCiAgICAgICAgZmlsZXR5cGUgPSAiR1RpZmYiLCBvdmVyd3JpdGUgPSBUUlVFLCBnZGFsID0gTlVMTCksIGxpc3QoKSkpCn0&marshal=dGVycmE6OndyYXAob2JqZWN0KQ&unmarshal=dGVycmE6OnVud3JhcChvYmplY3Qp&convert=&copy=&repository=|local|list|||1.27||
+bias_tt_5|stem|6709714ba2a810fa|b94d4d8ec14dcca1|237ff5f058f0a4b1|-478209044||t20595.0540393044s|s6405619b|6405619|format_custom&read=dGVycmE6OnJhc3QocGF0aCk&write=ewogICAgZG8uY2FsbCh0ZXJyYTo6d3JpdGVSYXN0ZXIsIGMobGlzdChvYmplY3QsIGZpbGVuYW1lID0gcGF0aCwgCiAgICAgICAgZmlsZXR5cGUgPSAiR1RpZmYiLCBvdmVyd3JpdGUgPSBUUlVFLCBnZGFsID0gTlVMTCksIGxpc3QoKSkpCn0&marshal=dGVycmE6OndyYXAob2JqZWN0KQ&unmarshal=dGVycmE6OnVud3JhcChvYmplY3Qp&convert=&copy=&repository=|local|list|||59.156||
+footprint_5|stem|e9a5c5171fda98f2|4c96c837f9fbe73a|2dbaf9ce19815c21|-50382550||t20595.054110136s|s5363430b|5363430|format_custom&read=dGVycmE6OnJhc3QocGF0aCk&write=ewogICAgZG8uY2FsbCh0ZXJyYTo6d3JpdGVSYXN0ZXIsIGMobGlzdChvYmplY3QsIGZpbGVuYW1lID0gcGF0aCwgCiAgICAgICAgZmlsZXR5cGUgPSAiR1RpZmYiLCBvdmVyd3JpdGUgPSBUUlVFLCBnZGFsID0gTlVMTCksIGxpc3QoKSkpCn0&marshal=dGVycmE6OndyYXAob2JqZWN0KQ&unmarshal=dGVycmE6OnVud3JhcChvYmplY3Qp&convert=&copy=&repository=|local|list|||5.97||
+landcover_covs|stem|a420430d174ee1c7|b32ac95d75c2a1ac|c4c9cb5e75aacf3a|1443098592||t20595.0574268016s|s29668047b|29668047|format_custom&read=dGVycmE6OnJhc3QocGF0aCk&write=ewogICAgZG8uY2FsbCh0ZXJyYTo6d3JpdGVSYXN0ZXIsIGMobGlzdChvYmplY3QsIGZpbGVuYW1lID0gcGF0aCwgCiAgICAgICAgZmlsZXR5cGUgPSAiR1RpZmYiLCBvdmVyd3JpdGUgPSBUUlVFLCBnZGFsID0gTlVMTCksIGxpc3QoKSkpCn0&marshal=dGVycmE6OndyYXAob2JqZWN0KQ&unmarshal=dGVycmE6OnVud3JhcChvYmplY3Qp&convert=&copy=&repository=|local|list|||285.742||
+offsets_5|stem|accfe8d76aef7014|c4546929dbaa61ab|e41c08df5d5a565d|-1232488623||t20595.0600832348s|s2091272831b|2091272831|format_custom&read=dGVycmE6OnJhc3QocGF0aCk&write=ewogICAgZG8uY2FsbCh0ZXJyYTo6d3JpdGVSYXN0ZXIsIGMobGlzdChvYmplY3QsIGZpbGVuYW1lID0gcGF0aCwgCiAgICAgICAgZmlsZXR5cGUgPSAiR1RpZmYiLCBvdmVyd3JpdGUgPSBUUlVFLCBnZGFsID0gTlVMTCksIGxpc3QoKSkpCn0&marshal=dGVycmE6OndyYXAob2JqZWN0KQ&unmarshal=dGVycmE6OnVud3JhcChvYmplY3Qp&convert=&copy=&repository=|local|list|||190.805||
+oneearth_vect|stem|0ec3260c6a07f6fd|01836632c7acd418|ab9aa6cc95cd7cde|1806226549||t20595.0601559932s|s897024b|897024|format_custom&read=ewogICAgaWYgKCJHUEtHIiA9PSAiRVNSSSBTaGFwZWZpbGUiKSB7CiAgICAgICAgdGVycmE6OnZlY3QocGFzdGUwKCIvdnNpemlwL3siLCBwYXRoLCAifSIpKQogICAgfQogICAgZWxzZSB7CiAgICAgICAgdGVycmE6OnZlY3QocGF0aCkKICAgIH0KfQ&write=ewogICAgZG8uY2FsbCh0ZXJyYTo6d3JpdGVWZWN0b3IsIGMobGlzdCh4ID0gb2JqZWN0LCBmaWxlbmFtZSA9IGlmZWxzZSgiR1BLRyIgPT0gCiAgICAgICAgIkVTUkkgU2hhcGVmaWxlIiwgeWVzID0gcGFzdGUwKHBhdGgsICIuc2h6IiksIG5vID0gcGF0aCksIAogICAgICAgIGZpbGV0eXBlID0gIkdQS0ciLCBvdmVyd3JpdGUgPSBUUlVFLCBvcHRpb25zID0gIkVOQ09ESU5HPVVURi04IiksIAogICAgICAgIGxpc3QoKSkpCiAgICBpZiAoIkdQS0ciID09ICJFU1JJIFNoYXBlZmlsZSIpIHsKICAgICAgICBmaWxlLnJlbmFtZShwYXN0ZTAocGF0aCwgIi5zaHoiKSwgcGF0aCkKICAgIH0KfQ&marshal=dGVycmE6OndyYXAob2JqZWN0KQ&unmarshal=dGVycmE6OnVud3JhcChvYmplY3Qp&convert=&copy=&repository=|local|list|||5.184|GDAL Message 1: The filename extension should be 'gpkg' instead of '' to conform to the GPKG specification.|
+dist_from_sea|stem|4cfb6a7be53faa60|5c4a8061e7f20718|1adc5dd605fb7572|-1153331621||t20595.0644455812s|s7176631b|7176631|format_custom&read=dGVycmE6OnJhc3QocGF0aCk&write=ewogICAgZG8uY2FsbCh0ZXJyYTo6d3JpdGVSYXN0ZXIsIGMobGlzdChvYmplY3QsIGZpbGVuYW1lID0gcGF0aCwgCiAgICAgICAgZmlsZXR5cGUgPSAiR1RpZmYiLCBvdmVyd3JpdGUgPSBUUlVFLCBnZGFsID0gTlVMTCksIGxpc3QoKSkpCn0&marshal=dGVycmE6OndyYXAob2JqZWN0KQ&unmarshal=dGVycmE6OnVud3JhcChvYmplY3Qp&convert=&copy=&repository=|local|list|||370.479||
+soiltype_layers|stem|accad32efb1a07d5|ded4aae960721347|2382e1018f56824e|-34829593||t20595.06444985s|s10489086b|10489086|format_custom&read=dGVycmE6OnJhc3QocGF0aCk&write=ewogICAgZG8uY2FsbCh0ZXJyYTo6d3JpdGVSYXN0ZXIsIGMobGlzdChvYmplY3QsIGZpbGVuYW1lID0gcGF0aCwgCiAgICAgICAgZmlsZXR5cGUgPSAiR1RpZmYiLCBvdmVyd3JpdGUgPSBUUlVFLCBnZGFsID0gTlVMTCksIGxpc3QoKSkpCn0&marshal=dGVycmE6OndyYXAob2JqZWN0KQ&unmarshal=dGVycmE6OnVud3JhcChvYmplY3Qp&convert=&copy=&repository=|local|list|||0.027||
+bioregion_layers|stem|e4855e74ed51289f|7c70c20660f6da3d|570003f3c5050bc6|-1825575546||t20595.0811666631s|s24098420b|24098420|format_custom&read=dGVycmE6OnJhc3QocGF0aCk&write=ewogICAgZG8uY2FsbCh0ZXJyYTo6d3JpdGVSYXN0ZXIsIGMobGlzdChvYmplY3QsIGZpbGVuYW1lID0gcGF0aCwgCiAgICAgICAgZmlsZXR5cGUgPSAiR1RpZmYiLCBvdmVyd3JpdGUgPSBUUlVFLCBnZGFsID0gTlVMTCksIGxpc3QoKSkpCn0&marshal=dGVycmE6OndyYXAob2JqZWN0KQ&unmarshal=dGVycmE6OnVud3JhcChvYmplY3Qp&convert=&copy=&repository=|local|list|||1442.399|GDAL Message 1: Pixels not square, distances will be inaccurate.. GDAL Message 1: Pixels not square, distances will be inaccurate.. GDAL Message 1: Pixels not square, distances will be inaccurate.. After searching up to radius 3 cells, 1408353 NA cells remain. Increase maxRadiusCell if you want to try farther neighbours.. GDAL Message 1: Pixels not square, distances will be inaccurate.. GDAL Message 1: Pixels not square, distances will be inaccurate.. GDAL Message 1: Pixels not square, distances will be inaccurate.. After searching up to radius 3 cells, 1408353 NA cells remain. Increase maxRadiusCell if you want to try farther neighbours.. GDAL Message 1: Pixels not square, distances will be inaccurate.. GDAL Message 1: Pixels not square, distances will be inaccurate.. GDAL Message 1: Pixels not square, distances will be inaccurate.. After searching up to radius 3 cells, 1408353 NA cells remain. Increase maxRadiusCell if you want to try farther neighbours.. GDAL Message 1: Pixels not square, distances will be inaccurate.. GDAL Message 1: Pixels not square, distances will be inaccurate.. GDAL Message 1: Pixels not square, distances will be inaccurate.. After searching up to radius 3 cells, 1408353 NA cells remain. Increase maxRadiusCell if you want to try farther neighbours.. GDAL Message 1: Pixels not square, distances will be inaccurate.. GDAL Message 1: Pixels not square, distances will be inaccurate.. GDAL Message 1: Pixels not square, distances will be inaccurate.. After searching up to radius 3 cells, 1408353 NA cells remain. Increase maxRadiusCell if you want to try farther neighbours.. GDAL Message 1: Pixels not square, distances will be inaccurate.. GDAL Message 1: Pixels not square, distances will be inaccurate.. GDAL Message 1: Pixels not square, distances will be inaccurate.. After searching up to radius 3 cells, 1408353 NA cells remain. Increase maxRadiusCell if you want to try farther neighbours.. GDAL Message 1: Pixels not square, distances will be inaccurate.. GDAL Message 1: Pixels not square, dis|
+prox_to_sea|stem|8b2fc7329d868dbd|c04ce3ad79033f9f|561031a2de75bc6a|2101995009||t20595.0811700831s|s6662590b|6662590|format_custom&read=dGVycmE6OnJhc3QocGF0aCk&write=ewogICAgZG8uY2FsbCh0ZXJyYTo6d3JpdGVSYXN0ZXIsIGMobGlzdChvYmplY3QsIGZpbGVuYW1lID0gcGF0aCwgCiAgICAgICAgZmlsZXR5cGUgPSAiR1RpZmYiLCBvdmVyd3JpdGUgPSBUUlVFLCBnZGFsID0gTlVMTCksIGxpc3QoKSkpCn0&marshal=dGVycmE6OndyYXAob2JqZWN0KQ&unmarshal=dGVycmE6OnVud3JhcChvYmplY3Qp&convert=&copy=&repository=|local|list|||0.147||
+soiltype_names|stem|ae29438082e93737|b07498ec7238e485|fdf3b843118d59b4|1524214026||t20595.0811704463s|s61b|61|rds|local|vector|||0||
+offsets_avg_5|stem|2ef0e91a7771f2bf|485b811ce33c3ede|f241caa00bddf9ce|-1144191919||t20595.2807813922s|s7160229b|7160229|format_custom&read=dGVycmE6OnJhc3QocGF0aCk&write=ewogICAgZG8uY2FsbCh0ZXJyYTo6d3JpdGVSYXN0ZXIsIGMobGlzdChvYmplY3QsIGZpbGVuYW1lID0gcGF0aCwgCiAgICAgICAgZmlsZXR5cGUgPSAiR1RpZmYiLCBvdmVyd3JpdGUgPSBUUlVFLCBnZGFsID0gTlVMTCksIGxpc3QoKSkpCn0&marshal=dGVycmE6OndyYXAob2JqZWN0KQ&unmarshal=dGVycmE6OnVud3JhcChvYmplY3Qp&convert=&copy=&repository=|local|list|||11.262||
+offsets_avg_10|stem|6f343e2c586f1141|e6392feff1052983|5ac50ccb3bb4de87|852067065||t20595.2807838167s|s1809176b|1809176|format_custom&read=dGVycmE6OnJhc3QocGF0aCk&write=ewogICAgZG8uY2FsbCh0ZXJyYTo6d3JpdGVSYXN0ZXIsIGMobGlzdChvYmplY3QsIGZpbGVuYW1lID0gcGF0aCwgCiAgICAgICAgZmlsZXR5cGUgPSAiR1RpZmYiLCBvdmVyd3JpdGUgPSBUUlVFLCBnZGFsID0gTlVMTCksIGxpc3QoKSkpCn0&marshal=dGVycmE6OndyYXAob2JqZWN0KQ&unmarshal=dGVycmE6OnVud3JhcChvYmplY3Qp&convert=&copy=&repository=|local|list|||0.07||
+model_fit_image_multisp_pp_count_sm|stem|fea3073f56cda9da|61f1a8aebdb70840|fba82e3bfb992c27|-1873982500||t20597.8995114872s|s92b|92|rds|local|vector|||38492.414||
+resids_multisp_pp_count_sm|stem|e7498694f0dd501c|d531b1828c5b3b6a|49df8b54124e5608|1003180063||t20597.9950377499s|s1245374b|1245374|rds|local|vector|||507.269|Removed 5036 rows containing non-finite outside the scale range (`stat_density()`).. Removed 820 rows containing non-finite outside the scale range (`stat_density()`).. Removed 5036 rows containing non-finite outside the scale range (`stat_ecdf()`).. Removed 820 rows containing non-finite outside the scale range (`stat_ecdf()`).. number of columns of result is not a multiple of vector length (arg 1). Using `size` aesthetic for lines was deprecated in ggplot2 3.4.0. ℹ Please use `linewidth` instead. ℹ The deprecated feature was likely used in the bayesplot package.   Please report the issue at <https://github.com/stan-dev/bayesplot/issues/>.. Removed 11185 rows containing missing values or values outside the scale range (`geom_tile()`).. Removed 11183 rows containing missing values or values outside the scale range (`geom_smooth()`).. Removed 12165 rows containing missing values or values outside the scale range (`geom_tile()`).. Removed 12163 rows containing missing values or values outside the scale range (`geom_smooth()`).. There were 2 warnings in `mutate()`. The first warning was: ℹ In argument: `idx1 = as.integer(...)`. Caused by warning: ! NAs introduced by coercion ℹ Run `dplyr::last_dplyr_warnings()` to see the 1 remaining warning.|
+preds_sm|stem|521d4250406d98a6|04036bfa34f00475|ca3bee73e0a33a32|47958146||t20598.0092396347s|s152b|152|rds|local|vector|||447.228||
+pred_dist_sm|stem|76c646747b256f31|5e7d2aa0395e8dad|fc89a0b13aae6bff|-1178814351||t20598.0110274703s|s14755754b|14755754|format_custom&read=dGVycmE6OnJhc3QocGF0aCk&write=ewogICAgZG8uY2FsbCh0ZXJyYTo6d3JpdGVSYXN0ZXIsIGMobGlzdChvYmplY3QsIGZpbGVuYW1lID0gcGF0aCwgCiAgICAgICAgZmlsZXR5cGUgPSAiR1RpZmYiLCBvdmVyd3JpdGUgPSBUUlVFLCBnZGFsID0gTlVMTCksIGxpc3QoKSkpCn0&marshal=dGVycmE6OndyYXAob2JqZWN0KQ&unmarshal=dGVycmE6OnVud3JhcChvYmplY3Qp&convert=&copy=&repository=|local|list|||0.005||
+distribution_plots_sm|stem|86bb0c9a7a8b25a0|f1d7533409b3f71d|b2a29412c09f7444|-1752205602||t20598.0126921374s|s43b|43|rds|local|vector|||64.111||
+raw_data_file|stem|a42cf3a6660521bc|2ce51bfe16ade4d4|2c530c1562a7fbd1|-669943514|data/tabular/va.data_20260427.csv|t20598.3024181515s|s80945123b|80945123|file|local|vector|||6.895||
+raw_data|stem|3c4a53086ece2df4|37c4ee609f456140|5a0960b4ac50c595|-1101284392||t20598.3027523356s|s1462388b|1462388|rds|local|vector|||10.773||
+full_data_records|stem|ecd91d96219880b6|4b1d500c11120fd3|9c56d2b70fe3d710|784196675||t20598.3028281287s|s305325b|305325|rds|local|vector|||5.484|There were 2 warnings in `mutate()`. The first warning was: ℹ In argument: `start_date = ym(start_date)`. Caused by warning: !  5279 failed to parse. ℹ Run `dplyr::last_dplyr_warnings()` to see the 1 remaining warning.|
+model_data_records|stem|4d8e543c5a213517|45d71e76908ccac5|590053f054d105cf|1335289901||t20598.3028615429s|s155176b|155176|rds|local|vector|||2.767||
+subrealm_layers|stem|8f368260e723cabf|4bb7cd8daed804bf|570003f3c5050bc6|1621255257||t20598.3072281354s|s12768300b|12768300|format_custom&read=dGVycmE6OnJhc3QocGF0aCk&write=ewogICAgZG8uY2FsbCh0ZXJyYTo6d3JpdGVSYXN0ZXIsIGMobGlzdChvYmplY3QsIGZpbGVuYW1lID0gcGF0aCwgCiAgICAgICAgZmlsZXR5cGUgPSAiR1RpZmYiLCBvdmVyd3JpdGUgPSBUUlVFLCBnZGFsID0gTlVMTCksIGxpc3QoKSkpCn0&marshal=dGVycmE6OndyYXAob2JqZWN0KQ&unmarshal=dGVycmE6OnVud3JhcChvYmplY3Qp&convert=&copy=&repository=|local|list|||376.639|After searching up to radius 3 cells, 1408353 NA cells remain. Increase maxRadiusCell if you want to try farther neighbours.. After searching up to radius 3 cells, 1408353 NA cells remain. Increase maxRadiusCell if you want to try farther neighbours.. After searching up to radius 3 cells, 1408353 NA cells remain. Increase maxRadiusCell if you want to try farther neighbours.. After searching up to radius 3 cells, 1408353 NA cells remain. Increase maxRadiusCell if you want to try farther neighbours.. After searching up to radius 3 cells, 1408353 NA cells remain. Increase maxRadiusCell if you want to try farther neighbours.. After searching up to radius 3 cells, 1408353 NA cells remain. Increase maxRadiusCell if you want to try farther neighbours.. After searching up to radius 3 cells, 1408353 NA cells remain. Increase maxRadiusCell if you want to try farther neighbours.. After searching up to radius 3 cells, 1408353 NA cells remain. Increase maxRadiusCell if you want to try farther neighbours.|
+subrealm_names|stem|cb721eedc3194ff1|af047bcb83c68ead|48a915fb44b00984|-1241956744||t20598.3072287112s|s137b|137|rds|local|vector|||0||
+covariate_rast_5_all|stem|83839d33307f849f|325569babd75d612|bfd133842680b549|252520625||t20598.3072900972s|s103684487b|103684487|format_custom&read=dGVycmE6OnJhc3QocGF0aCk&write=ewogICAgZG8uY2FsbCh0ZXJyYTo6d3JpdGVSYXN0ZXIsIGMobGlzdChvYmplY3QsIGZpbGVuYW1lID0gcGF0aCwgCiAgICAgICAgZmlsZXR5cGUgPSAiR1RpZmYiLCBvdmVyd3JpdGUgPSBUUlVFLCBnZGFsID0gTlVMTCksIGxpc3QoKSkpCn0&marshal=dGVycmE6OndyYXAob2JqZWN0KQ&unmarshal=dGVycmE6OnVud3JhcChvYmplY3Qp&convert=&copy=&repository=|local|list|||0.015||
+record_data_spatial_all|stem|571b320c35b9e94a|42de1cad051881e1|cbd2e6426d2d3a63|359892372||t20598.3073535733s|s493834b|493834|rds|local|vector|||0.67||
+expert_maps|stem|4873c9d0b67d4dff|957dc9859317a19a|47930c03b94d8bc1|1393525444||t20601.193857148s|s2547712b|2547712|format_custom&read=ewogICAgaWYgKCJHUEtHIiA9PSAiRVNSSSBTaGFwZWZpbGUiKSB7CiAgICAgICAgdGVycmE6OnZlY3QocGFzdGUwKCIvdnNpemlwL3siLCBwYXRoLCAifSIpKQogICAgfQogICAgZWxzZSB7CiAgICAgICAgdGVycmE6OnZlY3QocGF0aCkKICAgIH0KfQ&write=ewogICAgZG8uY2FsbCh0ZXJyYTo6d3JpdGVWZWN0b3IsIGMobGlzdCh4ID0gb2JqZWN0LCBmaWxlbmFtZSA9IGlmZWxzZSgiR1BLRyIgPT0gCiAgICAgICAgIkVTUkkgU2hhcGVmaWxlIiwgeWVzID0gcGFzdGUwKHBhdGgsICIuc2h6IiksIG5vID0gcGF0aCksIAogICAgICAgIGZpbGV0eXBlID0gIkdQS0ciLCBvdmVyd3JpdGUgPSBUUlVFLCBvcHRpb25zID0gIkVOQ09ESU5HPVVURi04IiksIAogICAgICAgIGxpc3QoKSkpCiAgICBpZiAoIkdQS0ciID09ICJFU1JJIFNoYXBlZmlsZSIpIHsKICAgICAgICBmaWxlLnJlbmFtZShwYXN0ZTAocGF0aCwgIi5zaHoiKSwgcGF0aCkKICAgIH0KfQ&marshal=dGVycmE6OndyYXAob2JqZWN0KQ&unmarshal=dGVycmE6OnVud3JhcChvYmplY3Qp&convert=&copy=&repository=|local|list|||7.7||
+expert_offset_maps|stem|4c3f1f26b6069023|c16c8493462d3b7c|fcfdb6d70fa1d35d|-894870899||t20601.2291440317s|s27288570b|27288570|format_custom&read=dGVycmE6OnJhc3QocGF0aCk&write=ewogICAgZG8uY2FsbCh0ZXJyYTo6d3JpdGVSYXN0ZXIsIGMobGlzdChvYmplY3QsIGZpbGVuYW1lID0gcGF0aCwgCiAgICAgICAgZmlsZXR5cGUgPSAiR1RpZmYiLCBvdmVyd3JpdGUgPSBUUlVFLCBnZGFsID0gTlVMTCksIGxpc3QoKSkpCn0&marshal=dGVycmE6OndyYXAob2JqZWN0KQ&unmarshal=dGVycmE6OnVud3JhcChvYmplY3Qp&convert=&copy=&repository=|local|list|||3047.479||
+expert_offset_maps_500|stem|e3a5f9275e6df14c|5068214239416ad2|fcfdb6d70fa1d35d|47167750||t20601.274257722s|s15786280b|15786280|format_custom&read=dGVycmE6OnJhc3QocGF0aCk&write=ewogICAgZG8uY2FsbCh0ZXJyYTo6d3JpdGVSYXN0ZXIsIGMobGlzdChvYmplY3QsIGZpbGVuYW1lID0gcGF0aCwgCiAgICAgICAgZmlsZXR5cGUgPSAiR1RpZmYiLCBvdmVyd3JpdGUgPSBUUlVFLCBnZGFsID0gTlVMTCksIGxpc3QoKSkpCn0&marshal=dGVycmE6OndyYXAob2JqZWN0KQ&unmarshal=dGVycmE6OnVud3JhcChvYmplY3Qp&convert=&copy=&repository=|local|list|||2375.401||
+bioregion_names|stem|842e90af2056486f|b3b34983d45d2e88|7fc1d01a2ab5759b|-520385986||t20613.0107274025s|s391b|391|rds|local|vector|||0.001||
+covariate_rast_5|stem|17042bc21f961029|0783f6d8469aff1e|e1f9fb27723bd52d|353214708||t20613.0142537311s|s93735328b|93735328|format_custom&read=dGVycmE6OnJhc3QocGF0aCk&write=ewogICAgZG8uY2FsbCh0ZXJyYTo6d3JpdGVSYXN0ZXIsIGMobGlzdChvYmplY3QsIGZpbGVuYW1lID0gcGF0aCwgCiAgICAgICAgZmlsZXR5cGUgPSAiR1RpZmYiLCBvdmVyd3JpdGUgPSBUUlVFLCBnZGFsID0gTlVMTCksIGxpc3QoKSkpCn0&marshal=dGVycmE6OndyYXAob2JqZWN0KQ&unmarshal=dGVycmE6OnVud3JhcChvYmplY3Qp&convert=&copy=&repository=|local|list|||0.005||
+bg_kmeans_list_spatial|stem|b03498f478887a6c|251a0dd85a161669|674508f811e42cbe|1232858644||t20613.0165162269s|s22931b|22931|rds|local|vector|||195.238|did not converge in 10 iterations|
+record_data_spatial|stem|245550d666989774|49089ac493949e45|3cdc57f4ec9ea3a0|-165702811||t20613.0165198018s|s486485b|486485|rds|local|vector|||0.004||
+bg_kmeans_df|stem|b7499bbc5491f543|a68940b3e6813511|792f803db062358e|-366115926||t20613.0165211071s|s23558b|23558|rds|local|vector|||0.093||
+record_data_spatial_subsample|stem|245550d666989774|e0ba6787a80b3f65|1dd858e218732991|-1361070627||t20613.0165241756s|s486485b|486485|rds|local|vector|||0||
+model_data_spatial_no_offset|stem|af715a7e1e6f4bfe|fba8fd57338aec4d|c87650f2a43475bb|806754048||t20613.0165275951s|s515950b|515950|rds|local|vector|||0.01||
+model_data_spatial|stem|3034423dba2c3e73|969a2bccf045501d|ef61fcdabd04fdcf|-139668007||t20613.0170077414s|s546040b|546040|rds|local|vector|||41.169||
+>>>>>>> Stashed changes
 get_bioregions|function|e3c8ea4c8af46545
 make_convex_hull|function|ba0b84d3165310b3
 reduce_sampling_methods|function|29ad8c02831b606c
@@ -116,12 +174,19 @@ prepare_multi_layer|function|c314e7d3b798deba
 plot_expert_map|function|237146f503bb67ac
 plot_presences_outside_expert_range|function|bf74b341b5c296f9
 bg_points_kmeans_spatial|function|cc52527c35e94398
+<<<<<<< Updated upstream
 make_bioregion_mask|function|2492e86e07429a9e
+=======
+>>>>>>> Stashed changes
 add_pa_points|function|6a3f1b0c8b7df77f
 average_last_year|function|a6ef82799cd518a0
 extract_ym_indexed_layer_data|function|922312aba45683eb
 .Random.seed|object|b8baa73906ec595f
+<<<<<<< Updated upstream
 make_rel_abund_rgb|function|a10640d23fefecbe
+=======
+make_rel_abund_rgb|function|ec41c5e7964ca994
+>>>>>>> Stashed changes
 ppcsave|function|f9a41656f35169bc
 enforce_dim|function|be52a9a8502be978
 clean_offsets|function|47d895bef5b12361
@@ -132,9 +197,14 @@ make_covariate_plots|function|9f5068002dbb670a
 check_point_data_type|function|b0555c1606d024b3
 make_new_mask|function|28e53edc14353f5e
 target_spp_test_only|function|232cc0caa3ce7ff1
+<<<<<<< Updated upstream
 make_rel_abund_rgb_plot|function|945e01973d0e64aa
 particle_corr_params|function|f51cc4869327e5cd
 add_expert_offset_old|function|07286815c16cde8c
+=======
+make_rel_abund_rgb_plot|function|160bd219c92b5206
+particle_corr_params|function|f51cc4869327e5cd
+>>>>>>> Stashed changes
 inits|function|9b3d714830de9985
 get_notna_idx|function|eedc272e128c4295
 make_oneearth|function|98f16c910fe049a3
@@ -164,7 +234,11 @@ make_expert_offset_maps|function|4cf8b3fac2345501
 combine_raw_data|function|8645a044672e3a66
 gt_lndcvr|function|2cd18023b1f13c25
 filter_few|function|c5c8909a44af479d
+<<<<<<< Updated upstream
 add_expert_offset|function|519cf613a484cbb5
+=======
+add_expert_offset|function|07286815c16cde8c
+>>>>>>> Stashed changes
 get_expert_maps|function|24ad975508022b97
 inits_are_deterministic|function|d5908bfa293df673
 make_pca_covariate_layers|function|a81d6ca8c94bed80
@@ -188,14 +262,20 @@ records_from_va|function|1bb3a24e9f3169cc
 make_distance_from_sea|function|1390878022805eac
 make_temperature_offset|function|769cff55a616e459
 make_smooth_dummies|function|b7fd4b893c2b5f80
+<<<<<<< Updated upstream
 logit_icloglog_safe|function|2e0629dae90c3d67
 logit_icloglog|function|2e0629dae90c3d67
+=======
+logit_icloglog|function|2e0629dae90c3d67
+logit_icloglog_safe|function|2e0629dae90c3d67
+>>>>>>> Stashed changes
 predict_lambda|function|d5905a564d725515
 predict_lambda_m1|function|f673de16bfb639d1
 predict_lambda_m2|function|d5905a564d725515
 predict_lambda_m3|function|3eee57d546e0d0e0
 predict_lambda_m4|function|587d8ab8da5906e2
 predict_lambda_m5|function|e6102d06975791bb
+<<<<<<< Updated upstream
 predict_lambda_m6|function|89eaf687d0c2d949
 predict_lambda_m7|function|04b92cc26ad46908
 predict_lambda_m6_with_masking|function|89eaf687d0c2d949
@@ -209,28 +289,57 @@ count_counts_matrix|function|76b422e099acce00
 clean_full_data_records|function|e20e1857e4c44aee
 make_detailed_data_records|function|10857e468386ed12
 mask_landcover_and_expert_offset|function|7080001a799a0593
+=======
+predict_lambda_m6|function|04b92cc26ad46908
+predict_lambda_m7|function|04b92cc26ad46908
+make_expert_map_plots|function|a289d06be0b61de1
+add_pa_points_list|function|c916c4bbe2d42d3f
+match_offset_data|function|f7242fcf5c75ae9e
+make_inits|function|569fa00c6b318a4f
+particle_crosscor|function|5161cddcf7c66029
+distplotlist|function|4a36dff5286be537
+count_counts_matrix|function|76b422e099acce00
+clean_full_data_records|function|e20e1857e4c44aee
+make_detailed_data_records|function|10857e468386ed12
+fit_m6_copy|function|e17b4b883186e1a6
+>>>>>>> Stashed changes
 fit_m1|function|6a833f0fe3101d04
 fit_m2|function|cd80d5d20a385424
 fit_m3|function|e13b7514ec702d60
 fit_m4|function|3427aeb6b9d05cce
 fit_m5|function|897e899f943136a8
+<<<<<<< Updated upstream
 fit_m6|function|0d56810b4ed51299
+=======
+fit_m6|function|f411e635d8446eca
+>>>>>>> Stashed changes
 fit_m7|function|bef5ba6dd95407fe
 fit_model_multisp_pp_count_sm|function|b3065fac85d31d75
 initials_from_free_states|function|942928b08fae8ad6
 prob_sample_free_states|function|8aee19652ec83167
 prior_sample_free_states_batch|function|d4a9b8dd075366bd
 sample_free_states_from_priors|function|031ae247934ecfc0
+<<<<<<< Updated upstream
 make_distribution_plots_rb_only|function|212b34fe2033b96f
 make_distribution_plots|function|d22b1138b82bd8d5
+=======
+make_distribution_plots_rb_only|function|8da86a6db89bbaac
+make_distribution_plots|function|6b6eb304e5f8a2ad
+>>>>>>> Stashed changes
 rootgram_data|function|554c059c3d10d72c
 prior_sample_free_states|function|77a3bc33b89a5729
 run_smc|function|1d8453e10253158b
 predictive_checks|function|34000fe439631501
 generate_valid_inits|function|1ff55a87fc86fe12
 fit_model_multisp_pp_count_4spp|function|b41418a40f9f04f3
+<<<<<<< Updated upstream
 validation_and_checking|function|8b66ad1028928e78
 fit_model_multisp_pp_count|function|a92b9de33e7c74ee
 bioregion_names_mask|stem|202148b31fab6643|24dbd412825047e9|dc260f4d86501a22|940295933||t20613.0734055363s|s418b|418|rds|local|vector|||0||
 bioregion_mask_5|stem|3c38b3071f8dffe4|f2f7f49adcc4f30f|cf28b659057cbd8f|559408327||t20613.0734180196s|s625439b|625439|format_custom&read=dGVycmE6OnJhc3QocGF0aCk&write=ewogICAgZG8uY2FsbCh0ZXJyYTo6d3JpdGVSYXN0ZXIsIGMobGlzdChvYmplY3QsIGZpbGVuYW1lID0gcGF0aCwgCiAgICAgICAgZmlsZXR5cGUgPSAiR1RpZmYiLCBvdmVyd3JpdGUgPSBUUlVFLCBnZGFsID0gTlVMTCksIGxpc3QoKSkpCn0&marshal=dGVycmE6OndyYXAob2JqZWN0KQ&unmarshal=dGVycmE6OnVud3JhcChvYmplY3Qp&convert=&copy=&repository=|local|list|||0.988||
 bioregion_mask_10|stem|ba403a91cc49a2dc|aa908712bbe56267|472707e2fff2ce73|51497348||t20613.0734187585s|s158485b|158485|format_custom&read=dGVycmE6OnJhc3QocGF0aCk&write=ewogICAgZG8uY2FsbCh0ZXJyYTo6d3JpdGVSYXN0ZXIsIGMobGlzdChvYmplY3QsIGZpbGVuYW1lID0gcGF0aCwgCiAgICAgICAgZmlsZXR5cGUgPSAiR1RpZmYiLCBvdmVyd3JpdGUgPSBUUlVFLCBnZGFsID0gTlVMTCksIGxpc3QoKSkpCn0&marshal=dGVycmE6OndyYXAob2JqZWN0KQ&unmarshal=dGVycmE6OnVud3JhcChvYmplY3Qp&convert=&copy=&repository=|local|list|||0.033||
+=======
+validation_and_checking|function|c253efce47601581
+fit_model_multisp_pp_count|function|a92b9de33e7c74ee
+covariate_rast_10|stem|c7bf0aa9c239cd4c|0e00d8c4d8fc2f05|ec67b7316b414730|896239252||t20613.2257844502s|s24990030b|24990030|format_custom&read=dGVycmE6OnJhc3QocGF0aCk&write=ewogICAgZG8uY2FsbCh0ZXJyYTo6d3JpdGVSYXN0ZXIsIGMobGlzdChvYmplY3QsIGZpbGVuYW1lID0gcGF0aCwgCiAgICAgICAgZmlsZXR5cGUgPSAiR1RpZmYiLCBvdmVyd3JpdGUgPSBUUlVFLCBnZGFsID0gTlVMTCksIGxpc3QoKSkpCn0&marshal=dGVycmE6OndyYXAob2JqZWN0KQ&unmarshal=dGVycmE6OnVud3JhcChvYmplY3Qp&convert=&copy=&repository=|local|list|||2.648||
+>>>>>>> Stashed changes
