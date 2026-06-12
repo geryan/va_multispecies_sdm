@@ -1,4 +1,4 @@
-fit_m6 <- function(
+fit_m6_copy <- function(
     model_data_spatial,
     target_covariate_names,
     target_species,
@@ -9,10 +9,8 @@ fit_m6 <- function(
     image_name = "outputs/images/multisp_pp_count_sm.RData",
     n_burnin = 50,
     n_samples = 100,
-    n_chains = 4,
-    n_cores = NULL
+    n_chains = 4
 ){
-
   model_data_spatial <- model_data_spatial |>
     filter(
       (data_type != "count") |
@@ -561,6 +559,7 @@ fit_m6 <- function(
              sampling_re_raw, sampling_re_sd,
              sqrt_inv_size)
 
+
   ###################
   # fit model
   ###################
@@ -598,8 +597,8 @@ fit_m6 <- function(
   #n_burnin <- 200
   #n_samples <- 100
 
-  Lmax <- 25
-  Lmin <- round(Lmax / 8)
+  Lmax <- 20
+  Lmin <- round(Lmax / 4)
 
   draws <- greta::mcmc(
     m,
@@ -608,7 +607,6 @@ fit_m6 <- function(
     n_samples = n_samples,
     chains = n_chains,
     # initial_values = inits_point
-    n_cores = n_cores
   )
 
 
