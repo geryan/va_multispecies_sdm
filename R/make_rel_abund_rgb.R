@@ -38,7 +38,8 @@ make_rel_abund_rgb <- function(
 
   if(!is.null(threshold)){
      allsp_mask <- app(target_x_pa, function(x) {
-      all(x > threshold)
+      #all(x > threshold)
+       any(x > threshold)
     }) |>
        app(
          fun = function(x){ ifelse(x == 0, NA, 1)}

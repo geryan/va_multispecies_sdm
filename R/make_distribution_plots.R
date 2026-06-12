@@ -12,7 +12,9 @@
 make_distribution_plots <- function(
     pred_dist,
     model_data_spatial,
-    plot_dir = "outputs/figures/distribution_plots/"
+    plot_dir = "outputs/figures/distribution_plots/",
+    colp = "cadetblue2",
+    cola = "lightyellow"
 ) {
 
 
@@ -41,7 +43,9 @@ make_distribution_plots <- function(
 
   dist_plots_va_points <- add_pa_points_list(
     dist_plots_va,
-    model_data_spatial
+    model_data_spatial,
+    colp = colp,
+    cola = cola
   )
 
   saveplotlist(
@@ -54,7 +58,8 @@ make_distribution_plots <- function(
   dist_plots_rb_points <- add_pa_points_list(
     dist_plots_rb,
     model_data_spatial,
-    colp = "yellow"
+    colp = "yellow",
+    cola = "grey80"
   )
 
   saveplotlist(

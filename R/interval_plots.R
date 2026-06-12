@@ -5,7 +5,8 @@ interval_plots <- function(
   sampling_methods = NULL,
   alpha = TRUE,
   beta = FALSE,
-  gammadelta = TRUE
+  gammadelta = TRUE,
+  plotdir = "outputs/figures/parameter_estimates"
   ){
 
   sm <- !is.null(sampling_methods)
@@ -202,7 +203,8 @@ interval_plots <- function(
 
     ggsave(
       filename = sprintf(
-        "outputs/figures/parameter_estimates/alpha%s.png",
+        "%s/alpha%s.png",
+        plotdir,
         sm_text
       ),
       width = 2000,
@@ -264,7 +266,8 @@ interval_plots <- function(
 
     ggsave(
       filename = sprintf(
-        "outputs/figures/parameter_estimates/beta_by_cov%s.png",
+        "%s/beta_by_cov%s.png",
+        plotdir,
         sm_text
       ),
       width = 3200,
@@ -318,7 +321,8 @@ interval_plots <- function(
 
     ggsave(
       filename = sprintf(
-        "outputs/figures/parameter_estimates/beta_by_spp%s.png",
+        "%s/beta_by_spp%s.png",
+        plotdir,
         sm_text
       ),
       width = 3200,
@@ -379,7 +383,8 @@ interval_plots <- function(
 
     ggsave(
       filename = sprintf(
-        "outputs/figures/parameter_estimates/bias%s.png",
+        "%s/bias%s.png",
+        plotdir,
         sm_text
       ),
       width = 2000,
@@ -435,7 +440,10 @@ interval_plots <- function(
 
 
     ggsave(
-      filename = "outputs/figures/parameter_estimates/sampling.png",
+      filename = sprintf(
+        "%s/sampling.png",
+        plotdir
+      ),
       width = 2000,
       height = 1300,
       units = "px"

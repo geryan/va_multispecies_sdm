@@ -80,28 +80,6 @@ list(
 
   # read in other layers and match to offset size shape and extent
 
-  # tar_terra_rast(
-  #   landcover_raw,
-  #   get_landcovers(
-  #     vars = c(
-  #       "trees",
-  #       "grassland",
-  #       "shrubs",
-  #       "cropland",
-  #       "built",
-  #       #"bare",
-  #       "water",
-  #       "wetland",
-  #       "mangroves"
-  #     ),
-  #     path = ifelse(
-  #       user_is_gerry_spartan,
-  #       "/data/gpfs/projects/punim1422/va_multispecies_sdm/data/raster/geodata/",
-  #       "data/raster/geodata/"
-  #     )
-  #   )
-  # ),
-
   tar_terra_rast(
     landcover_raw,
     gt_lndcvr(
@@ -124,45 +102,23 @@ list(
     )
   ),
 
-  # tar_terra_rast(
-  #   landcover_raw,
-  #   sapply(
-  #     X = c(
-  #       "trees",
-  #       "grassland",
-  #       "shrubs",
-  #       "cropland",
-  #       "built",
-  #       #"bare",
-  #       "water",
-  #       "wetland",
-  #       "mangroves"
-  #     ),
-  #     FUN = function(x, path){
-  #       landcover(x, path = path)
-  #     },
-  #     ifelse(
-  #       user_is_gerry_spartan,
-  #       "/data/gpfs/projects/punim1422/va_multispecies_sdm/data/raster/geodata/",
-  #       "data/raster/geodata/"
-  #     )
-  #   ) |>
-  #     rast()
-  # ),
 
+  tar_terra_rast(
+    water_mask_5,
+    make_water_mask(
+      water = landcover_raw[["water"]],
+      proj_mask = project_mask_5_outline
+    )
+  ),
 
+  # generate project mask based on water mask and outline of landform from offset layers
+  tar_terra_rast(
+    project_mask_5,
+    project_mask_5_outline |>
+      mask(mask = water_mask_5)
+  ),
 
-
-  # load the bare landcover
-  # tar_terra_rast(
-  #   landcover_bare_raw,
-  #   get_landcovers(
-  #     vars = c(
-  #       "bare"
-  #     ),
-  #     path = "data/raster/geodata/"
-  #   )
-  # ),
+  # bare landcover
   tar_terra_rast(
     landcover_bare_raw,
     gt_lndcvr(
@@ -188,17 +144,13 @@ list(
   ),
 
   tar_terra_rast(
-    water_mask_5,
-    make_water_mask(
-      water = landcover_raw[["water"]],
-      proj_mask = project_mask_5_outline
-    )
-  ),
-
-  tar_terra_rast(
-    project_mask_5,
-    project_mask_5_outline |>
-      mask(mask = water_mask_5)
+    landcover_bare_10,
+    landcover_bare |>
+      aggregate(
+        fact = 2,
+        fun = mean,
+        na.rm = TRUE
+      )
   ),
 
   # distance from sea
@@ -249,7 +201,14 @@ list(
   # the names of the dummy variables
   tar_target(
     subrealm_names,
-    names(subrealm_layers)
+    names(subrealm_layers)  |>
+      setdiff(
+        c(
+          "Greater Arabian Peninsula",
+          "North Africa",
+          "Southern Afrotropics"
+        )
+      )
   ),
 
   # set the bioregion names, excluding some bioregions that are outside the area
@@ -259,17 +218,61 @@ list(
     names(bioregion_layers) |>
       setdiff(
         c(
-          "Sahel Acacia Savannas",
+          #"Sahel Acacia Savannas", # points inthis region for arabiensis so shoudld include it
           "Southern Sahara Deserts & Mountain Woodlands",
           "South Mediterranean Mixed Woodlands & Forests",
           "Northern Sahara Deserts, Savannas, & Marshes",
           "Red Seas, Arabian Deserts & Salt Marshes",
-          "Seychelles & Comoros Tropical Islands",
+          "Seychelles & Comoros Tropical Islands", # such a small area probably not worth estimating
           "St Helena & Ascension Islands",
           "South African Cape Shrublands & Mountain Forests"
         )
       )
+  ),
 
+  #
+  tar_target(
+    bioregion_names_mask,
+    names(bioregion_layers) |>
+      setdiff(
+        c(
+          #"Sahel Acacia Savannas",
+          "Southern Sahara Deserts & Mountain Woodlands",
+          "South Mediterranean Mixed Woodlands & Forests",
+          "Northern Sahara Deserts, Savannas, & Marshes",
+          "Red Seas, Arabian Deserts & Salt Marshes",
+          #"Seychelles & Comoros Tropical Islands", # want to plot comoros
+          "St Helena & Ascension Islands",
+          "South African Cape Shrublands & Mountain Forests"
+        )
+      )
+  ),
+
+  # create a mask of only the areas we wish to model in
+  tar_terra_rast(
+    bioregion_mask_5,
+    make_bioregion_mask(
+      oneearth_vect,
+      bioregion_names_mask,
+      project_mask_5
+    )
+  ),
+
+  tar_terra_rast(
+    bioregion_mask_10,
+    aggregate(
+      x = bioregion_mask_5,
+      fact = 2,
+      fun = "max",
+      na.rm = TRUE
+    )
+  ),
+
+  # combine bare ground and bioregions of interest into landscape mask
+  # that represents area we believe is extent of boundary of these species
+  tar_terra_rast(
+    landscape_mask_10,
+    bioregion_mask_10 * (1 - landcover_bare_10)
   ),
 
 
@@ -334,134 +337,134 @@ list(
   # layers from Malaria Atlas Project
   #
 
-  # built volume
-
-  tar_terra_rast(
-    built_volume_raw,
-    rast("/Users/gryan/Documents/tki_work/vector_atlas/africa_spatial_data/data/raster/MAP_covariates/GHSL_2023/GHS_BUILT_V_R23A.2020.Annual.Data.1km.Data.tif") |>
-    set_layer_names("built_volume")
-  ),
-
-  tar_terra_rast(
-    built_volume_5,
-    built_volume_raw |>
-      aggregate(fact = 5) |>
-      crop(y = project_mask_5) |>
-      resample(y = project_mask_5) |>
-      fill_na_with_nearest_mean(maxRadiusCell = 50) |>
-      mask(mask = project_mask_5) |>
-      scale()
-  ),
-
-  # EVI
-  # monthly EVI available from MAP, need to work out some code to process this
-  # stuff on MAP workbench so that I don't need to download all the enormous
-  # layers
-  tar_terra_rast(
-    evi_raw,
-    prepare_multi_layer(
-      data_dir ="/Users/gryan/Documents/tki_work/vector_atlas/africa_spatial_data/data/raster/MAP_covariates/EVI/"#,
-      # layer_prefix = "evi",
-      # file_id_prefix = ".*v6\\.",
-      # file_id_suffix = "\\.Annual.*"
-    )
-  ),
-
-  tar_terra_rast(
-    evi_5,
-    evi_raw |>
-      mean() |>
-      set_layer_names("evi") |>
-      crop(y = project_mask_5) |>
-      aggregate(fact = 5) |>
-      resample(y = project_mask_5) |>
-      fill_na_with_nearest_mean(maxRadiusCell = 50) |>
-      mask(mask = project_mask_5) |>
-      scale()
-  ),
-
-
-  # Tasseled Cap Brightness
-  # same for
-  # TCB re monthly data
-  tar_terra_rast(
-    tcb_raw,
-    prepare_multi_layer(
-      data_dir ="/Users/gryan/Documents/tki_work/vector_atlas/africa_spatial_data/data/raster/MAP_covariates/TCB/"
-    )
-  ),
-
-  tar_terra_rast(
-    tcb_5,
-    tcb_raw |>
-      mean() |>
-      set_layer_names("tcb") |>
-      crop(y = project_mask_5) |>
-      aggregate(fact = 5) |>
-      resample(y = project_mask_5) |>
-      fill_na_with_nearest_mean(maxRadiusCell = 50) |>
-      mask(mask = project_mask_5) |>
-      scale()
-  ),
-
-
-  # land surface temperature at night annual mean
-  # also same for lst re monthly data
-  tar_terra_rast(
-    lst_night_raw,
-    prepare_multi_layer(
-      data_dir ="/Users/gryan/Documents/tki_work/vector_atlas/africa_spatial_data/data/raster/MAP_covariates/LST_Night/"
-    )
-  ),
-
-  tar_terra_rast(
-    lst_night_5,
-    lst_night_raw |>
-      mean() |>
-      set_layer_names("lst_night") |>
-      aggregate(fact = 5) |>
-      crop(y = project_mask_5) |>
-      resample(y = project_mask_5) |>
-      fill_na_with_nearest_mean(maxRadiusCell = 50) |>
-      mask(mask = project_mask_5) |>
-      scale()
-  ),
-
+  # # built volume
   #
-  # via `geodata`
+  # tar_terra_rast(
+  #   built_volume_raw,
+  #   rast("/Users/gryan/Documents/tki_work/vector_atlas/africa_spatial_data/data/raster/MAP_covariates/GHSL_2023/GHS_BUILT_V_R23A.2020.Annual.Data.1km.Data.tif") |>
+  #   set_layer_names("built_volume")
+  # ),
   #
-
-  # elevation
-
-  tar_terra_rast(
-    elevation_raw,
-    global_regions |>
-      filter(continent == "Africa") |>
-      pull(iso3) |>
-      lapply(
-        FUN = function(x){
-          elevation_30s(
-            country = x,
-            path = "data/raster/geodata"
-          )
-        }
-      ) |>
-      sprc() |>
-      merge() |>
-      set_layer_names("elevation")
-  ),
-
-  tar_terra_rast(
-    elevation_5,
-    elevation_raw |>
-      aggregate(fact = 5) |>
-      crop(y = project_mask_5) |>
-      resample(y = project_mask_5) |>
-      fill_na_with_nearest_mean(maxRadiusCell = 50) |>
-      mask(mask = project_mask_5) |>
-      scale()
-  ),
-
+  # tar_terra_rast(
+  #   built_volume_5,
+  #   built_volume_raw |>
+  #     aggregate(fact = 5) |>
+  #     crop(y = project_mask_5) |>
+  #     resample(y = project_mask_5) |>
+  #     fill_na_with_nearest_mean(maxRadiusCell = 50) |>
+  #     mask(mask = project_mask_5) |>
+  #     scale()
+  # ),
+  #
+  # # EVI
+  # # monthly EVI available from MAP, need to work out some code to process this
+  # # stuff on MAP workbench so that I don't need to download all the enormous
+  # # layers
+  # tar_terra_rast(
+  #   evi_raw,
+  #   prepare_multi_layer(
+  #     data_dir ="/Users/gryan/Documents/tki_work/vector_atlas/africa_spatial_data/data/raster/MAP_covariates/EVI/"#,
+  #     # layer_prefix = "evi",
+  #     # file_id_prefix = ".*v6\\.",
+  #     # file_id_suffix = "\\.Annual.*"
+  #   )
+  # ),
+  #
+  # tar_terra_rast(
+  #   evi_5,
+  #   evi_raw |>
+  #     mean() |>
+  #     set_layer_names("evi") |>
+  #     crop(y = project_mask_5) |>
+  #     aggregate(fact = 5) |>
+  #     resample(y = project_mask_5) |>
+  #     fill_na_with_nearest_mean(maxRadiusCell = 50) |>
+  #     mask(mask = project_mask_5) |>
+  #     scale()
+  # ),
+  #
+  #
+  # # Tasseled Cap Brightness
+  # # same for
+  # # TCB re monthly data
+  # tar_terra_rast(
+  #   tcb_raw,
+  #   prepare_multi_layer(
+  #     data_dir ="/Users/gryan/Documents/tki_work/vector_atlas/africa_spatial_data/data/raster/MAP_covariates/TCB/"
+  #   )
+  # ),
+  #
+  # tar_terra_rast(
+  #   tcb_5,
+  #   tcb_raw |>
+  #     mean() |>
+  #     set_layer_names("tcb") |>
+  #     crop(y = project_mask_5) |>
+  #     aggregate(fact = 5) |>
+  #     resample(y = project_mask_5) |>
+  #     fill_na_with_nearest_mean(maxRadiusCell = 50) |>
+  #     mask(mask = project_mask_5) |>
+  #     scale()
+  # ),
+  #
+  #
+  # # land surface temperature at night annual mean
+  # # also same for lst re monthly data
+  # tar_terra_rast(
+  #   lst_night_raw,
+  #   prepare_multi_layer(
+  #     data_dir ="/Users/gryan/Documents/tki_work/vector_atlas/africa_spatial_data/data/raster/MAP_covariates/LST_Night/"
+  #   )
+  # ),
+  #
+  # tar_terra_rast(
+  #   lst_night_5,
+  #   lst_night_raw |>
+  #     mean() |>
+  #     set_layer_names("lst_night") |>
+  #     aggregate(fact = 5) |>
+  #     crop(y = project_mask_5) |>
+  #     resample(y = project_mask_5) |>
+  #     fill_na_with_nearest_mean(maxRadiusCell = 50) |>
+  #     mask(mask = project_mask_5) |>
+  #     scale()
+  # ),
+  #
+  # #
+  # # via `geodata`
+  # #
+  #
+  # # elevation
+  #
+  # tar_terra_rast(
+  #   elevation_raw,
+  #   global_regions |>
+  #     filter(continent == "Africa") |>
+  #     pull(iso3) |>
+  #     lapply(
+  #       FUN = function(x){
+  #         elevation_30s(
+  #           country = x,
+  #           path = "data/raster/geodata"
+  #         )
+  #       }
+  #     ) |>
+  #     sprc() |>
+  #     merge() |>
+  #     set_layer_names("elevation")
+  # ),
+  #
+  # tar_terra_rast(
+  #   elevation_5,
+  #   elevation_raw |>
+  #     aggregate(fact = 5) |>
+  #     crop(y = project_mask_5) |>
+  #     resample(y = project_mask_5) |>
+  #     fill_na_with_nearest_mean(maxRadiusCell = 50) |>
+  #     mask(mask = project_mask_5) |>
+  #     scale()
+  # ),
+  #
   # soil clay
 
   tar_terra_rast(
@@ -542,10 +545,10 @@ list(
   #     scale()
   # ),
 
-  tar_terra_rast(
-    offset_temp_5,
-    make_temperature_offset(project_mask_5)
-  ),
+  # tar_terra_rast(
+  #   offset_temp_5,
+  #   make_temperature_offset(project_mask_5)
+  # ),
 
   #
   # bias
@@ -641,7 +644,7 @@ list(
 
       footprint_5,
 
-      # subrealm_layers,
+      subrealm_layers,
       bioregion_layers,
 
       offset_temp_5,
@@ -655,7 +658,7 @@ list(
     subset_covariate_rast(
       covariate_rast_5_all,
       target_covariate_names = target_covariate_names,
-      # subrealm_names = subrealm_names,
+      subrealm_names = subrealm_names,
       bioregion_names = bioregion_names,
       soiltype_names = soiltype_names,
       offset_names = offset_names,
@@ -787,12 +790,32 @@ list(
   ),
 
   tar_terra_rast(
+    expert_offset_maps_10,
+    expert_offset_maps |>
+      aggregate(
+        fact = 2,
+        fun = mean,
+        na.rm = TRUE
+      )
+  ),
+
+  tar_terra_rast(
     expert_offset_maps_500,
     make_expert_offset_maps(
       expert_maps,
       project_mask_5,
       buffer_km = 500
     )
+  ),
+
+  tar_terra_rast(
+    expert_offset_maps_10_500,
+    expert_offset_maps_500 |>
+      aggregate(
+        fact = 2,
+        fun = mean,
+        na.rm = TRUE
+      )
   ),
 
 
@@ -1010,7 +1033,7 @@ list(
            !names(covariate_rast_5_all) %in%
              c(
                target_covariate_names,
-               # subrealm_names,
+               subrealm_names,
                bioregion_names,
                soiltype_names,
                offset_names,
@@ -1447,6 +1470,33 @@ list(
    )
  ),
 
+ tar_target(
+   m6_fit,
+   fit_m6(
+     image_name = "m6_fit.RData",
+     model_data_spatial = model_data_spatial,
+     target_covariate_names = target_covariate_names,
+     target_species = target_species,
+     subrealm_names = subrealm_names,
+     bioregion_names = bioregion_names,
+     soiltype_names = soiltype_names,
+     project_mask = project_mask_5,
+     n_burnin = 2000,
+     n_samples = 1000,
+     n_chains = 50,
+     n_cores = 6
+   )
+ ),
+
+ tar_target(
+   resids_m6,
+   validation_and_checking(
+     m6_fit,
+     nsims = 100,
+     plotdir = "outputs/figures/validation/20260605/"
+   )
+ ),
+
 
  # tar_target(
  #   pred_file_multisp_pp_count_sm,
@@ -1470,10 +1520,25 @@ list(
  #   )
  # ),
 
+ # tar_target(
+ #   preds_sm,
+ #   predict_lambda_m6(
+ #     #image_name = model_fit_image_multisp_pp_count_sm,
+ #     image_name = m6_fit,
+ #     prediction_layer = covariate_rast_10, # use 10k for faster preds
+ #     target_species,
+ #     output_file_prefix = "outputs/rasters/multisp_pp_sm",
+ #     offset = offsets_avg_10,
+ #     sm = TRUE, # if predict survey method
+ #     nsims = 100 # lower for faster preds
+ #   )
+ # ),
+
  tar_target(
    preds_sm,
-   predict_lambda(
-     image_name = model_fit_image_multisp_pp_count_sm,
+   predict_lambda_m6(
+     #image_name = model_fit_image_multisp_pp_count_sm,
+     image_name = m6_fit,
      prediction_layer = covariate_rast_10, # use 10k for faster preds
      target_species,
      output_file_prefix = "outputs/rasters/multisp_pp_sm",
@@ -1483,22 +1548,53 @@ list(
    )
  ),
 
+
+
  tar_terra_rast(
-   pred_dist_sm,
-   #rast(preds_sm$p)
-   rast("outputs/rasters/via_spartan/multisp_pp_sm_p.tif")
+   pred_dist_not_masked,
+   # rast(preds_sm$p)
+   rast("spartan_model_comparison/m6/m6_p.tif")
  ),
 
  tar_terra_rast(
-   pred_dcv_sm,
-   #rast(preds_sm$p_cv)
-   rast("outputs/rasters/via_spartan/multisp_pp_sm_p_cv.tif")
+   pred_p,
+   mask_landcover_and_expert_offset(
+     p = pred_dist_not_masked,
+     expert = expert_offset_maps_10,
+     bare = landcover_bare_10
+   )
+ ),
+
+ tar_target(
+   plot_pred_p,
+   make_distribution_plots(
+     pred_p,
+     model_data_spatial,
+     plot_dir = "outputs/figures/distribution_plots/distn_20260601",
+     cola = "yellow"
+   )
  ),
 
  tar_terra_rast(
-   pred_lambda_mean,
-   #rast(preds_sm$lambda_no_offset) * offsets_avg_10
-   rast("outputs/rasters/via_spartan/multisp_pp_sm.tif") * offsets_avg_10
+   pred_pcv_not_masked,
+   # rast(preds_sm$p_cv)
+   rast("spartan_model_comparison/m6/m6_p_cv.tif")
+ ),
+
+ tar_terra_rast(
+   pred_pcv,
+   mask_landcover_and_expert_offset(
+     p = pred_pcv_not_masked,
+     expert = expert_offset_maps_10,
+     bare = landcover_bare_10
+   )
+ ),
+
+
+ tar_terra_rast(
+   pred_lambda_mean_not_masked,
+   rast("spartan_model_comparison/m6/m6.tif") * offsets_avg_10
+   #rast("outputs/rasters/via_spartan/multisp_pp_sm.tif") * offsets_avg_10
  ),
 
  tar_terra_rast(
@@ -1581,7 +1677,7 @@ list(
    rel_abund_rgb_sm,
    make_rel_abund_rgb(
      #x = pred_dist_rgb,
-     x = pred_dist_sm,
+     x = pred_p,
      threshold = 0.05
    ),
    datatype = "INT1U"
@@ -1592,7 +1688,7 @@ list(
    make_rel_abund_rgb_plot(
      rel_abund_rgb_sm,
      project_mask_5,
-     filename = "outputs/figures/rgb_relative_abundance_20251219_sm.png"
+     filename = "outputs/figures/rgb_relative_abundance_20260601.png"
    )
  ),
 
@@ -1629,119 +1725,6 @@ list(
  #     plot_dir = "outputs/figures/distribution_plots/distn_20251219_sm_scale"
  #   )
  # ),
-
- #############################################################################
- #############################################################################
- # 4 species only analysis
-  # need to refine this list
-  # tar_target(
-  #   target_species_4,
-  #   target_spp_test_only()
-  # ),
-  #
-  # tar_target(
-  #   model_data_records_4,
-  #   generate_model_data_records(
-  #     full_data_records,
-  #     target_species = target_species_4
-  #   )
-  # ),
-  #
-  #
-  # tar_target(
-  #   record_data_spatial_all_4,
-  #   get_spatial_values(
-  #     lyrs = covariate_rast_5_all,
-  #     dat = model_data_records_4,
-  #     project_mask_5
-  #   )
-  # ),
-  #
-  # tar_target(
-  #   record_data_spatial_4,
-  #   record_data_spatial_all_4 |>
-  #     select(
-  #       - all_of(
-  #         names(covariate_rast_5_all)[
-  #           !names(covariate_rast_5_all) %in%
-  #             c(
-  #               target_covariate_names,
-  #               #offset_names,
-  #               bias_names
-  #             )
-  #         ]
-  #       ),
-  #     )
-  # ),
-  #
-  # tar_target(
-  #   model_data_spatial_4,
-  #   bind_rows(
-  #     record_data_spatial_4 |>
-  #       mutate(weight = 1),
-  #     bg_kmeans_df |>
-  #       mutate(
-  #         data_type = "bg",
-  #         presence = 0,
-  #         n = 0
-  #       )
-  #   )
-  # ),
-
-  # ## multispecies pp count
-  # ##
-  #
-  # # fit the model in greta
-  # # save an image of the environment within function
-  # # otherwise the greta model nodes become disconnected and buggered up
-  # # because of some R6 nonsense with greta or whatever and the usual targets
-  # # shenanigans
-  # tar_target(
-  #   model_fit_image_multisp_pp_count_4,
-  #   fit_model_multisp_pp_count_4spp(
-  #     model_data_spatial = model_data_spatial_4,
-  #     target_covariate_names = target_covariate_names,
-  #     target_species = target_species_4,
-  #     project_mask_5,
-  #     image_name = "outputs/images/4_multisp_pp_count.RData",
-  #     n_burnin = 2000,
-  #     n_samples = 1000,
-  #     n_chains = 50
-  #   )
-  # ),
-  #
-  # # # read in image and predict out raster as a tif
-  # tar_target(
-  #   pred_file_multisp_pp_count_4,
-  #   predict_greta_mspp_count(
-  #     image_filename = model_fit_image_multisp_pp_count_4,
-  #     prediction_layer = covariate_rast_5,
-  #     target_species,
-  #     output_file_prefix = "outputs/rasters/4_multisp_pp_count"
-  #   )
-  # ),
-  #
-  # tar_target(
-  #   pred_file_multisp_pp_count_pa_expoff_4,
-  #   add_expert_offset(
-  #     predfilelist = pred_file_multisp_pp_count_4,
-  #     #expert_offset_maps = rast("outputs/rasters/va_plots_20250718/expert_offset_aggregated.tif")
-  #     expert_offset_maps = expert_offset_maps_500,
-  #     pred_type = "pa"
-  #   )
-  # ),
-  #
-  # tar_target(
-  #   pred_file_multisp_pp_count_count_expoff_4,
-  #   add_expert_offset(
-  #     predfilelist = pred_file_multisp_pp_count_4,
-  #     #expert_offset_maps = rast("outputs/rasters/va_plots_20250718/expert_offset_aggregated.tif")
-  #     expert_offset_maps = expert_offset_maps_500,
-  #     pred_type = "count"
-  #   )
-  # ),
-
-
 
 
  #####################

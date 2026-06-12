@@ -31,7 +31,7 @@ distplotlist <- function(
     pred_dist,
     colscheme
     ){
-      distplot(pred_dist, x, colscheme)
+      distplot(pred_dist, x, colscheme, guide = "prob")
     },
     pred_dist,
     colscheme,

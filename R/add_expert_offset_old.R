@@ -8,11 +8,15 @@
 #' @return
 #' @author geryan
 #' @export
-add_expert_offset <- function(
-    predraw,
-    expert_offset_maps
+add_expert_offset_old <- function(
+    predfilelist,
+    expert_offset_maps,
+    pred_type = c("pa", "count")
   ) {
 
+  pred_type <- match.arg(pred_type)
+
+  predraw <- rast(predfilelist[[pred_type]])
 
   r <- sapp(
     x = predraw,
@@ -30,6 +34,18 @@ add_expert_offset <- function(
     expert_offset_maps
   )
 
-  r
+  filename <- sub(
+    pattern = "\\.tif",
+    replacement = "_expoff.tif",
+    x = predfilelist[[pred_type]]
+  )
+
+  writeRaster(
+    x = r,
+    filename = filename,
+    overwrite = TRUE
+  )
+
+  filename
 
 }
