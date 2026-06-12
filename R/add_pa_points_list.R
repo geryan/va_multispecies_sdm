@@ -37,7 +37,8 @@ add_pa_points_list <- function(
         p = p,
         point_data = d,
         colp = colp,
-        cola = cola
+        cola = cola,
+        guide = "detected"
       )
 
       p2
