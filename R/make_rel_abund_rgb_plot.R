@@ -8,7 +8,7 @@ make_rel_abund_rgb_plot <- function(
 ) {
 
   colz <- rel_abund_rgb |>
-    RGB(value = 1:3) |>
+    terra::RGB(value = 1:3) |>
     colorize(
     to = "col"
   )
