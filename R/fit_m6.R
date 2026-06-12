@@ -9,7 +9,8 @@ fit_m6 <- function(
     image_name = "outputs/images/multisp_pp_count_sm.RData",
     n_burnin = 50,
     n_samples = 100,
-    n_chains = 4
+    n_chains = 4,
+    n_cores = NULL
 ){
 
   model_data_spatial <- model_data_spatial |>
@@ -640,6 +641,7 @@ fit_m6 <- function(
     n_samples = n_samples,
     chains = n_chains,
     # initial_values = inits_point
+    n_cores = n_cores
   )
 
 

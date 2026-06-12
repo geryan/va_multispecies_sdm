@@ -15,6 +15,16 @@ validation_and_checking <- function(
   ) {
 
 
+  plotdir_exists <- dir.exists(plotdir)
+
+  if(!plotdir_exists){
+    dir.create(
+      plotdir,
+      recursive = TRUE
+    )
+  }
+
+
   load(model_fit_image_multisp_pp_count_sm)
 
 
@@ -616,7 +626,10 @@ validation_and_checking <- function(
     regex_pars = "alpha"
   )
   ggsave(
-    "outputs/figures/traceplots/sm_alpha.png"
+    sprintf(
+      "%s/sm_alpha.png",
+      plotdir
+    )
   )
 
   # too many, takes forever, you can't read them anyway
@@ -633,7 +646,10 @@ validation_and_checking <- function(
     regex_pars = c("delta", "gamma")
   )
   ggsave(
-    "outputs/figures/traceplots/sm_delta_gamma.png"
+    sprintf(
+      "%s/sm_delta_gamma.png",
+      plotdir
+    )
   )
 
   mcmc_trace(
@@ -641,7 +657,10 @@ validation_and_checking <- function(
     regex_pars = "sampling"
   )
   ggsave(
-    "outputs/figures/traceplots/sm_sampling.png"
+    sprintf(
+      "%s/sm_sampling.png",
+      plotdir
+    )
   )
 
 
@@ -650,14 +669,17 @@ validation_and_checking <- function(
                     autoburnin = FALSE,
                     multivariate = FALSE)
 
-  # write_csv(
-  #   cbind(
-  #     par = rownames(rhats$psrf),
-  #     rhats$psrf |>
-  #       as.data.frame()
-  #   ),
-  #   file = "outputs/last_rhats.csv",
-  # )
+  write_csv(
+    cbind(
+      par = rownames(rhats$psrf),
+      rhats$psrf |>
+        as.data.frame()
+    ),
+    file = sprintf(
+      "%s/last_rhats.csv",
+      plotdir
+    ),
+  )
 
 
   ###### Plot parameter estimates

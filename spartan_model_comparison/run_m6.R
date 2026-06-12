@@ -40,6 +40,14 @@ m6_fit <- fit_m6(
   n_chains = n_chains
 )
 
+
+m6_fit <- sprintf(
+  "%s/%s.RData",
+  model_dir,
+  model_name
+)
+
+
 resids_m6 <- validation_and_checking(
   m6_fit,
   nsims = n_sims,
@@ -47,12 +55,12 @@ resids_m6 <- validation_and_checking(
 )
 
 
-pred_lambda <- predict_lambda_m6(
+pred_lambda <- predict_lambda_m6_with_masking(
   image_name = m6_fit,
   prediction_layer = covariate_rast_10, # use 10k for faster preds
   target_species,
   output_file_prefix = sprintf(
-    "%s/%s",
+    "%s/%s_mask",
     model_dir,
     model_name
   ),

@@ -1,4 +1,4 @@
-predict_lambda_m6 <- function(
+predict_lambda_m6_with_masking <- function(
     image_name,
     prediction_layer,
     target_species,
@@ -15,6 +15,7 @@ predict_lambda_m6 <- function(
 
   prednames <- target_covariate_names
 
+
   # create values to predict to using covatiate layers
   r <- prediction_layer
 
@@ -26,6 +27,9 @@ predict_lambda_m6 <- function(
   # x_subrealm_predict <- layer_values[!naidx, subrealm_names]
   x_bioregion_predict <- layer_values[!naidx, bioregion_names]
   # x_soiltype_predict <- layer_values[!naidx, soiltype_names]
+
+  bioreg_mask_vals <- values(bioregion_mask)
+  bmv <- bioreg_mask_vals[!naidx]
 
 
   # # model bioregion effects as additive to landcover, so just expand the
@@ -57,7 +61,12 @@ predict_lambda_m6 <- function(
 
   x_predict_beta_species <- x_all_predict %*% beta
 
-  log_lambda_larval_habitat_predict <- sweep(x_predict_beta_species, 2, alpha, FUN = "+")
+  log_lambda_larval_habitat_predict_no_mask <- sweep(x_predict_beta_species, 2, alpha, FUN = "+")
+
+  log_lambda_larval_habitat_predict <- sweep(log_lambda_larval_habitat_predict_no_mask, 1, bmv, FUN = "+")
+
+
+
 
   if(sm){
     # simulate human_landing_catch indoor
