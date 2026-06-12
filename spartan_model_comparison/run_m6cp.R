@@ -5,12 +5,12 @@
 .libPaths("~/R/gr_lib")
 
 
-n_burnin  <- 20000
-n_samples <- 2000
+n_burnin  <- 1000
+n_samples <- 500
 n_chains  <- 50
 n_sims    <- 100
 
-model_name <- "m6"
+model_name <- "m6cp"
 
 model_dir <- sprintf(
   "spartan_model_comparison/%s",
@@ -22,7 +22,7 @@ library(targets)
 tar_load_globals()
 tar_load_everything()
 
-m6_fit <- fit_m6(
+m6cp_fit <- fit_m6_copy(
   model_data_spatial = model_data_spatial,
   target_covariate_names = target_covariate_names,
   target_species = target_species,
@@ -40,27 +40,19 @@ m6_fit <- fit_m6(
   n_chains = n_chains
 )
 
-
-m6_fit <- sprintf(
-  "%s/%s.RData",
-  model_dir,
-  model_name
-)
-
-
-resids_m6 <- validation_and_checking(
-  m6_fit,
+resids_m6cp <- validation_and_checking(
+  m6cp_fit,
   nsims = n_sims,
   plotdir = model_dir
 )
 
 
-pred_lambda <- predict_lambda_m6_with_masking(
-  image_name = m6_fit,
+pred_lambda <- predict_lambda_m6(
+  image_name = m6cp_fit,
   prediction_layer = covariate_rast_10, # use 10k for faster preds
   target_species,
   output_file_prefix = sprintf(
-    "%s/%s_mask",
+    "%s/%s",
     model_dir,
     model_name
   ),
