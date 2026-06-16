@@ -61,11 +61,7 @@ predict_lambda_m6_with_masking <- function(
 
   x_predict_beta_species <- x_all_predict %*% beta
 
-  log_lambda_larval_habitat_predict_no_mask <- sweep(x_predict_beta_species, 2, alpha, FUN = "+")
-
-  log_lambda_larval_habitat_predict <- sweep(log_lambda_larval_habitat_predict_no_mask, 1, bmv, FUN = "+")
-
-
+  log_lambda_larval_habitat_predict<- sweep(x_predict_beta_species, 2, alpha, FUN = "+")
 
 
   if(sm){
@@ -80,7 +76,9 @@ predict_lambda_m6_with_masking <- function(
   }
 
 
-  lambda_predict <- exp(log_lambda_predict)
+  lambda_predict_no_mask <- exp(log_lambda_predict)
+
+  lambda_predict <- sweep(lambda_predict_no_mask, 1, bmv, FUN = "*")
 
   # create   rasters to put values into
   #
