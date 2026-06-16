@@ -1446,35 +1446,11 @@ list(
  ## multispecies pp count with sampling method
  ##
 
- tar_target(
-   model_fit_image_multisp_pp_count_sm,
-   fit_model_multisp_pp_count_sm(
-     model_data_spatial = model_data_spatial,
-     target_covariate_names = target_covariate_names,
-     target_species = target_species,
-     # subrealm_names = subrealm_names,
-     bioregion_names = bioregion_names,
-     soiltype_names = soiltype_names,
-     project_mask = project_mask_5,
-     image_name = "outputs/images/multisp_pp_count_sm.RData",
-     n_burnin = 5000,
-     n_samples = 1000,
-     n_chains = 50
-   )
- ),
 
  tar_target(
-   resids_multisp_pp_count_sm,
-   validation_and_checking(
-     model_fit_image_multisp_pp_count_sm,
-     nsims = 100
-   )
- ),
-
- tar_target(
-   m6_fit,
-   fit_m6(
-     image_name = "m6_fit.RData",
+   model_fit,
+   fit_model_multispecies_pp_count(
+     image_name = "model_fit.RData",
      model_data_spatial = model_data_spatial,
      target_covariate_names = target_covariate_names,
      target_species = target_species,
@@ -1489,9 +1465,9 @@ list(
  ),
 
  tar_target(
-   resids_m6,
+   resids_and_rhats,
    validation_and_checking(
-     m6_fit,
+     model_fit,
      nsims = 100,
      plotdir = "outputs/figures/validation/20260605/"
    )
