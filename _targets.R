@@ -1050,13 +1050,13 @@ list(
  tar_target(
    record_data_spatial_subsample,
    record_data_spatial #|>
-     # group_by(
-     #   species,
-     #   data_type,
-     #   sampling_method
-     # ) |>
-     # slice_sample(prop = 0.5) |>
-     # ungroup()
+   # group_by(
+   #   species,
+   #   data_type,
+   #   sampling_method
+   # ) |>
+   # slice_sample(prop = 0.5) |>
+   # ungroup()
  ),
 
  # put together with background data
@@ -1446,7 +1446,7 @@ list(
  ## multispecies pp count with sampling method
  ##
 
-  tar_target(
+ tar_target(
    model_fit_image_multisp_pp_count_sm,
    fit_model_multisp_pp_count_sm(
      model_data_spatial = model_data_spatial,
@@ -1482,10 +1482,9 @@ list(
      bioregion_names = bioregion_names,
      soiltype_names = soiltype_names,
      project_mask = project_mask_5,
-     n_burnin = 2000,
-     n_samples = 1000,
-     n_chains = 50,
-     n_cores = 6
+     n_burnin = 30000,
+     n_samples = 2000,
+     n_chains = 50
    )
  ),
 
@@ -1537,12 +1536,12 @@ list(
 
  tar_target(
    preds_sm,
-   predict_lambda_m6(
+   predict_lambda_m6_with_masking(
      #image_name = model_fit_image_multisp_pp_count_sm,
      image_name = m6_fit,
      prediction_layer = covariate_rast_10, # use 10k for faster preds
      target_species,
-     output_file_prefix = "outputs/rasters/multisp_pp_sm",
+     output_file_prefix = "outputs/rasters/multispecies_pp",
      offset = offsets_avg_10,
      sm = TRUE, # if predict survey method
      nsims = 100 # lower for faster preds
@@ -1730,10 +1729,10 @@ list(
 
  #####################
 
-  tar_target(
-    so_i_dont_have_to_go_backward_and_add_commas,
-    print("Targets great in theory but kinda annoying to work with")
-  )
+ tar_target(
+   so_i_dont_have_to_go_backward_and_add_commas,
+   print("Targets great in theory but kinda annoying to work with")
+ )
 
 
 
