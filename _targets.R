@@ -631,7 +631,8 @@ list(
 
   tar_target(
     offset_names,
-    "offset_temp"
+    #"offset_temp"
+    NULL
   ),
 
   tar_terra_rast(
@@ -647,7 +648,7 @@ list(
       subrealm_layers,
       bioregion_layers,
 
-      offset_temp_5,
+      #offset_temp_5,
 
       bias_tt_5
     )
