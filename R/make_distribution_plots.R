@@ -14,7 +14,7 @@ make_distribution_plots <- function(
     model_data_spatial,
     plot_dir = "outputs/figures/distribution_plots/",
     colp = "cadetblue2",
-    cola = "lightyellow"
+    cola = "lightyellow3"
 ) {
 
 
