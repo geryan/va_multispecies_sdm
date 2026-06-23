@@ -182,7 +182,8 @@ generate_model_data_records <- function(
       presence,
       count,
       n,
-      inferred
+      inferred,
+      source_id
     )
 
 }
