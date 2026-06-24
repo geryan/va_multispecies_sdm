@@ -1288,163 +1288,21 @@ list(
  # ),
 
 
- # # write out to process from monthly on MAP AWS
- # tar_target(
- #   writemds,
- #   write_csv(
- #     mod_dat_spat,
- #     file = "data/processed/mod_dat_spat.csv"
- #   )
- # ),
- #
- # # read back in from AWS
- # tar_target(
- #   mds,
- #   read_csv(file = "data/processed/mod_dat_spat_updated.csv")
- # ),
-
- #
- # # plots of offset layers against presence and absence
- # tar_target(
- #   offset_pa_plots,
- #   make_offset_pa_plots(
- #     mod_dat_spat,
- #     target_species,
- #   )
- # ),
-
- # one sp add at a time
- # add absence vs presence at a time
- # consider various weighting of the expert layers and
- #  distance of buffer from edge (linear weighting drop off)
 
  ################
  ## models
  ################
 
- # ## multispecies pp count
- # ##
+ ## multispecies pp count with sampling method
  #
  # # fit the model in greta
  # # save an image of the environment within function
  # # otherwise the greta model nodes become disconnected and buggered up
  # # because of some R6 nonsense with greta or whatever and the usual targets
  # # shenanigans
- # tar_target(
- #   model_fit_image_multisp_pp_count,
- #   fit_model_multisp_pp_count(
- #     model_data_spatial = model_data_spatial,
- #     target_covariate_names = target_covariate_names,
- #     target_species = target_species,
- #     project_mask = project_mask_5,
- #     image_name = "outputs/images/multisp_pp_count.RData",
- #     n_burnin = 1000,
- #     n_samples = 500,
- #     n_chains = 20
- #   )
- # ),
- #
- # # # read in image and predict out raster as a tif
- # tar_target(
- #   pred_file_multisp_pp_count,
- #   predict_greta_mspp_count(
- #     image_filename = model_fit_image_multisp_pp_count,
- #     prediction_layer = covariate_rast_10,
- #     offset = offsets_avg_10,
- #     target_species,
- #     target_covariate_names,
- #     output_file_prefix = "outputs/rasters/multisp_pp_count"
- #   )
- # ),
- #
- # # tar_target(
- # #   pred_file_multisp_pp_count_pa_expoff,
- # #   add_expert_offset(
- # #     predfilelist = pred_file_multisp_pp_count,
- # #     #expert_offset_maps = rast("outputs/rasters/va_plots_20250718/expert_offset_aggregated.tif")
- # #     expert_offset_maps = expert_offset_maps_500,
- # #     pred_type = "pa"
- # #   )
- # # ),
- # #
- # # tar_target(
- # #   pred_file_multisp_pp_count_count_expoff,
- # #   add_expert_offset(
- # #     predfilelist = pred_file_multisp_pp_count,
- # #     #expert_offset_maps = rast("outputs/rasters/va_plots_20250718/expert_offset_aggregated.tif")
- # #     expert_offset_maps = expert_offset_maps_500,
- # #     pred_type = "count"
- # #   )
- # # ),
- #
- #
- # #
- # # #####
- # #
- # # distribution plots
- #
- # # this is the temporary thang until the above are tidied
- # tar_terra_rast(
- #   pred_dist,
- #   rast(x = pred_file_multisp_pp_count$pa)
- # ),
- #
- # tar_target(
- #   distribution_plots,
- #   make_distribution_plots(
- #     pred_dist,
- #     model_data_spatial,
- #     plot_dir = "outputs/figures/distribution_plots/distn_20260211"
- #   )
- # ),
- #
- # ## relative abundance
- #
- #
- # # this is making the gambiae-coluzzii layer inside this function
- # # if we get the hierarchical species complex model in, be sure to still do this
- # # as the gam-col layer would (should :grimace:) only be the shared complex
- # # thingies, not the joint species level ones
- # tar_terra_rast(
- #   rel_abund_rgb,
- #   make_rel_abund_rgb(
- #     #x = pred_dist_rgb,
- #     x = pred_dist,
- #     threshold = 0.05
- #   ),
- #   datatype = "INT1U"
- # ),
- #
- # tar_target(
- #   rel_abund_plots,
- #   make_rel_abund_rgb_plot(
- #     rel_abund_rgb,
- #     project_mask_5,
- #     filename = "outputs/figures/rgb_relative_abundance_20251219.png"
- #   )
- # ),
- #
- # ## variance scaling
- #
- # tar_terra_rast(
- #   pred_dist_scale,
- #   scale_predictions(
- #     lambda_file = pred_file_multisp_pp_count_count_expoff
- #   )
- # ),
- #
- # tar_target(
- #   distribution_plots_scale,
- #   make_distribution_plots(
- #     pred_dist_scale,
- #     model_data_spatial,
- #     plot_dir = "outputs/figures/distribution_plots/distn_20251219_scale"
- #   )
- # ),
 
 
  ###########
- ## multispecies pp count with sampling method
  ##
 
 

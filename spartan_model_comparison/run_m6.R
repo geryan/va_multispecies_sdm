@@ -49,7 +49,7 @@ m6_fit <- sprintf(
 
 
 resids_m6 <- validation_and_checking(
-  m6_fit,
+  model_fit_image_multisp_pp_count_sm = m6_fit,
   nsims = n_sims,
   plotdir = model_dir
 )
