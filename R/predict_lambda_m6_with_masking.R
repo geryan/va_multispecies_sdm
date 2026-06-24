@@ -6,7 +6,7 @@ predict_lambda_m6_with_masking <- function(
     offset,
     sm = FALSE,
     nsims = 50,
-    bioregion_mask
+    bioregion_mask = NULL
 ){
 
   # load image with model and draws in it
@@ -28,8 +28,6 @@ predict_lambda_m6_with_masking <- function(
   x_bioregion_predict <- layer_values[!naidx, bioregion_names]
   # x_soiltype_predict <- layer_values[!naidx, soiltype_names]
 
-  bioreg_mask_vals <- values(bioregion_mask)
-  bmv <- bioreg_mask_vals[!naidx]
 
 
   # # model bioregion effects as additive to landcover, so just expand the
@@ -78,7 +76,17 @@ predict_lambda_m6_with_masking <- function(
 
   lambda_predict_no_mask <- exp(log_lambda_predict)
 
-  lambda_predict <- sweep(lambda_predict_no_mask, 1, bmv, FUN = "*")
+  if(is.null(bioregion_mask)) {
+
+    lambda_predict <- lambda_predict_no_mask
+
+  } else {
+
+    bioreg_mask_vals <- values(bioregion_mask)
+    bmv <- bioreg_mask_vals[!naidx]
+    lambda_predict <- sweep(lambda_predict_no_mask, 1, bmv, FUN = "*")
+
+  }
 
   # create   rasters to put values into
   #
