@@ -1,4 +1,4 @@
-fit_m6 <- function(
+fit_model_multispecies_pp_count <- function(
     model_data_spatial,
     target_covariate_names,
     target_species,

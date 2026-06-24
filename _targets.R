@@ -509,7 +509,8 @@ list(
 
   tar_target(
     soiltype_names,
-    names(soiltype_layers)
+    #names(soiltype_layers)
+    NULL
   ),
 
   # footprint
@@ -631,7 +632,8 @@ list(
 
   tar_target(
     offset_names,
-    "offset_temp"
+    #"offset_temp"
+    NULL
   ),
 
   tar_terra_rast(
@@ -647,7 +649,7 @@ list(
       subrealm_layers,
       bioregion_layers,
 
-      offset_temp_5,
+      #offset_temp_5,
 
       bias_tt_5
     )
@@ -875,7 +877,8 @@ list(
    raw_data_file,
    #"data/tabular/VA_FULL_DATA_20250716.csv",
    #"data/tabular/VA_DATA_20260218.csv",
-   "data/tabular/va.data_20260427.csv",
+   #"data/tabular/va.data_20260427.csv",
+   "data/tabular/va.data_20260513.csv",
    format = "file"
  ),
 
@@ -892,7 +895,6 @@ list(
        !(source_id == 4682 & species == "merus")
      )
  ),
-
  #########################
 
  # process data
@@ -1049,13 +1051,13 @@ list(
  tar_target(
    record_data_spatial_subsample,
    record_data_spatial #|>
-     # group_by(
-     #   species,
-     #   data_type,
-     #   sampling_method
-     # ) |>
-     # slice_sample(prop = 0.5) |>
-     # ungroup()
+   # group_by(
+   #   species,
+   #   data_type,
+   #   sampling_method
+   # ) |>
+   # slice_sample(prop = 0.5) |>
+   # ungroup()
  ),
 
  # put together with background data
@@ -1286,194 +1288,28 @@ list(
  # ),
 
 
- # # write out to process from monthly on MAP AWS
- # tar_target(
- #   writemds,
- #   write_csv(
- #     mod_dat_spat,
- #     file = "data/processed/mod_dat_spat.csv"
- #   )
- # ),
- #
- # # read back in from AWS
- # tar_target(
- #   mds,
- #   read_csv(file = "data/processed/mod_dat_spat_updated.csv")
- # ),
-
- #
- # # plots of offset layers against presence and absence
- # tar_target(
- #   offset_pa_plots,
- #   make_offset_pa_plots(
- #     mod_dat_spat,
- #     target_species,
- #   )
- # ),
-
- # one sp add at a time
- # add absence vs presence at a time
- # consider various weighting of the expert layers and
- #  distance of buffer from edge (linear weighting drop off)
 
  ################
  ## models
  ################
 
- # ## multispecies pp count
- # ##
+ ## multispecies pp count with sampling method
  #
  # # fit the model in greta
  # # save an image of the environment within function
  # # otherwise the greta model nodes become disconnected and buggered up
  # # because of some R6 nonsense with greta or whatever and the usual targets
  # # shenanigans
- # tar_target(
- #   model_fit_image_multisp_pp_count,
- #   fit_model_multisp_pp_count(
- #     model_data_spatial = model_data_spatial,
- #     target_covariate_names = target_covariate_names,
- #     target_species = target_species,
- #     project_mask = project_mask_5,
- #     image_name = "outputs/images/multisp_pp_count.RData",
- #     n_burnin = 1000,
- #     n_samples = 500,
- #     n_chains = 20
- #   )
- # ),
- #
- # # # read in image and predict out raster as a tif
- # tar_target(
- #   pred_file_multisp_pp_count,
- #   predict_greta_mspp_count(
- #     image_filename = model_fit_image_multisp_pp_count,
- #     prediction_layer = covariate_rast_10,
- #     offset = offsets_avg_10,
- #     target_species,
- #     target_covariate_names,
- #     output_file_prefix = "outputs/rasters/multisp_pp_count"
- #   )
- # ),
- #
- # # tar_target(
- # #   pred_file_multisp_pp_count_pa_expoff,
- # #   add_expert_offset(
- # #     predfilelist = pred_file_multisp_pp_count,
- # #     #expert_offset_maps = rast("outputs/rasters/va_plots_20250718/expert_offset_aggregated.tif")
- # #     expert_offset_maps = expert_offset_maps_500,
- # #     pred_type = "pa"
- # #   )
- # # ),
- # #
- # # tar_target(
- # #   pred_file_multisp_pp_count_count_expoff,
- # #   add_expert_offset(
- # #     predfilelist = pred_file_multisp_pp_count,
- # #     #expert_offset_maps = rast("outputs/rasters/va_plots_20250718/expert_offset_aggregated.tif")
- # #     expert_offset_maps = expert_offset_maps_500,
- # #     pred_type = "count"
- # #   )
- # # ),
- #
- #
- # #
- # # #####
- # #
- # # distribution plots
- #
- # # this is the temporary thang until the above are tidied
- # tar_terra_rast(
- #   pred_dist,
- #   rast(x = pred_file_multisp_pp_count$pa)
- # ),
- #
- # tar_target(
- #   distribution_plots,
- #   make_distribution_plots(
- #     pred_dist,
- #     model_data_spatial,
- #     plot_dir = "outputs/figures/distribution_plots/distn_20260211"
- #   )
- # ),
- #
- # ## relative abundance
- #
- #
- # # this is making the gambiae-coluzzii layer inside this function
- # # if we get the hierarchical species complex model in, be sure to still do this
- # # as the gam-col layer would (should :grimace:) only be the shared complex
- # # thingies, not the joint species level ones
- # tar_terra_rast(
- #   rel_abund_rgb,
- #   make_rel_abund_rgb(
- #     #x = pred_dist_rgb,
- #     x = pred_dist,
- #     threshold = 0.05
- #   ),
- #   datatype = "INT1U"
- # ),
- #
- # tar_target(
- #   rel_abund_plots,
- #   make_rel_abund_rgb_plot(
- #     rel_abund_rgb,
- #     project_mask_5,
- #     filename = "outputs/figures/rgb_relative_abundance_20251219.png"
- #   )
- # ),
- #
- # ## variance scaling
- #
- # tar_terra_rast(
- #   pred_dist_scale,
- #   scale_predictions(
- #     lambda_file = pred_file_multisp_pp_count_count_expoff
- #   )
- # ),
- #
- # tar_target(
- #   distribution_plots_scale,
- #   make_distribution_plots(
- #     pred_dist_scale,
- #     model_data_spatial,
- #     plot_dir = "outputs/figures/distribution_plots/distn_20251219_scale"
- #   )
- # ),
 
 
  ###########
- ## multispecies pp count with sampling method
  ##
 
-  tar_target(
-   model_fit_image_multisp_pp_count_sm,
-   fit_model_multisp_pp_count_sm(
-     model_data_spatial = model_data_spatial,
-     target_covariate_names = target_covariate_names,
-     target_species = target_species,
-     # subrealm_names = subrealm_names,
-     bioregion_names = bioregion_names,
-     soiltype_names = soiltype_names,
-     project_mask = project_mask_5,
-     image_name = "outputs/images/multisp_pp_count_sm.RData",
-     n_burnin = 5000,
-     n_samples = 1000,
-     n_chains = 50
-   )
- ),
 
  tar_target(
-   resids_multisp_pp_count_sm,
-   validation_and_checking(
-     model_fit_image_multisp_pp_count_sm,
-     nsims = 100
-   )
- ),
-
- tar_target(
-   m6_fit,
-   fit_m6(
-     image_name = "m6_fit.RData",
+   model_fit,
+   fit_model_multispecies_pp_count(
+     image_name = "model_fit.RData",
      model_data_spatial = model_data_spatial,
      target_covariate_names = target_covariate_names,
      target_species = target_species,
@@ -1481,67 +1317,28 @@ list(
      bioregion_names = bioregion_names,
      soiltype_names = soiltype_names,
      project_mask = project_mask_5,
-     n_burnin = 2000,
-     n_samples = 1000,
-     n_chains = 50,
-     n_cores = 6
+     n_burnin = 30000,
+     n_samples = 2000,
+     n_chains = 50
    )
  ),
 
  tar_target(
-   resids_m6,
+   resids_and_rhats,
    validation_and_checking(
-     m6_fit,
+     model_fit,
      nsims = 100,
      plotdir = "outputs/figures/validation/20260605/"
    )
  ),
 
-
- # tar_target(
- #   pred_file_multisp_pp_count_sm,
- #   predict_greta_mspp_count_sm(
- #     image_filename = model_fit_image_multisp_pp_count_sm,
- #     prediction_layer = covariate_rast_10,
- #     offset = offsets_avg_10,
- #     target_species = target_species,
- #     # NB the image above is loaded with load()
- #     # which may cause problems with these _names args if they are
- #     # different from in the fit function.
- #     # Though they should be the same anyway - can't think of a situation
- #     # where we could provide different ones to predict from fit anyway
- #     # leaving with this note but commentint out this function as
- #     # predict_lambda is the better one to use.
- #     target_covariate_names = target_covariate_names,
- #     # subrealm_names = subrealm_names,
- #     bioregion_names = bioregion_names,
- #     soiltype_names = soiltype_names,
- #     output_file_prefix = "outputs/rasters/multisp_pp_count_sm"
- #   )
- # ),
-
- # tar_target(
- #   preds_sm,
- #   predict_lambda_m6(
- #     #image_name = model_fit_image_multisp_pp_count_sm,
- #     image_name = m6_fit,
- #     prediction_layer = covariate_rast_10, # use 10k for faster preds
- #     target_species,
- #     output_file_prefix = "outputs/rasters/multisp_pp_sm",
- #     offset = offsets_avg_10,
- #     sm = TRUE, # if predict survey method
- #     nsims = 100 # lower for faster preds
- #   )
- # ),
-
  tar_target(
    preds_sm,
-   predict_lambda_m6(
-     #image_name = model_fit_image_multisp_pp_count_sm,
-     image_name = m6_fit,
+   predict_lambda(
+     image_name = model_fit,
      prediction_layer = covariate_rast_10, # use 10k for faster preds
      target_species,
-     output_file_prefix = "outputs/rasters/multisp_pp_sm",
+     output_file_prefix = "outputs/rasters/multispecies_pp",
      offset = offsets_avg_10,
      sm = TRUE, # if predict survey method
      nsims = 100 # lower for faster preds
@@ -1729,10 +1526,10 @@ list(
 
  #####################
 
-  tar_target(
-    so_i_dont_have_to_go_backward_and_add_commas,
-    print("Targets great in theory but kinda annoying to work with")
-  )
+ tar_target(
+   so_i_dont_have_to_go_backward_and_add_commas,
+   print("Targets great in theory but kinda annoying to work with")
+ )
 
 
 

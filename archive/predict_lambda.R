@@ -1,12 +1,11 @@
-predict_lambda_m6_with_masking <- function(
+predict_lambda <- function(
     image_name,
     prediction_layer,
     target_species,
     output_file_prefix,
     offset,
     sm = FALSE,
-    nsims = 50,
-    bioregion_mask
+    nsims = 50
 ){
 
   # load image with model and draws in it
@@ -14,7 +13,6 @@ predict_lambda_m6_with_masking <- function(
   load(image_name)
 
   prednames <- target_covariate_names
-
 
   # create values to predict to using covatiate layers
   r <- prediction_layer
@@ -26,10 +24,8 @@ predict_lambda_m6_with_masking <- function(
 
   # x_subrealm_predict <- layer_values[!naidx, subrealm_names]
   x_bioregion_predict <- layer_values[!naidx, bioregion_names]
-  # x_soiltype_predict <- layer_values[!naidx, soiltype_names]
 
-  bioreg_mask_vals <- values(bioregion_mask)
-  bmv <- bioreg_mask_vals[!naidx]
+  x_soiltype_predict <- layer_values[!naidx, soiltype_names]
 
 
   # # model bioregion effects as additive to landcover, so just expand the
@@ -38,16 +34,11 @@ predict_lambda_m6_with_masking <- function(
 
   # # model bioregion effects only as interactions with landcover, and expand
   # the covariate set
-
-  # x_intercovs_predict <- cbind(x_bioregion_predict, x_soiltype_predict)
-  # x_interactions_predict <- make_designmat_interactions(
-  #   x_predict,
-  #   x_intercovs_predict
-  # )
-  # x_all_predict <- cbind(x_predict, x_interactions_predict)
+  #
+  x_intercovs_predict <- cbind(x_bioregion_predict, x_soiltype_predict)
   x_interactions_predict <- make_designmat_interactions(
     x_predict,
-    x_bioregion_predict
+    x_intercovs_predict
   )
   x_all_predict <- cbind(x_predict, x_interactions_predict)
   x_all_predict <- as_data(x_all_predict)
@@ -61,12 +52,7 @@ predict_lambda_m6_with_masking <- function(
 
   x_predict_beta_species <- x_all_predict %*% beta
 
-  log_lambda_larval_habitat_predict_no_mask <- sweep(x_predict_beta_species, 2, alpha, FUN = "+")
-
-  log_lambda_larval_habitat_predict <- sweep(log_lambda_larval_habitat_predict_no_mask, 1, bmv, FUN = "+")
-
-
-
+  log_lambda_larval_habitat_predict <- sweep(x_predict_beta_species, 2, alpha, FUN = "+")
 
   if(sm){
     # simulate human_landing_catch indoor
