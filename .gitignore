@@ -17,3 +17,4 @@ outputs
 _targets/meta/meta
 .positai
 *.csv
+*.xlsx
