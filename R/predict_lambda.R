@@ -1,4 +1,4 @@
-predict_lambda_m6_with_masking <- function(
+predict_lambda <- function(
     image_name,
     prediction_layer,
     target_species,

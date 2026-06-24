@@ -1476,9 +1476,8 @@ list(
 
  tar_target(
    preds_sm,
-   predict_lambda_m6_with_masking(
-     #image_name = model_fit_image_multisp_pp_count_sm,
-     image_name = m6_fit,
+   predict_lambda(
+     image_name = model_fit,
      prediction_layer = covariate_rast_10, # use 10k for faster preds
      target_species,
      output_file_prefix = "outputs/rasters/multispecies_pp",
