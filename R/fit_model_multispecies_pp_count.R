@@ -2,10 +2,10 @@ fit_model_multispecies_pp_count <- function(
     model_data_spatial,
     target_covariate_names,
     target_species,
-    subrealm_names,
+    #subrealm_names = NULL,
     bioregion_names,
-    soiltype_names,
-    project_mask,
+    #soiltype_names = NULL,
+    #project_mask,
     image_name = "outputs/images/multisp_pp_count_sm.RData",
     n_burnin = 50,
     n_samples = 100,
@@ -152,10 +152,10 @@ fit_model_multispecies_pp_count <- function(
 
   # area of background cells
 
-  total_area <- expanse(
-    project_mask,
-    unit = "km"
-  )$area
+  # total_area <- expanse(
+  #   project_mask,
+  #   unit = "km"
+  # )$area
 
 
   n_bg <- model_data_spatial_bg |>

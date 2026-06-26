@@ -118,6 +118,7 @@ list(
       mask(mask = water_mask_5)
   ),
 
+
   # bare landcover
   tar_terra_rast(
     landcover_bare_raw,
@@ -875,10 +876,7 @@ list(
 
  tar_target(
    raw_data_file,
-   #"data/tabular/VA_FULL_DATA_20250716.csv",
-   #"data/tabular/VA_DATA_20260218.csv",
-   #"data/tabular/va.data_20260427.csv",
-   "data/tabular/va.data_20260513.csv",
+   "data/tabular/va.data_20260616.csv",
    format = "file"
  ),
 
@@ -1309,16 +1307,27 @@ list(
  tar_target(
    model_fit,
    fit_model_multispecies_pp_count(
-     image_name = "model_fit.RData",
+     image_name = "model_fit_test.RData",
      model_data_spatial = model_data_spatial,
      target_covariate_names = target_covariate_names,
      target_species = target_species,
-     subrealm_names = subrealm_names,
      bioregion_names = bioregion_names,
-     soiltype_names = soiltype_names,
-     project_mask = project_mask_5,
-     n_burnin = 30000,
-     n_samples = 2000,
+     n_burnin = 50,
+     n_samples = 50,
+     n_chains = 50
+   )
+ ),
+
+ tar_target(
+   model_fit_sre,
+   fit_model_multispecies_pp_count_source_effect(
+     image_name = "model_fit_test_source_re.RData",
+     model_data_spatial = model_data_spatial,
+     target_covariate_names = target_covariate_names,
+     target_species = target_species,
+     bioregion_names = bioregion_names,
+     n_burnin = 50,
+     n_samples = 50,
      n_chains = 50
    )
  ),
@@ -1328,7 +1337,7 @@ list(
    validation_and_checking(
      model_fit,
      nsims = 100,
-     plotdir = "outputs/figures/validation/20260605/"
+     plotdir = "outputs/figures/validation/20260628/"
    )
  ),
 
@@ -1349,8 +1358,8 @@ list(
 
  tar_terra_rast(
    pred_dist_not_masked,
-   # rast(preds_sm$p)
-   rast("spartan_model_comparison/m6/m6_p.tif")
+    rast(preds_sm$p)
+   #rast("spartan_model_comparison/m6/m6_p.tif")
  ),
 
  tar_terra_rast(
@@ -1423,41 +1432,11 @@ list(
    )
  ),
 
- # tar_target(
- #   pred_file_multisp_pp_count_expoff_sm,
- #   add_expert_offset(
- #     predfilelist = pred_file_multisp_pp_count_sm,
- #     expert_offset_maps = expert_offset_maps_500
- #     #expert_offset_maps = rast("outputs/rasters/va_plots_20250718/expert_offset_aggregated.tif")
- #   )
- # ),
- #
- # tar_target(
- #   pred_file_multisp_pp_count_expoff_sm_count,
- #   add_expert_offset_count(
- #     predfilelist = pred_file_multisp_pp_count_sm,
- #     expert_offset_maps = expert_offset_maps_500
- #     #expert_offset_maps = rast("outputs/rasters/va_plots_20250718/expert_offset_aggregated.tif")
- #   )
- # ),
- #
- #  tar_target(
- #    pred_file_multisp_pp_count_expoff_sm_500,
- #    add_expert_offset(
- #      predfilelist = pred_file_multisp_pp_count_sm,
- #    )
- #  ),
 
  #
  # #####
  #
  # distribution plots
-
- # this is the temporary thang until the above are tidied
- # tar_terra_rast(
- #   pred_dist_sm,
- #   rast(x = pred_file_multisp_pp_count_sm$pa)
- # ),
 
  tar_target(
    distribution_plots_sm,
