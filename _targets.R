@@ -1343,6 +1343,19 @@ list(
  ),
 
  tar_target(
+   refit_model_fit_sre,
+   refit_model_multispecies_pp_count_source_effect(
+     fit_image_name = model_fit_sre,
+     refit_image_name = "refit_model_fit_test_source_re.RData",
+     n_burnin = 100,
+     n_samples = 100,
+     n_chains = 50,
+     n_cores = 6
+   )
+ ),
+
+
+ tar_target(
    resids_and_rhats_sre,
    validation_and_checking(
      model_fit_sre,
