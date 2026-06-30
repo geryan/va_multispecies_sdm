@@ -1326,8 +1326,8 @@ list(
      target_covariate_names = target_covariate_names,
      target_species = target_species,
      bioregion_names = bioregion_names,
-     n_burnin = 10000,
-     n_samples = 2000,
+     n_burnin = 2000,
+     n_samples = 1000,
      n_chains = 50,
      n_cores = 32
    )
@@ -1347,7 +1347,7 @@ list(
    refit_model_multispecies_pp_count_source_effect(
      fit_image_name = model_fit_sre,
      refit_image_name = "refit_model_fit_test_source_re.RData",
-     n_burnin = 1000,
+     n_burnin = 2000,
      n_samples = 1000,
      n_chains = 50,
      n_cores = 32
