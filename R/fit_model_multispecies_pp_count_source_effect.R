@@ -1,4 +1,4 @@
-fit_model_multispecies_pp_count <- function(
+fit_model_multispecies_pp_count_source_effect <- function(
     model_data_spatial,
     target_covariate_names,
     target_species,
@@ -146,6 +146,15 @@ fit_model_multispecies_pp_count <- function(
       species_id = match(
         x = species,
         table = target_species
+      ),
+      # get and index for source id
+      sid = factor(source_id) |>
+        as.numeric(),
+      # generate index for bg points with no source id
+      sid = ifelse(
+        is.na(sid),
+        max(sid, na.rm = TRUE) + 1,
+        sid
       )
     ) |>
     select(-locatenate)
@@ -158,9 +167,13 @@ fit_model_multispecies_pp_count <- function(
   # )$area
 
 
+  # number of bg points
   n_bg <- model_data_spatial_bg |>
     filter(data_type == "bg") |>
     nrow()
+
+  # number of studies (+ bg)
+  n_sid <- max(model_data$sid)
 
   # don't need this with weight
   #area_bg <- total_area/n_bg
@@ -374,6 +387,22 @@ fit_model_multispecies_pp_count <- function(
                   truncation = c(0, Inf))
 
 
+  ###
+  # effect of survey on count size
+
+  zeta_regularised_sd <- 0.1
+
+  zeta_raw <- normal(
+    0,
+    1,
+    dim = n_sid
+  )
+
+  zeta_scale <- rep(zeta_regularised_sd, n_sid)
+
+  zeta <- zeta_raw * zeta_scale
+
+
   # offset from calculated gambiae adult survival given habitat
   log_lambda_adults <- log_offset
   # this turns offset off instead of above line
@@ -412,7 +441,8 @@ fit_model_multispecies_pp_count <- function(
     select(
       location_id,
       species_id,
-      sampling_method_id
+      sampling_method_id,
+      sid
     )
 
   count_data_loc_sp_idx <- count_data_index |>
@@ -429,7 +459,8 @@ fit_model_multispecies_pp_count <- function(
     select(
       location_id,
       species_id,
-      sampling_method_id
+      sampling_method_id,
+      sid
     )
 
   pa_data_loc_sp_idx <- pa_data_index |>
@@ -445,7 +476,8 @@ fit_model_multispecies_pp_count <- function(
     select(
       location_id,
       species_id,
-      sampling_method_id
+      sampling_method_id,
+      sid
     )
 
   pobg_data_loc_sp_idx <- pobg_data_index |>
@@ -460,7 +492,8 @@ fit_model_multispecies_pp_count <- function(
   #### count data likelihood
 
   log_lambda_obs_count <- log_lambda[count_data_loc_sp_idx] +
-    sampling_re[count_data_index$sampling_method_id]
+    sampling_re[count_data_index$sampling_method_id] +
+    zeta[count_data_index$sid]
 
   count_data_response <- model_data |>
     filter(data_type == "count") |>
@@ -497,7 +530,8 @@ fit_model_multispecies_pp_count <- function(
   #### PA likelihood
 
   log_lambda_obs_pa <- log_lambda[pa_data_loc_sp_idx] +
-    sampling_re[pa_data_index$sampling_method_id]
+    sampling_re[pa_data_index$sampling_method_id] #+
+    #zeta[pa_data_index$sid]
 
   pa_data_response <- model_data |>
     filter(data_type == "pa") |>
@@ -539,7 +573,8 @@ fit_model_multispecies_pp_count <- function(
   log_bias_obs_pobg <- log_bias[pobg_data_loc_sp_idx]
 
   log_lambda_obs_pobg <-log_lambda[pobg_data_loc_sp_idx] +
-    sampling_re[pobg_data_index$sampling_method_id]
+    sampling_re[pobg_data_index$sampling_method_id] #+
+    #zeta[pobg_data_index$sid]
 
   po_data_response_expected <- exp(
     log_lambda_obs_pobg +
@@ -556,6 +591,7 @@ fit_model_multispecies_pp_count <- function(
              gamma_mean, gamma_sd, gamma_raw,
              delta,
              beta_raw,
+             zeta_raw,
              # subrealm_sd, subrealm_svc_coef_raw,
              # bioregion_sd, bioregion_svc_coef_raw,
              sampling_re_raw, sampling_re_sd,
