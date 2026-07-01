@@ -1,0 +1,660 @@
+---
+title: "Kenya MESS"
+format: html
+---
+
+## Setup
+
+```{r}
+#| label: setup
+#| message: false
+
+library(targets)
+library(terra)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(bssdm)
+
+tar_load(c(covariate_rast_5, model_data_spatial, ken, target_covariate_names))
+
+# Muted divergent shades used throughout (negative/novel vs positive/similar)
+col_neg <- "#D6604D"
+col_pos <- "#4393C3"
+```
+
+## Crop and mask raster to Kenya
+
+```{r}
+#| label: cov-rast-ken
+
+cov_rast_ken <- crop(covariate_rast_5, ken) |>
+  mask(ken)
+```
+
+## Create SpatVector from model data
+
+```{r}
+#| label: model-data-vect
+
+model_data_vect <- vect(
+  model_data_spatial |>
+    select(
+      species,
+      longitude,
+      latitude,
+      count,
+      presence,
+      data_type
+    ),
+  geom = c("longitude", "latitude"),
+  crs = crs(ken)
+)
+```
+
+## Subset points within Kenya
+
+```{r}
+#| label: ken-points
+
+ken_points <- model_data_vect[ken, ]
+```
+
+## MESS iteration 0 (before adding any points)
+
+Subset the raster to the target covariate layers and, for each species, compute
+the reference environmental values from its observation points and the initial
+(iteration 0) MESS surface -- i.e. the MESS before any search points are added.
+
+```{r}
+#| label: mess-iter0
+
+cov_rast_ken_sub <- cov_rast_ken[[target_covariate_names]]
+
+target_species <- c("arabiensis", "gambiae", "funestus")
+
+# Reference env values per species (observation points only)
+ref_vals_0 <- lapply(target_species, function(sp) {
+  sp_points <- ken_points[ken_points$species == sp, ]
+  terra::extract(cov_rast_ken_sub, sp_points, ID = FALSE) |>
+    na.omit()
+})
+names(ref_vals_0) <- target_species
+
+# Iteration 0 MESS surface per species
+mess_iter0 <- lapply(ref_vals_0, function(rv) mess(cov_rast_ken_sub, rv))
+names(mess_iter0) <- target_species
+```
+
+### Iteration 0 MESS by species
+
+```{r}
+#| label: plot-iter0
+#| fig-width: 12
+#| fig-height: 5
+
+iter0 <- lapply(mess_iter0, \(m) m$mess)
+
+# Shared symmetric range, clamped to the 1st/99th percentile so extreme outliers
+# don't wash out the colour variation. Zero maps to white for comparability.
+iter0_absmax <- max(abs(unlist(lapply(iter0, \(r) {
+  quantile(values(r), c(0.01, 0.99), na.rm = TRUE)
+}))))
+iter0_range  <- c(-iter0_absmax, iter0_absmax)
+divergent_pal <- colorRampPalette(c(col_neg, "white", col_pos))(255)
+
+par(mfrow = c(1, 3), mar = c(2, 2, 3, 4))
+for (sp in target_species) {
+  plot(iter0[[sp]], main = sp, col = divergent_pal, range = iter0_range, axes = FALSE)
+}
+```
+
+### Pairwise differences between species (iteration 0)
+
+Each panel maps the cell-by-cell difference in iteration 0 MESS between a pair of
+species. A shared symmetric scale is used so zero (no difference) maps to white.
+
+```{r}
+#| label: plot-iter0-diff
+#| fig-width: 12
+#| fig-height: 5
+
+iter0_diffs <- list(
+  "arabiensis - gambiae"  = iter0$arabiensis - iter0$gambiae,
+  "arabiensis - funestus" = iter0$arabiensis - iter0$funestus,
+  "gambiae - funestus"    = iter0$gambiae    - iter0$funestus
+)
+
+diff_absmax <- max(abs(unlist(lapply(iter0_diffs, \(r) minmax(r)))))
+diff_range  <- c(-diff_absmax, diff_absmax)
+
+# Distinct divergent palette (orange-teal) for the difference maps, symmetric
+# around zero so no difference maps to white.
+diff_pal <- colorRampPalette(c("#E08214", "white", "#80CDC1"))(255)
+
+# Layout: three map panels above one shared horizontal colourbar
+layout(rbind(1:3, c(4, 4, 4)), heights = c(1, 0.28))
+par(mar = c(2, 2, 3, 1))
+for (nm in names(iter0_diffs)) {
+  plot(iter0_diffs[[nm]], main = nm, col = diff_pal, range = diff_range,
+       legend = FALSE, axes = FALSE)
+}
+
+# Shared colourbar
+par(mar = c(3, 6, 0.5, 6))
+diff_vals <- seq(diff_range[1], diff_range[2], length.out = length(diff_pal))
+image(x = diff_vals, y = 1, z = matrix(diff_vals, ncol = 1),
+      col = diff_pal, axes = FALSE, xlab = "Difference in iteration 0 MESS", ylab = "")
+axis(1)
+```
+
+### Novel (negative) regions -- are they similar across species?
+
+Mask each iteration 0 surface to keep only the negative (novel / extrapolation)
+cells, then compare where the novel regions fall across species.
+
+```{r}
+#| label: iter0-negative-similarity
+
+# Keep only negative cells (novel areas)
+iter0_neg <- lapply(iter0, \(r) { r[r >= 0] <- NA; r })
+
+# Which cells are novel (negative) per species?
+is_neg <- lapply(iter0, \(r) values(r) < 0)
+
+# Pairwise agreement in the *location* of novel cells (Jaccard-style overlap)
+overlap <- function(a, b) {
+  both <- a & b
+  either <- a | b
+  sum(both, na.rm = TRUE) / sum(either, na.rm = TRUE)
+}
+
+cat("Overlap of novel-cell locations (intersection / union):\n",
+  "arabiensis vs gambiae: ", round(overlap(is_neg$arabiensis, is_neg$gambiae),  3), "\n",
+  "arabiensis vs funestus:", round(overlap(is_neg$arabiensis, is_neg$funestus), 3), "\n",
+  "gambiae vs funestus:   ", round(overlap(is_neg$gambiae,    is_neg$funestus), 3), "\n"
+)
+
+# Correlation of the negative MESS values where both species are novel
+neg_cor <- function(a, b) {
+  va <- values(a)[, 1]; vb <- values(b)[, 1]
+  ok <- !is.na(va) & !is.na(vb)
+  if (sum(ok) < 2) return(NA_real_)
+  cor(va[ok], vb[ok])
+}
+
+cat("\nCorrelation of negative MESS values where both are novel:\n",
+  "arabiensis vs gambiae: ", round(neg_cor(iter0_neg$arabiensis, iter0_neg$gambiae),  3), "\n",
+  "arabiensis vs funestus:", round(neg_cor(iter0_neg$arabiensis, iter0_neg$funestus), 3), "\n",
+  "gambiae vs funestus:   ", round(neg_cor(iter0_neg$gambiae,    iter0_neg$funestus), 3), "\n"
+)
+```
+
+## MESS surfaces and iterative novel-environment point search
+
+For each of the three target species, iteratively generate a MESS surface
+(starting from the iteration 0 surface above), identify the cell with the lowest
+similarity score, record its centroid, add it to the reference set, and repeat
+until 20 points have been recorded.
+
+```{r}
+#| label: mess-iteration
+
+n_iter <- 20
+mess_results <- list()
+
+for (sp in target_species) {
+
+  # Start from the species observation points
+  ref_vals <- ref_vals_0[[sp]]
+
+  recorded_pts <- data.frame(longitude = numeric(0), latitude = numeric(0))
+  # Surfaces indexed 1..(n_iter + 1) for iterations 0..n_iter; iteration 0 is
+  # the MESS before any search points have been added
+  mess_surfaces <- vector("list", n_iter + 1)
+
+  for (i in 0:n_iter) {
+
+    # Reuse the pre-computed iteration 0 surface; otherwise recompute
+    m <- if (i == 0) mess_iter0[[sp]] else mess(cov_rast_ken_sub, ref_vals)
+    mess_surfaces[[i + 1]] <- m
+
+    # Final surface computed; no further points to add
+    if (i == n_iter) break
+
+    # Identify cell with lowest MESS value and get its centroid
+    min_cell <- which.min(values(m$mess))
+    centroid  <- xyFromCell(m$mess, min_cell)
+    lon <- centroid[1, "x"]
+    lat <- centroid[1, "y"]
+
+    recorded_pts <- rbind(
+      recorded_pts,
+      data.frame(longitude = lon, latitude = lat)
+    )
+
+    # Extract env values at new point and add to reference set
+    new_pt   <- vect(data.frame(x = lon, y = lat), geom = c("x", "y"), crs = crs(cov_rast_ken_sub))
+    new_vals <- terra::extract(cov_rast_ken_sub, new_pt, ID = FALSE)
+    ref_vals <- rbind(ref_vals, new_vals)
+  }
+
+  mess_results[[sp]] <- list(
+    mess_surfaces = mess_surfaces,
+    recorded_points = recorded_pts
+  )
+
+  message("Done: ", sp)
+}
+```
+
+## Results
+
+```{r}
+#| label: results
+
+for (sp in target_species) {
+  cat("\n###", sp, "\n\n")
+  print(mess_results[[sp]]$recorded_points)
+}
+```
+
+
+```{r}
+#| label: selected-points-identical
+
+# Check whether the selected points are identical across the three species
+selected_pts <- lapply(mess_results, \(x) x$recorded_points)
+
+cat(
+  "arabiensis vs gambiae: ", identical(selected_pts$arabiensis, selected_pts$gambiae),  "\n",
+  "arabiensis vs funestus:", identical(selected_pts$arabiensis, selected_pts$funestus), "\n",
+  "gambiae vs funestus:   ", identical(selected_pts$gambiae,    selected_pts$funestus), "\n",
+  "all three identical:   ",
+  identical(selected_pts$arabiensis, selected_pts$gambiae) &&
+    identical(selected_pts$arabiensis, selected_pts$funestus), "\n"
+)
+```
+
+
+
+## Are species observation points identical?
+
+```{r}
+#| label: points-identity
+
+coords_by_species <- lapply(target_species, function(sp) {
+  pts <- crds(ken_points[ken_points$species == sp, ])
+  sort(paste(round(pts[, "x"], 6), round(pts[, "y"], 6)))
+})
+names(coords_by_species) <- target_species
+
+# Point counts per species
+sapply(coords_by_species, length)
+
+# Pairwise identity checks
+cat(
+  "arabiensis vs gambiae: ", identical(coords_by_species[["arabiensis"]], coords_by_species[["gambiae"]]), "\n",
+  "arabiensis vs funestus:", identical(coords_by_species[["arabiensis"]], coords_by_species[["funestus"]]), "\n",
+  "gambiae vs funestus:   ", identical(coords_by_species[["gambiae"]],    coords_by_species[["funestus"]]),  "\n"
+)
+```
+
+## Absolute sum of positive and negative cells per iteration
+
+For each surface (from iteration 0), sum the positive cell values (similar,
+blue) and the absolute value of the negative cells (novel, red), then track how
+these totals change across iterations. The grey line (secondary axis) shows the
+MESS value of the point selected at each iteration -- i.e. how novel the most
+novel cell is -- so we can see what is being picked as the search continues.
+
+```{r}
+#| label: mess-cell-sums
+#| fig-width: 12
+#| fig-height: 4
+
+cell_sums <- lapply(target_species, function(sp) {
+  surfaces <- mess_results[[sp]]$mess_surfaces
+  data.frame(
+    species   = sp,
+    iteration = seq_along(surfaces) - 1,
+    positive  = sapply(surfaces, function(m) {
+      v <- values(m$mess); sum(v[v > 0], na.rm = TRUE)
+    }),
+    negative  = sapply(surfaces, function(m) {
+      v <- values(m$mess); sum(abs(v[v < 0]), na.rm = TRUE)
+    })
+  )
+}) |>
+  bind_rows() |>
+  pivot_longer(c(positive, negative), names_to = "sign", values_to = "abs_sum")
+
+# MESS value of the point selected at each iteration (the most novel cell).
+# Points are selected at iterations 0..(n_iter - 1); the final surface has none.
+selected_mess <- lapply(target_species, function(sp) {
+  surfaces <- mess_results[[sp]]$mess_surfaces
+  data.frame(
+    species    = sp,
+    iteration  = seq_len(n_iter) - 1,
+    mess_value = sapply(surfaces[seq_len(n_iter)], function(m) {
+      min(values(m$mess), na.rm = TRUE)
+    })
+  )
+}) |>
+  bind_rows()
+
+# Combine into one long frame with a panel per metric: absolute sums on the top
+# row, selected-point MESS value on its own row below (each with a free y-axis).
+plot_data <- bind_rows(
+  cell_sums |>
+    transmute(species, iteration, series = sign, value = abs_sum,
+              panel = "Absolute sum of MESS cells"),
+  selected_mess |>
+    transmute(species, iteration, series = "selected", value = mess_value,
+              panel = "Selected point MESS value")
+) |>
+  mutate(panel = factor(
+    panel,
+    levels = c("Absolute sum of MESS cells", "Selected point MESS value")
+  ))
+
+ggplot(plot_data, aes(iteration, value, colour = series)) +
+  geom_line(data = ~ filter(.x, series == "selected")) +
+  geom_point() +
+  facet_grid(panel ~ species, scales = "free_y", switch = "y") +
+  scale_colour_manual(
+    values = c(negative = col_neg, positive = col_pos, selected = "grey40"),
+    labels = c(
+      negative = "|negative| (novel)",
+      positive = "positive (similar)",
+      selected = "selected point MESS"
+    ),
+    breaks = c("negative", "positive", "selected")
+  ) +
+  labs(x = "Iteration", y = NULL, colour = NULL) +
+  theme(strip.placement = "outside")
+```
+
+## Absolute sum table
+
+```{r}
+#| label: mess-cell-sums-table
+
+cell_sums |>
+  pivot_wider(names_from = sign, values_from = abs_sum) |>
+  left_join(selected_mess, by = c("species", "iteration")) |>
+  arrange(species, iteration) |>
+  knitr::kable(
+    digits    = c(0, 0, 0, 0, 2),
+    col.names = c("Species", "Iteration", "positive (similar)", "|negative| (novel)", "Selected point MESS")
+  )
+```
+
+## MESS surface evolution by species
+
+Each panel shows the MESS surface at that iteration (starting from iteration 0,
+before any points are added), with all points selected up to and including that
+iteration overlaid in black.
+
+```{r}
+#| label: plot-mess
+#| fig-width: 10
+#| fig-height: 11
+
+# Clamp to the 1st/99th percentile across all surfaces (symmetric around zero)
+# so extreme negative outliers don't wash out the colour variation. Zero maps
+# to white and all panels share the same scale for comparability.
+clamp_absmax <- max(abs(unlist(lapply(target_species, function(sp) {
+  lapply(mess_results[[sp]]$mess_surfaces, function(m) {
+    quantile(values(m$mess), c(0.01, 0.99), na.rm = TRUE)
+  })
+}))))
+
+mess_range <- c(-clamp_absmax, clamp_absmax)
+
+# Divergent palette: muted red = negative (novel), white = zero, blue = positive
+divergent_pal <- colorRampPalette(c(col_neg, "white", col_pos))(255)
+
+# Layout: 3x3 grid of panels plus a bottom strip for the shared legend
+layout_mat <- rbind(
+  matrix(1:9, nrow = 3, ncol = 3, byrow = TRUE),
+  rep(10, 3)
+)
+
+for (sp in target_species) {
+  pts      <- mess_results[[sp]]$recorded_points
+  surfaces <- mess_results[[sp]]$mess_surfaces
+
+  layout(layout_mat, heights = c(1, 1, 1, 0.4))
+  par(mar = c(1, 1, 2, 0.5), oma = c(0, 0, 3, 0))
+
+  # Iterations 0 through 8 (surfaces 1 through 9)
+  for (j in seq_len(9)) {
+    iter <- j - 1
+    plot(
+      surfaces[[j]]$mess,
+      main   = paste0("iter ", iter),
+      col    = divergent_pal,
+      range  = mess_range,
+      legend = FALSE,
+      axes   = FALSE
+    )
+    lines(ken)
+
+    # Show all points selected up to and including this iteration
+    if (iter >= 1) {
+      pts_so_far <- pts[seq_len(iter), , drop = FALSE]
+      pts_vect   <- vect(pts_so_far, geom = c("longitude", "latitude"), crs = crs(cov_rast_ken_sub))
+      points(pts_vect, pch = 19, col = "goldenrod", cex = 2)
+    }
+  }
+
+  # Shared legend (panel 10): horizontal colour bar spanning the grid width
+  par(mar = c(2.5, 3, 0.5, 3))
+  legend_vals <- seq(mess_range[1], mess_range[2], length.out = length(divergent_pal))
+  image(
+    x = legend_vals, y = 1, z = matrix(legend_vals, ncol = 1),
+    col = divergent_pal, axes = FALSE, xlab = "MESS (clamped to 1st/99th pctile)", ylab = ""
+  )
+  axis(1)
+
+  mtext(sp, outer = TRUE, cex = 1.4, font = 2)
+}
+```
+
+# Funestus-driven point selection
+
+Here the iterative search selects points **only** from the funestus MESS surface,
+but each selected point is added to *all three* species' reference sets. This
+shows how points chosen to fill funestus's novel environment reshape the MESS of
+the other two species as well.
+
+```{r}
+#| label: mess-iteration-funestus
+
+# Reference sets start from each species' observation points
+ref_vals_fun <- ref_vals_0
+
+recorded_pts_fun   <- data.frame(longitude = numeric(0), latitude = numeric(0))
+selected_cells_fun <- integer(0)
+mess_surfaces_fun  <- setNames(
+  lapply(target_species, \(sp) vector("list", n_iter + 1)),
+  target_species
+)
+
+for (i in 0:n_iter) {
+
+  # MESS for every species with the current (shared) reference sets
+  for (sp in target_species) {
+    mess_surfaces_fun[[sp]][[i + 1]] <-
+      if (i == 0) mess_iter0[[sp]] else mess(cov_rast_ken_sub, ref_vals_fun[[sp]])
+  }
+
+  if (i == n_iter) break
+
+  # Select the most novel cell from the FUNESTUS surface only
+  m_fun    <- mess_surfaces_fun[["funestus"]][[i + 1]]
+  min_cell <- which.min(values(m_fun$mess))
+  centroid <- xyFromCell(m_fun$mess, min_cell)
+  lon <- centroid[1, "x"]
+  lat <- centroid[1, "y"]
+
+  recorded_pts_fun   <- rbind(recorded_pts_fun, data.frame(longitude = lon, latitude = lat))
+  selected_cells_fun <- c(selected_cells_fun, min_cell)
+
+  # Add the funestus-selected point to ALL species' reference sets
+  new_pt   <- vect(data.frame(x = lon, y = lat), geom = c("x", "y"), crs = crs(cov_rast_ken_sub))
+  new_vals <- terra::extract(cov_rast_ken_sub, new_pt, ID = FALSE)
+  for (sp in target_species) ref_vals_fun[[sp]] <- rbind(ref_vals_fun[[sp]], new_vals)
+}
+
+# Package like mess_results; recorded points are shared (the funestus picks)
+mess_results_fun <- setNames(
+  lapply(target_species, \(sp) list(
+    mess_surfaces   = mess_surfaces_fun[[sp]],
+    recorded_points = recorded_pts_fun
+  )),
+  target_species
+)
+```
+
+## Absolute sum of positive and negative cells per iteration (funestus-driven)
+
+The selected-point MESS series now shows the value of the *funestus-selected*
+cell on each species' own surface -- for funestus this is its minimum, for the
+others it is how novel that same point is to them.
+
+```{r}
+#| label: mess-cell-sums-funestus
+#| fig-width: 12
+#| fig-height: 4
+
+cell_sums_fun <- lapply(target_species, function(sp) {
+  surfaces <- mess_results_fun[[sp]]$mess_surfaces
+  data.frame(
+    species   = sp,
+    iteration = seq_along(surfaces) - 1,
+    positive  = sapply(surfaces, function(m) {
+      v <- values(m$mess); sum(v[v > 0], na.rm = TRUE)
+    }),
+    negative  = sapply(surfaces, function(m) {
+      v <- values(m$mess); sum(abs(v[v < 0]), na.rm = TRUE)
+    })
+  )
+}) |>
+  bind_rows() |>
+  pivot_longer(c(positive, negative), names_to = "sign", values_to = "abs_sum")
+
+# MESS value at the funestus-selected cell, evaluated on each species' surface
+selected_mess_fun <- lapply(target_species, function(sp) {
+  surfaces <- mess_results_fun[[sp]]$mess_surfaces
+  data.frame(
+    species    = sp,
+    iteration  = seq_len(n_iter) - 1,
+    mess_value = sapply(seq_len(n_iter), function(i) {
+      values(surfaces[[i]]$mess)[selected_cells_fun[i]]
+    })
+  )
+}) |>
+  bind_rows()
+
+plot_data_fun <- bind_rows(
+  cell_sums_fun |>
+    transmute(species, iteration, series = sign, value = abs_sum,
+              panel = "Absolute sum of MESS cells"),
+  selected_mess_fun |>
+    transmute(species, iteration, series = "selected", value = mess_value,
+              panel = "Selected point MESS value")
+) |>
+  mutate(panel = factor(
+    panel,
+    levels = c("Absolute sum of MESS cells", "Selected point MESS value")
+  ))
+
+ggplot(plot_data_fun, aes(iteration, value, colour = series)) +
+  geom_line(data = ~ filter(.x, series == "selected")) +
+  geom_point() +
+  facet_grid(panel ~ species, scales = "free_y", switch = "y") +
+  scale_colour_manual(
+    values = c(negative = col_neg, positive = col_pos, selected = "grey40"),
+    labels = c(
+      negative = "|negative| (novel)",
+      positive = "positive (similar)",
+      selected = "selected point MESS"
+    ),
+    breaks = c("negative", "positive", "selected")
+  ) +
+  labs(x = "Iteration", y = NULL, colour = NULL) +
+  theme(strip.placement = "outside")
+```
+
+## Absolute sum table (funestus-driven)
+
+```{r}
+#| label: mess-cell-sums-table-funestus
+
+cell_sums_fun |>
+  pivot_wider(names_from = sign, values_from = abs_sum) |>
+  left_join(selected_mess_fun, by = c("species", "iteration")) |>
+  arrange(species, iteration) |>
+  knitr::kable(
+    digits    = c(0, 0, 0, 0, 2),
+    col.names = c("Species", "Iteration", "positive (similar)", "|negative| (novel)", "Selected point MESS")
+  )
+```
+
+## MESS surface evolution by species (funestus-driven)
+
+Each panel shows the MESS surface at that iteration. The overlaid points are the
+funestus-selected locations, identical across all three species' panels.
+
+```{r}
+#| label: plot-mess-funestus
+#| fig-width: 10
+#| fig-height: 11
+
+clamp_absmax_fun <- max(abs(unlist(lapply(target_species, function(sp) {
+  lapply(mess_results_fun[[sp]]$mess_surfaces, function(m) {
+    quantile(values(m$mess), c(0.01, 0.99), na.rm = TRUE)
+  })
+}))))
+
+mess_range_fun <- c(-clamp_absmax_fun, clamp_absmax_fun)
+
+for (sp in target_species) {
+  pts      <- mess_results_fun[[sp]]$recorded_points
+  surfaces <- mess_results_fun[[sp]]$mess_surfaces
+
+  layout(layout_mat, heights = c(1, 1, 1, 0.4))
+  par(mar = c(1, 1, 2, 0.5), oma = c(0, 0, 3, 0))
+
+  for (j in seq_len(9)) {
+    iter <- j - 1
+    plot(
+      surfaces[[j]]$mess,
+      main   = paste0("iter ", iter),
+      col    = divergent_pal,
+      range  = mess_range_fun,
+      legend = FALSE,
+      axes   = FALSE
+    )
+    lines(ken)
+
+    if (iter >= 1) {
+      pts_so_far <- pts[seq_len(iter), , drop = FALSE]
+      pts_vect   <- vect(pts_so_far, geom = c("longitude", "latitude"), crs = crs(cov_rast_ken_sub))
+      points(pts_vect, pch = 19, col = "goldenrod", cex = 2)
+    }
+  }
+
+  par(mar = c(2.5, 3, 0.5, 3))
+  legend_vals <- seq(mess_range_fun[1], mess_range_fun[2], length.out = length(divergent_pal))
+  image(
+    x = legend_vals, y = 1, z = matrix(legend_vals, ncol = 1),
+    col = divergent_pal, axes = FALSE, xlab = "MESS (clamped to 1st/99th pctile)", ylab = ""
+  )
+  axis(1)
+
+  mtext(paste0(sp, " (funestus-driven picks)"), outer = TRUE, cex = 1.4, font = 2)
+}
+```
