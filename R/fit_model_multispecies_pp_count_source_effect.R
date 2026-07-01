@@ -493,7 +493,7 @@ fit_model_multispecies_pp_count_source_effect <- function(
 
   log_lambda_obs_count <- log_lambda[count_data_loc_sp_idx] +
     sampling_re[count_data_index$sampling_method_id] +
-    zeta[count_data_index$sampling_method_id]
+    zeta[count_data_index$sid]
 
   count_data_response <- model_data |>
     filter(data_type == "count") |>
@@ -530,8 +530,8 @@ fit_model_multispecies_pp_count_source_effect <- function(
   #### PA likelihood
 
   log_lambda_obs_pa <- log_lambda[pa_data_loc_sp_idx] +
-    sampling_re[pa_data_index$sampling_method_id] +
-    zeta[pa_data_index$sid]
+    sampling_re[pa_data_index$sampling_method_id] #+
+    #zeta[pa_data_index$sid]
 
   pa_data_response <- model_data |>
     filter(data_type == "pa") |>
@@ -573,8 +573,8 @@ fit_model_multispecies_pp_count_source_effect <- function(
   log_bias_obs_pobg <- log_bias[pobg_data_loc_sp_idx]
 
   log_lambda_obs_pobg <-log_lambda[pobg_data_loc_sp_idx] +
-    sampling_re[pobg_data_index$sampling_method_id] +
-    zeta[pobg_data_index$sid]
+    sampling_re[pobg_data_index$sampling_method_id] #+
+    #zeta[pobg_data_index$sid]
 
   po_data_response_expected <- exp(
     log_lambda_obs_pobg +

@@ -9,7 +9,14 @@ split_sims <- function(sims) {
       row_i <- lapply(
         X = sims,
         FUN = function(x){
-          x[i, , , drop = FALSE]
+          x_i <- x[i, , , drop = FALSE]
+
+          array(
+            data = x_i,
+            dim = dim(x = x)[-1],
+            dimnames = dimnames(x = x)[-1]
+          )
+
         }
       )
 
