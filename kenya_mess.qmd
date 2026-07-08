@@ -16,7 +16,16 @@ library(tidyr)
 library(ggplot2)
 library(bssdm)
 
-tar_load(c(covariate_rast_5, model_data_spatial, ken, target_covariate_names))
+tar_load(
+  c(
+    covariate_rast_5,
+    model_data_spatial,
+    ken,
+    target_covariate_names
+  )
+)
+
+cv <- rast("spartan_model_comparison/m6/m6_mask_p_cv.tif")
 
 # Muted divergent shades used throughout (negative/novel vs positive/similar)
 col_neg <- "#D6604D"
@@ -30,6 +39,12 @@ col_pos <- "#4393C3"
 
 cov_rast_ken <- crop(covariate_rast_5, ken) |>
   mask(ken)
+
+cov_rast_ken_sub <- cov_rast_ken[[target_covariate_names]]
+
+plot(cov_rast_ken_sub[[1:5]])
+plot(cov_rast_ken_sub[[6:10]])
+
 ```
 
 ## Create SpatVector from model data
@@ -50,6 +65,8 @@ model_data_vect <- vect(
   geom = c("longitude", "latitude"),
   crs = crs(ken)
 )
+
+model_data_vect
 ```
 
 ## Subset points within Kenya
@@ -58,6 +75,9 @@ model_data_vect <- vect(
 #| label: ken-points
 
 ken_points <- model_data_vect[ken, ]
+
+plot(ken)
+points(ken_points)
 ```
 
 ## MESS iteration 0 (before adding any points)
@@ -68,8 +88,6 @@ the reference environmental values from its observation points and the initial
 
 ```{r}
 #| label: mess-iter0
-
-cov_rast_ken_sub <- cov_rast_ken[[target_covariate_names]]
 
 target_species <- c("arabiensis", "gambiae", "funestus")
 
@@ -93,6 +111,7 @@ names(mess_iter0) <- target_species
 #| fig-width: 12
 #| fig-height: 5
 
+# extract just the mess rasters
 iter0 <- lapply(mess_iter0, \(m) m$mess)
 
 # Shared symmetric range, clamped to the 1st/99th percentile so extreme outliers
@@ -384,9 +403,12 @@ cell_sums |>
   pivot_wider(names_from = sign, values_from = abs_sum) |>
   left_join(selected_mess, by = c("species", "iteration")) |>
   arrange(species, iteration) |>
+  group_by(species) |>
+  mutate(delta_negative = negative - lag(negative)) |>
+  ungroup() |>
   knitr::kable(
-    digits    = c(0, 0, 0, 0, 2),
-    col.names = c("Species", "Iteration", "positive (similar)", "|negative| (novel)", "Selected point MESS")
+    digits    = c(0, 0, 0, 0, 2, 0),
+    col.names = c("Species", "Iteration", "positive (similar)", "|negative| (novel)", "Selected point MESS", "Δ|negative|")
   )
 ```
 
@@ -597,9 +619,12 @@ cell_sums_fun |>
   pivot_wider(names_from = sign, values_from = abs_sum) |>
   left_join(selected_mess_fun, by = c("species", "iteration")) |>
   arrange(species, iteration) |>
+  group_by(species) |>
+  mutate(delta_negative = negative - lag(negative)) |>
+  ungroup() |>
   knitr::kable(
-    digits    = c(0, 0, 0, 0, 2),
-    col.names = c("Species", "Iteration", "positive (similar)", "|negative| (novel)", "Selected point MESS")
+    digits    = c(0, 0, 0, 0, 2, 0),
+    col.names = c("Species", "Iteration", "positive (similar)", "|negative| (novel)", "Selected point MESS", "Δ|negative|")
   )
 ```
 
@@ -658,3 +683,434 @@ for (sp in target_species) {
   mtext(paste0(sp, " (funestus-driven picks)"), outer = TRUE, cex = 1.4, font = 2)
 }
 ```
+
+## Using uncertainty
+
+```{r}
+cv <- rast("spartan_model_comparison/m6/m6_mask_p_cv.tif") |> 
+  crop(ken) |> 
+  mask(ken)
+
+cv <- cv[[target_species]]
+
+# Resample CV to match the covariate raster resolution for later weighting
+cv <- resample(cv, cov_rast_ken_sub, method = "bilinear")
+
+plot(cv)
+```
+
+# CV-weighted MESS point selection
+
+Here the species-by-species iterative search is repeated, but instead of selecting
+the cell with the lowest MESS value, we select based on a weighted combination:
+`weight = MESS × CV`, where CV is the coefficient of variation in the covariates
+at each pixel (high CV = high covariate diversity, worth exploring).
+
+```{r}
+#| label: mess-iteration-cv-weighted
+
+n_iter <- 20
+mess_results_cv <- list()
+
+for (sp in target_species) {
+
+  # Start from the species observation points
+  ref_vals <- ref_vals_0[[sp]]
+
+  recorded_pts_cv <- data.frame(longitude = numeric(0), latitude = numeric(0))
+  mess_surfaces_cv <- vector("list", n_iter + 1)
+
+  for (i in 0:n_iter) {
+
+    # Reuse the pre-computed iteration 0 surface; otherwise recompute
+    m <- if (i == 0) mess_iter0[[sp]] else mess(cov_rast_ken_sub, ref_vals)
+    mess_surfaces_cv[[i + 1]] <- m
+
+    # Final surface computed; no further points to add
+    if (i == n_iter) break
+
+    # Weight by CV: low MESS (novel) × high CV (diverse covariates)
+    # Both are masked to Kenya; multiply MESS by CV to get the weighted surface
+    weighted <- m$mess * cv[[sp]]
+
+    # Select cell with lowest weighted value (most novel and diverse)
+    min_cell <- which.min(values(weighted))
+    centroid  <- xyFromCell(weighted, min_cell)
+    lon <- centroid[1, "x"]
+    lat <- centroid[1, "y"]
+
+    recorded_pts_cv <- rbind(
+      recorded_pts_cv,
+      data.frame(longitude = lon, latitude = lat)
+    )
+
+    # Extract env values at new point and add to reference set
+    new_pt   <- vect(data.frame(x = lon, y = lat), geom = c("x", "y"), crs = crs(cov_rast_ken_sub))
+    new_vals <- terra::extract(cov_rast_ken_sub, new_pt, ID = FALSE)
+    ref_vals <- rbind(ref_vals, new_vals)
+  }
+
+  mess_results_cv[[sp]] <- list(
+    mess_surfaces = mess_surfaces_cv,
+    recorded_points = recorded_pts_cv
+  )
+
+  message("Done (CV-weighted): ", sp)
+}
+```
+
+## Absolute sum of positive and negative cells per iteration (CV-weighted)
+
+```{r}
+#| label: mess-cell-sums-cv
+#| fig-width: 12
+#| fig-height: 4
+
+cell_sums_cv <- lapply(target_species, function(sp) {
+  surfaces <- mess_results_cv[[sp]]$mess_surfaces
+  data.frame(
+    species   = sp,
+    iteration = seq_along(surfaces) - 1,
+    positive  = sapply(surfaces, function(m) {
+      v <- values(m$mess); sum(v[v > 0], na.rm = TRUE)
+    }),
+    negative  = sapply(surfaces, function(m) {
+      v <- values(m$mess); sum(abs(v[v < 0]), na.rm = TRUE)
+    })
+  )
+}) |>
+  bind_rows() |>
+  pivot_longer(c(positive, negative), names_to = "sign", values_to = "abs_sum")
+
+selected_mess_cv <- lapply(target_species, function(sp) {
+  surfaces <- mess_results_cv[[sp]]$mess_surfaces
+  data.frame(
+    species    = sp,
+    iteration  = seq_len(n_iter) - 1,
+    mess_value = sapply(surfaces[seq_len(n_iter)], function(m) {
+      min(values(m$mess), na.rm = TRUE)
+    })
+  )
+}) |>
+  bind_rows()
+
+plot_data_cv <- bind_rows(
+  cell_sums_cv |>
+    transmute(species, iteration, series = sign, value = abs_sum,
+              panel = "Absolute sum of MESS cells"),
+  selected_mess_cv |>
+    transmute(species, iteration, series = "selected", value = mess_value,
+              panel = "Selected point MESS value")
+) |>
+  mutate(panel = factor(
+    panel,
+    levels = c("Absolute sum of MESS cells", "Selected point MESS value")
+  ))
+
+ggplot(plot_data_cv, aes(iteration, value, colour = series)) +
+  geom_line(data = ~ filter(.x, series == "selected")) +
+  geom_point() +
+  facet_grid(panel ~ species, scales = "free_y", switch = "y") +
+  scale_colour_manual(
+    values = c(negative = col_neg, positive = col_pos, selected = "grey40"),
+    labels = c(
+      negative = "|negative| (novel)",
+      positive = "positive (similar)",
+      selected = "selected point MESS"
+    ),
+    breaks = c("negative", "positive", "selected")
+  ) +
+  labs(x = "Iteration", y = NULL, colour = NULL) +
+  theme(strip.placement = "outside")
+```
+
+## Absolute sum table (CV-weighted)
+
+```{r}
+#| label: mess-cell-sums-table-cv
+
+cell_sums_cv |>
+  pivot_wider(names_from = sign, values_from = abs_sum) |>
+  left_join(selected_mess_cv, by = c("species", "iteration")) |>
+  arrange(species, iteration) |>
+  group_by(species) |>
+  mutate(delta_negative = negative - lag(negative)) |>
+  ungroup() |>
+  knitr::kable(
+    digits    = c(0, 0, 0, 0, 2, 0),
+    col.names = c("Species", "Iteration", "positive (similar)", "|negative| (novel)", "Selected point MESS", "Δ|negative|")
+  )
+```
+
+## MESS surface evolution by species (CV-weighted)
+
+```{r}
+#| label: plot-mess-cv
+#| fig-width: 10
+#| fig-height: 11
+
+clamp_absmax_cv <- max(abs(unlist(lapply(target_species, function(sp) {
+  lapply(mess_results_cv[[sp]]$mess_surfaces, function(m) {
+    quantile(values(m$mess), c(0.01, 0.99), na.rm = TRUE)
+  })
+}))))
+
+mess_range_cv <- c(-clamp_absmax_cv, clamp_absmax_cv)
+
+for (sp in target_species) {
+  pts      <- mess_results_cv[[sp]]$recorded_points
+  surfaces <- mess_results_cv[[sp]]$mess_surfaces
+
+  layout(layout_mat, heights = c(1, 1, 1, 0.4))
+  par(mar = c(1, 1, 2, 0.5), oma = c(0, 0, 3, 0))
+
+  for (j in seq_len(9)) {
+    iter <- j - 1
+    plot(
+      surfaces[[j]]$mess,
+      main   = paste0("iter ", iter),
+      col    = divergent_pal,
+      range  = mess_range_cv,
+      legend = FALSE,
+      axes   = FALSE
+    )
+    lines(ken)
+
+    if (iter >= 1) {
+      pts_so_far <- pts[seq_len(iter), , drop = FALSE]
+      pts_vect   <- vect(pts_so_far, geom = c("longitude", "latitude"), crs = crs(cov_rast_ken_sub))
+      points(pts_vect, pch = 19, col = "goldenrod", cex = 2)
+    }
+  }
+
+  par(mar = c(2.5, 3, 0.5, 3))
+  legend_vals <- seq(mess_range_cv[1], mess_range_cv[2], length.out = length(divergent_pal))
+  image(
+    x = legend_vals, y = 1, z = matrix(legend_vals, ncol = 1),
+    col = divergent_pal, axes = FALSE, xlab = "MESS (clamped to 1st/99th pctile)", ylab = ""
+  )
+  axis(1)
+
+  mtext(paste0(sp, " (CV-weighted)"), outer = TRUE, cex = 1.4, font = 2)
+}
+```
+
+# Combined CV-weighted MESS point selection (all species)
+
+Here the iteration selects a **single location per iteration** from across all
+three species by computing `MESS × CV` for each species and cell, then picking
+the cell (from any species) with the *lowest* weighted value. This matches the
+species-by-species selection direction: because MESS is strongly negative in novel
+areas, `MESS × CV` is most negative where a cell is both novel and high-CV, so the
+minimum identifies the most novel-and-diverse cell. This location is then added to
+all three species' reference sets, so all species evolve together around shared
+points.
+
+```{r}
+#| label: mess-iteration-combined-cv
+
+ref_vals_combined <- ref_vals_0
+recorded_pts_combined <- data.frame(longitude = numeric(0), latitude = numeric(0))
+mess_surfaces_combined <- setNames(
+  lapply(target_species, \(sp) vector("list", n_iter + 1)),
+  target_species
+)
+
+for (i in 0:n_iter) {
+
+  # MESS for every species with the current (shared) reference sets
+  for (sp in target_species) {
+    mess_surfaces_combined[[sp]][[i + 1]] <-
+      if (i == 0) mess_iter0[[sp]] else mess(cov_rast_ken_sub, ref_vals_combined[[sp]])
+  }
+
+  if (i == n_iter) break
+
+  # For each species and cell, compute weight = MESS × CV
+  # Then select the cell with the lowest weight across all species (consistent
+  # with the species-by-species which.min selection)
+  weights <- lapply(target_species, function(sp) {
+    mess_surfaces_combined[[sp]][[i + 1]]$mess * cv[[sp]]
+  })
+  names(weights) <- target_species
+
+  # Stack all weighted surfaces and find the global minimum
+  all_weights <- lapply(weights, \(w) values(w))
+  min_idx <- which.min(unlist(all_weights))
+
+  # Identify which species contributed the min and recover the cell index
+  cumsum_len <- cumsum(sapply(all_weights, length))
+  sp_idx <- sum(min_idx > c(0, cumsum_len[-length(cumsum_len)]))
+  sp_name <- target_species[sp_idx]
+  cell_in_sp <- min_idx - c(0, cumsum_len[-length(cumsum_len)])[sp_idx]
+
+  # Get the cell centroid
+  centroid <- xyFromCell(weights[[sp_name]], cell_in_sp)
+  lon <- centroid[1, "x"]
+  lat <- centroid[1, "y"]
+
+  recorded_pts_combined <- rbind(
+    recorded_pts_combined,
+    data.frame(longitude = lon, latitude = lat, source_species = sp_name)
+  )
+
+  # Add the point to ALL species' reference sets
+  new_pt <- vect(data.frame(x = lon, y = lat), geom = c("x", "y"), crs = crs(cov_rast_ken_sub))
+  new_vals <- terra::extract(cov_rast_ken_sub, new_pt, ID = FALSE)
+  for (sp in target_species) {
+    ref_vals_combined[[sp]] <- rbind(ref_vals_combined[[sp]], new_vals)
+  }
+}
+
+mess_results_combined <- setNames(
+  lapply(target_species, \(sp) list(
+    mess_surfaces   = mess_surfaces_combined[[sp]],
+    recorded_points = recorded_pts_combined
+  )),
+  target_species
+)
+```
+
+## Absolute sum of positive and negative cells per iteration (combined CV-weighted)
+
+```{r}
+#| label: mess-cell-sums-combined
+#| fig-width: 12
+#| fig-height: 4
+
+cell_sums_combined <- lapply(target_species, function(sp) {
+  surfaces <- mess_results_combined[[sp]]$mess_surfaces
+  data.frame(
+    species   = sp,
+    iteration = seq_along(surfaces) - 1,
+    positive  = sapply(surfaces, function(m) {
+      v <- values(m$mess); sum(v[v > 0], na.rm = TRUE)
+    }),
+    negative  = sapply(surfaces, function(m) {
+      v <- values(m$mess); sum(abs(v[v < 0]), na.rm = TRUE)
+    })
+  )
+}) |>
+  bind_rows() |>
+  pivot_longer(c(positive, negative), names_to = "sign", values_to = "abs_sum")
+
+selected_mess_combined <- lapply(target_species, function(sp) {
+  surfaces <- mess_results_combined[[sp]]$mess_surfaces
+  pts <- mess_results_combined[[sp]]$recorded_points
+  data.frame(
+    species    = sp,
+    iteration  = seq_len(n_iter) - 1,
+    mess_value = sapply(seq_len(n_iter), function(j) {
+      pt_coord <- as.matrix(pts[j, c("longitude", "latitude")])
+      cell_idx <- cellFromXY(surfaces[[j]]$mess, pt_coord)
+      values(surfaces[[j]]$mess)[cell_idx]
+    })
+  )
+}) |>
+  bind_rows()
+
+plot_data_combined <- bind_rows(
+  cell_sums_combined |>
+    transmute(species, iteration, series = sign, value = abs_sum,
+              panel = "Absolute sum of MESS cells"),
+  selected_mess_combined |>
+    transmute(species, iteration, series = "selected", value = mess_value,
+              panel = "Selected point MESS value")
+) |>
+  mutate(panel = factor(
+    panel,
+    levels = c("Absolute sum of MESS cells", "Selected point MESS value")
+  ))
+
+ggplot(plot_data_combined, aes(iteration, value, colour = series)) +
+  geom_line(data = ~ filter(.x, series == "selected")) +
+  geom_point() +
+  facet_grid(panel ~ species, scales = "free_y", switch = "y") +
+  scale_colour_manual(
+    values = c(negative = col_neg, positive = col_pos, selected = "grey40"),
+    labels = c(
+      negative = "|negative| (novel)",
+      positive = "positive (similar)",
+      selected = "selected point MESS"
+    ),
+    breaks = c("negative", "positive", "selected")
+  ) +
+  labs(x = "Iteration", y = NULL, colour = NULL) +
+  theme(strip.placement = "outside")
+```
+
+## Absolute sum table (combined CV-weighted)
+
+```{r}
+#| label: mess-cell-sums-table-combined
+
+cell_sums_combined |>
+  pivot_wider(names_from = sign, values_from = abs_sum) |>
+  left_join(selected_mess_combined, by = c("species", "iteration")) |>
+  arrange(species, iteration) |>
+  group_by(species) |>
+  mutate(delta_negative = negative - lag(negative)) |>
+  ungroup() |>
+  knitr::kable(
+    digits    = c(0, 0, 0, 0, 2, 0),
+    col.names = c("Species", "Iteration", "positive (similar)", "|negative| (novel)", "Selected point MESS", "Δ|negative|")
+  )
+```
+
+## MESS surface evolution by species (combined CV-weighted)
+
+The same shared points (from the combined optimization) are overlaid on each
+species' surface, showing how the globally-optimized picks affect each species.
+
+```{r}
+#| label: plot-mess-combined
+#| fig-width: 10
+#| fig-height: 11
+
+clamp_absmax_combined <- max(abs(unlist(lapply(target_species, function(sp) {
+  lapply(mess_results_combined[[sp]]$mess_surfaces, function(m) {
+    quantile(values(m$mess), c(0.01, 0.99), na.rm = TRUE)
+  })
+}))))
+
+mess_range_combined <- c(-clamp_absmax_combined, clamp_absmax_combined)
+
+for (sp in target_species) {
+  pts      <- mess_results_combined[[sp]]$recorded_points
+  surfaces <- mess_results_combined[[sp]]$mess_surfaces
+
+  layout(layout_mat, heights = c(1, 1, 1, 0.4))
+  par(mar = c(1, 1, 2, 0.5), oma = c(0, 0, 3, 0))
+
+  for (j in seq_len(9)) {
+    iter <- j - 1
+    plot(
+      surfaces[[j]]$mess,
+      main   = paste0("iter ", iter),
+      col    = divergent_pal,
+      range  = mess_range_combined,
+      legend = FALSE,
+      axes   = FALSE
+    )
+    lines(ken)
+
+    if (iter >= 1) {
+      pts_so_far <- pts[seq_len(iter), , drop = FALSE]
+      pts_vect   <- vect(pts_so_far, geom = c("longitude", "latitude"), crs = crs(cov_rast_ken_sub))
+      points(pts_vect, pch = 19, col = "goldenrod", cex = 2)
+    }
+  }
+
+  par(mar = c(2.5, 3, 0.5, 3))
+  legend_vals <- seq(mess_range_combined[1], mess_range_combined[2], length.out = length(divergent_pal))
+  image(
+    x = legend_vals, y = 1, z = matrix(legend_vals, ncol = 1),
+    col = divergent_pal, axes = FALSE, xlab = "MESS (clamped to 1st/99th pctile)", ylab = ""
+  )
+  axis(1)
+
+  mtext(paste0(sp, " (combined CV-weighted)"), outer = TRUE, cex = 1.4, font = 2)
+}
+```
+
+
