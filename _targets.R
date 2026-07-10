@@ -26,7 +26,8 @@ tar_option_set(
     "bayesplot",
     "patchwork",
     # "see"
-    "MCMCvis"
+    "MCMCvis",
+    "bssdm" # remotes::install_github("cebra-analytics/bssdm")
   ),
   workspace_on_error = TRUE
 )
@@ -49,6 +50,8 @@ list(
     user_is_gerry_spartan,
     Sys.info()[["user"]] == "ryange"
   ),
+
+
 
   # read in offset layers
 
@@ -1271,6 +1274,22 @@ list(
  #   )
  # ),
 
+ ## MESS Analysis
+
+ # not working as yet
+ tar_terra_nested(
+   name = africa_mess,
+   command = bssdm::mess(
+     x = covariate_rast_5[[target_covariate_names]],
+     ref = model_data_spatial |>
+       select(
+         all_of(target_covariate_names)
+       )
+   )
+ ),
+
+
+
  # ######
  # # PCA Covariate layers
  # ######
@@ -1425,8 +1444,8 @@ list(
 
  tar_terra_rast(
    pred_pcv_not_masked,
-   # rast(preds_sm$p_cv)
-   rast("spartan_model_comparison/m6/m6_p_cv.tif")
+   rast(preds_sm$p_cv)
+   #rast("spartan_model_comparison/m6/m6_p_cv.tif")
  ),
 
  tar_terra_rast(
