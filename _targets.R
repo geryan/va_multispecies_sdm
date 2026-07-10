@@ -758,6 +758,16 @@ list(
     )
   ),
 
+  tar_terra_vect(
+    uga,
+    gadm(
+      country = "UGA",
+      level = 0,
+      path = "data/raster/geodata/"
+    )
+  ),
+
+
   # expert maps from
   # Sinka, M.E., Bangs, M.J., Manguin, S. et al.
   # The dominant Anopheles vectors of human malaria in Africa, Europe and
