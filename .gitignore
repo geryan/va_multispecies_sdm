@@ -20,3 +20,4 @@ _targets/meta/meta
 *.xlsx
 kenya_mess_files
 kenya_mess.html
+.posit/assistant

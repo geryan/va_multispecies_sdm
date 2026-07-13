@@ -1,13 +1,11 @@
 ---
-title: "Kenya MESS"
+title: "Kenya MESS Analysis Report"
 format:
-  html:
-    toc: true
-    toc-depth: 4
-    toc-location: left
   pdf:
     toc: true
     toc-depth: 4
+execute:
+  echo: false
 ---
 
 ## Setup
@@ -63,6 +61,7 @@ col_pos <- "#4393C3"
 
 ### Helper functions
 
+These functions captu
 ```{r}
 #| label: helpers
 

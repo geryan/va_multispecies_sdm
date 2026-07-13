@@ -1276,7 +1276,6 @@ list(
 
  ## MESS Analysis
 
- # not working as yet
  tar_terra_nested(
    name = africa_mess,
    command = bssdm::mess(
@@ -1287,6 +1286,20 @@ list(
        )
    )
  ),
+
+
+ tar_terra_nested(
+   name = africa_mess_nosea,
+   command = bssdm::mess(
+     x = covariate_rast_5[[target_covariate_names[which(target_covariate_names != "prox_to_sea")]]],
+     ref = model_data_spatial |>
+       select(
+         all_of(target_covariate_names[which(target_covariate_names != "prox_to_sea")])
+       )
+   )
+ ),
+
+
 
 
 
