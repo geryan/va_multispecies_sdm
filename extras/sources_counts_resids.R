@@ -209,3 +209,49 @@ sources |>
   mutate(n = n()) |>
   filter(n != 1)
 
+
+##
+
+"~/Downloads/PDF/"
+
+
+# Match PDF files to source_id in a sources table.
+#
+# Reads all PDFs recursively under `pdf_dir`, then tries to match either the
+# subdirectory name or the filename (sans .pdf) to `id_col`, coercing to numeric
+# so leading zeroes are ignored. Prefers a filename match, falls back to subdir.
+# NA ids are dropped from the valid set so that non-numeric names (which become
+# NA) don't spuriously match via `NA %in% valid_ids`.
+match_pdfs_to_sources <- function(pdf_dir, sources, id_col = source_id) {
+  id_col <- rlang::ensym(id_col)
+  valid_ids <- sources |> pull(!!id_col) |> unique()
+  valid_ids <- valid_ids[!is.na(valid_ids)]
+
+  as_id <- function(x) {
+    x <- str_remove(x, "^0+(?=\\d)")
+    suppressWarnings(as.numeric(if_else(str_detect(x, "^\\d+$"), x, NA_character_)))
+  }
+
+  rel_paths <- list.files(pdf_dir, recursive = TRUE, pattern = "\\.pdf$",
+                          ignore.case = TRUE, full.names = FALSE)
+
+  tibble(rel_path = rel_paths) |>
+    mutate(
+      subdir     = dirname(rel_path),
+      filename   = str_remove(basename(rel_path), "\\.pdf$"),
+      subdir_id  = as_id(subdir),
+      file_id    = as_id(filename),
+      matched_id = case_when(
+        file_id   %in% valid_ids ~ file_id,
+        subdir_id %in% valid_ids ~ subdir_id,
+        TRUE ~ NA_real_
+      ),
+      match_source = case_when(
+        file_id   %in% valid_ids ~ "filename",
+        subdir_id %in% valid_ids ~ "subdir",
+        TRUE ~ NA_character_
+      )
+    )
+}
+
+matches <- match_pdfs_to_sources("~/Downloads/PDF/", ars_sources)
