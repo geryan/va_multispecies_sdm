@@ -222,8 +222,7 @@ sources |>
 # so leading zeroes are ignored. Prefers a filename match, falls back to subdir.
 # NA ids are dropped from the valid set so that non-numeric names (which become
 # NA) don't spuriously match via `NA %in% valid_ids`.
-match_pdfs_to_sources <- function(pdf_dir, sources, id_col = source_id) {
-  id_col <- rlang::ensym(id_col)
+match_pdfs_to_sources <- function(pdf_dir, sources, id_col = "source_id") {
   valid_ids <- sources |> pull(!!id_col) |> unique()
   valid_ids <- valid_ids[!is.na(valid_ids)]
 
@@ -254,4 +253,7 @@ match_pdfs_to_sources <- function(pdf_dir, sources, id_col = source_id) {
     )
 }
 
-matches <- match_pdfs_to_sources("~/Downloads/PDF/", ars_sources)
+matches <- match_pdfs_to_sources(
+  pdf_dir = "~/Downloads/PDF/",
+  sources = ars_sources
+)
