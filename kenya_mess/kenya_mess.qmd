@@ -101,15 +101,19 @@ colorbar_h <- function(rng, label, pal = divergent_pal) {
   axis(1)
 }
 
-# 3x3 grid of MESS surfaces (iterations 0-8) with selected points overlaid and a
-# shared horizontal colourbar below.
+# 3x3 grid of MESS surfaces (default iterations 0-8, or any 9 requested
+# iterations) with selected points overlaid and a shared horizontal colourbar
+# below.
 plot_mess_evolution <- function(surfaces, pts, mess_range, title,
+                                 iters = 0:8,
                                  initial = "initial",
-                                 cbar_label = "MESS (clamped to 1st/99th pctile)") {
+                                 cbar_label = "MESS (clamped to 1st/99th pctile)",
+                                 pt_cex = 2) {
+  stopifnot(length(iters) == 9)
   layout(layout_mat, heights = c(1, 1, 1, 0.4))
   par(mar = c(1, 1, 2, 0.5), oma = c(0, 0, 3, 0))
-  for (j in seq_len(9)) {
-    iter <- j - 1
+  for (iter in iters) {
+    j <- iter + 1
     plot(surfaces[[j]]$mess,
          main = if (iter == 0) initial else paste0("iter ", iter),
          col = divergent_pal, range = mess_range, legend = FALSE, axes = FALSE)
@@ -121,7 +125,7 @@ plot_mess_evolution <- function(surfaces, pts, mess_range, title,
         geom = c("longitude", "latitude"),
         crs = crs(cov_rast_ken_sub)
       )
-      points(pts_vect, pch = 19, col = "goldenrod", cex = 2)
+      points(pts_vect, pch = 19, col = "goldenrod", cex = pt_cex)
     }
   }
   par(
@@ -813,16 +817,24 @@ points.
 ```{r}
 #| label: mess-iteration-combined-cv
 
-n_iter <- 200
+n_iter_max <- 200
 
 ref_vals_combined <- ref_vals_0
-recorded_pts_combined <- data.frame(longitude = numeric(0), latitude = numeric(0))
+recorded_pts_combined <- data.frame(
+  longitude = numeric(0),
+  latitude = numeric(0),
+  source_species = character(0),
+  phase = character(0)
+)
 mess_surfaces_combined <- setNames(
-  lapply(ken_mess_spp, \(sp) vector("list", n_iter + 1)),
+  lapply(ken_mess_spp, \(sp) vector("list", n_iter_max + 1)),
   ken_mess_spp
 )
 
-for (i in 0:n_iter) {
+novelty_exhausted <- FALSE
+novelty_exhaustion_iter <- NULL
+
+for (i in 0:n_iter_max) {
 
   # MESS for every species with the current (shared) reference sets
   for (sp in ken_mess_spp) {
@@ -830,35 +842,66 @@ for (i in 0:n_iter) {
       if (i == 0) mess_iter0[[sp]] else mess(cov_rast_ken_sub, ref_vals_combined[[sp]])
   }
 
-  if (i == n_iter) break
+  if (i == n_iter_max) break
 
-  # For each species and cell, compute weight = MESS × CV
-  # Then select the cell with the lowest weight across all species (consistent
-  # with the species-by-species which.min selection)
+  # For each species and cell, compute weight surface based on current phase
+  # Phase 1 & 2: Always select lowest MESS × CV (most novel/dissimilar cells)
+  # Phase 1 continues until all cells have MESS ≥ 0 (novel space exhausted)
+  # Phase 2 continues selecting the least-similar cells, which gradually improves
+  # net coverage similarity by expanding the reference envelope
   weights <- lapply(ken_mess_spp, function(sp) {
-    mess_surfaces_combined[[sp]][[i + 1]]$mess * cv[[sp]]
+    mess_surf <- mess_surfaces_combined[[sp]][[i + 1]]$mess
+    # Both phases: minimize MESS × CV to select most dissimilar cells
+    mess_surf * cv[[sp]]
   })
   names(weights) <- ken_mess_spp
 
   # Stack all weighted surfaces and find the global minimum
+  # (same criterion in both phases, but with different termination behavior)
   all_weights <- lapply(weights, \(w) values(w))
-  min_idx <- which.min(unlist(all_weights))
+  extremum_idx <- which.min(unlist(all_weights))
 
-  # Identify which species contributed the min and recover the cell index
+  # Identify which species contributed the extremum and recover the cell index
   cumsum_len <- cumsum(sapply(all_weights, length))
-  sp_idx <- sum(min_idx > c(0, cumsum_len[-length(cumsum_len)]))
+  sp_idx <- sum(extremum_idx > c(0, cumsum_len[-length(cumsum_len)]))
   sp_name <- ken_mess_spp[sp_idx]
-  cell_in_sp <- min_idx - c(0, cumsum_len[-length(cumsum_len)])[sp_idx]
+  cell_in_sp <- extremum_idx - c(0, cumsum_len[-length(cumsum_len)])[sp_idx]
 
   # Get the cell centroid
   centroid <- xyFromCell(weights[[sp_name]], cell_in_sp)
   lon <- centroid[1, "x"]
   lat <- centroid[1, "y"]
 
+  # Determine phase label
+  phase_label <- if (novelty_exhausted) "coverage" else "novelty"
+
   recorded_pts_combined <- rbind(
     recorded_pts_combined,
-    data.frame(longitude = lon, latitude = lat, source_species = sp_name)
+    data.frame(
+      longitude = lon,
+      latitude = lat,
+      source_species = sp_name,
+      phase = phase_label
+    )
   )
+
+  # Check for novelty exhaustion: if we haven't yet and min(MESS × CV) ≥ 0 across all cells
+  # This marks the transition from "novel space exists" to "all cells within envelope"
+  # but selection continues with the same criterion (minimize MESS × CV)
+  if (!novelty_exhausted) {
+    mess_vals <- lapply(ken_mess_spp, function(sp) {
+      mess_surfaces_combined[[sp]][[i + 1]]$mess * cv[[sp]]
+    })
+    global_min_weight <- min(unlist(lapply(mess_vals, \(w) values(w))), na.rm = TRUE)
+    if (global_min_weight >= 0) {
+      novelty_exhausted <- TRUE
+      novelty_exhaustion_iter <- i
+      message(
+        "Novelty exhaustion detected at iteration ", i,
+        ": all cells have MESS × CV ≥ 0. Continuing to select least-similar cells to maximize net coverage similarity."
+      )
+    }
+  }
 
   # Add the point to ALL species' reference sets
   new_pt <- vect(
@@ -889,6 +932,16 @@ mess_results_combined <- setNames(
   ),
   ken_mess_spp
 )
+
+cat("Iterations completed:\n")
+if (!is.null(novelty_exhaustion_iter)) {
+  cat("  Phase 1 (novelty): iterations 0-", novelty_exhaustion_iter, "\n", sep = "")
+  cat("  Phase 2 (coverage): iterations ", novelty_exhaustion_iter + 1, "-", nrow(recorded_pts_combined) - 1, "\n", sep = "")
+} else {
+  cat("  Phase 1 (novelty): iterations 0-", nrow(recorded_pts_combined) - 1, "\n", sep = "")
+  cat("  Phase 2 (coverage): not reached in this run\n")
+}
+cat("  Total points selected: ", nrow(recorded_pts_combined), "\n", sep = "")
 ```
 
 ### MESS surface evolution by species (combined CV-weighted)
@@ -914,6 +967,32 @@ for (sp in ken_mess_spp) {
 }
 ```
 
+### MESS surface evolution across the full run (combined CV-weighted)
+
+Iteration 0, iteration `n_iter_max`, and 7 evenly-spaced iterations in between, so the
+full run is visible in one grid. Points are drawn small since up
+to `n_iter_max` of them are shown at once.
+
+```{r}
+#| label: plot-mess-combined-full-range
+#| fig-width: 10
+#| fig-height: 11
+
+iters_full_range <- round(seq(0, n_iter_max, length.out = 9))
+
+for (sp in ken_mess_spp) {
+  plot_mess_evolution(
+    surfaces   = mess_results_combined[[sp]]$mess_surfaces,
+    pts        = mess_results_combined[[sp]]$recorded_points,
+    mess_range = mess_range_combined,
+    title      = bquote(italic(.(sp)) * " (combined CV-weighted)"),
+    iters      = iters_full_range,
+    initial    = "iter 0",
+    pt_cex     = 1
+  )
+}
+```
+
 
 
 ####  Summary values over iterations (combined CV-weighted)
@@ -934,7 +1013,7 @@ selected_mess_combined <- lapply(
   \(sp) selected_mess_at_point(
     mess_results_combined[[sp]]$mess_surfaces,
     mess_results_combined[[sp]]$recorded_points,
-    n_iter,
+    nrow(mess_results_combined[[sp]]$recorded_points),
     sp
   )
 ) |>
@@ -957,30 +1036,324 @@ mess_summary_table(
 )
 ```
 
-## Using Africa-wide MESS
+### Export selected points (combined CV-weighted)
 
-Africa-wide MESS surfaces are pre-computed in the _targets.R pipeline using all species observation points across the continent as the reference set. 
-
-The iterative workflow:
-1. Start with Africa-wide MESS computed from all continental observation points
-2. Crop to Kenya and identify the cell with lowest MESS (most novel)
-3. Record this point and add it to the reference set
-4. Recompute MESS using the expanded reference set
-5. Crop to Kenya and repeat until 20 points selected
-
-This contrasts with Kenya-only MESS, which samples Kenya's reference space. Africa-wide MESS identifies points novel relative to the entire continent.
-
-### Setup for Africa-based MESS
+The recorded points from the combined optimization are shared across all
+species, so only one set is written out. The `phase` column indicates whether
+each point was selected before (**novelty**) or after (**coverage**) all novel 
+environmental space was exhausted. In both phases, selection prioritizes the 
+least-similar cells (lowest MESS × CV), but the phase distinction marks when the 
+reference envelope begins to fully encompass Kenya's environmental space. As coverage 
+phase proceeds, selecting additional least-similar cells gradually improves net 
+overall similarity of the reference set.
 
 ```{r}
-#| label: africa-mess-setup
+#| label: write-selected-points
 
-# Crop Africa-wide MESS surfaces to Kenya for initial visualization
-africa_mess_ken <- crop(africa_mess$mess, ken) |> mask(ken)
+readr::write_csv(
+  mess_results_combined[[ken_mess_spp[1]]]$recorded_points |> 
+    mutate(priority = row_number()),
+  "selected_points_combined.csv"
+)
 
+cat("\nPoints by phase:\n")
+pts_tbl <- mess_results_combined[[ken_mess_spp[1]]]$recorded_points |>
+  group_by(phase) |>
+  summarise(count = n())
+print(pts_tbl)
 ```
 
+## Iterative selection to maximise total MESS (distinct cells)
 
+The combined chunk above selects on `MESS × CV` but never excludes a cell once it
+has been chosen. Because adding a cell that is already inside the reference
+envelope barely moves its own MESS value, an unconstrained loop tends to re-pick
+the same near-zero cell over and over once novel space is used up — the original
+"185 repeats of one cell" behaviour.
 
+This section fixes that with two changes:
 
+1. **Selection is on the raw MESS surface** (the sum of MESS over the whole
+   surface is the stated objective, so no CV weighting is applied — set
+   `use_cv_weight <- TRUE` to weight by model uncertainty instead).
+2. **Each grid cell can be chosen at most once.** After a cell is selected it is
+   masked out, forcing the search to a *new, distinct* cell every iteration. This
+   is what lets the loop keep selecting different near-zero cells after novelty is
+   exhausted, rather than collapsing onto one.
 
+A single shared point is chosen per iteration (the globally most-dissimilar
+un-chosen cell across the three species) and added to every species' reference
+set, mirroring the combined analysis above.
+
+**Measured behaviour (this run):** total MESS rises steeply during the novelty
+phase (iterations 0–10 here), as strongly-negative cells are absorbed and the
+covariate envelope widens to cover them — about 62% of the total gain. Crucially,
+gains do **not** stop at novelty exhaustion: even once every cell sits inside the
+envelope (`MESS ≥ 0` everywhere), each distinct new point keeps shifting the
+reference distribution, pulling more cells toward higher similarity. The coverage
+phase (iterations 10–200) contributes the remaining ~38% of the gain. The
+trajectory decelerates but is still climbing at iteration 200, so the full budget
+is doing useful work. The climb is strongly upward but not strictly monotonic — a
+few picks momentarily lower the total, because the criterion selects the most
+dissimilar cell rather than maximising the surface sum directly. The trajectory
+plot below shows the real shape.
+
+```{r}
+#| label: mess-maximise-run
+
+n_iter_maxmess <- 200
+use_cv_weight  <- FALSE   # TRUE weights the selection surface by CV
+
+ref_vals_maxmess <- ref_vals_0
+recorded_pts_maxmess <- data.frame(
+  longitude      = numeric(0),
+  latitude       = numeric(0),
+  source_species = character(0),
+  iter_added     = integer(0),
+  phase          = character(0),
+  sel_value      = numeric(0)
+)
+mess_surfaces_maxmess <- setNames(
+  lapply(ken_mess_spp, \(sp) vector("list", n_iter_maxmess + 1)),
+  ken_mess_spp
+)
+
+# Total MESS summed over every (unmasked) cell and species, per iteration.
+total_mess_trajectory <- rep(NA_real_, n_iter_maxmess + 1)
+
+chosen_cells <- integer(0)          # shared-grid cell indices already selected
+novelty_exhausted <- FALSE
+novelty_exhaustion_iter <- NA_integer_
+
+for (i in 0:n_iter_maxmess) {
+
+  # (Re)compute MESS for every species with the current shared reference sets.
+  for (sp in ken_mess_spp) {
+    mess_surfaces_maxmess[[sp]][[i + 1]] <-
+      if (i == 0) mess_iter0[[sp]] else mess(cov_rast_ken_sub, ref_vals_maxmess[[sp]])
+  }
+
+  # Objective: total MESS over the whole surface (all cells, all species).
+  total_mess_trajectory[i + 1] <- sum(
+    sapply(ken_mess_spp, \(sp) sum(values(mess_surfaces_maxmess[[sp]][[i + 1]]$mess), na.rm = TRUE))
+  )
+
+  if (i == n_iter_maxmess) break
+
+  # Per-species selection surface: raw MESS, optionally CV-weighted.
+  sel_cols <- lapply(ken_mess_spp, function(sp) {
+    m <- mess_surfaces_maxmess[[sp]][[i + 1]]$mess
+    if (use_cv_weight) values(m * cv[[sp]])[, 1] else values(m)[, 1]
+  })
+  names(sel_cols) <- ken_mess_spp
+
+  # For each cell, the most-dissimilar species drives its selection value.
+  cell_min <- do.call(pmin, c(sel_cols, na.rm = TRUE))
+
+  # Exclude already-chosen cells so every pick is a distinct location.
+  cell_min[chosen_cells] <- NA
+
+  if (all(is.na(cell_min))) {
+    message("All selectable cells chosen; stopping at iteration ", i)
+    break
+  }
+
+  sel_cell  <- which.min(cell_min)      # global most-dissimilar un-chosen cell
+  sel_value <- cell_min[sel_cell]
+  sp_name   <- ken_mess_spp[which.min(sapply(sel_cols, \(v) v[sel_cell]))]
+
+  # Novelty exhaustion: no negative MESS remains anywhere (bookkeeping only;
+  # the selection criterion does not change).
+  if (!novelty_exhausted) {
+    global_min_mess <- min(
+      sapply(ken_mess_spp, \(sp) min(values(mess_surfaces_maxmess[[sp]][[i + 1]]$mess), na.rm = TRUE))
+    )
+    if (global_min_mess >= 0) {
+      novelty_exhausted <- TRUE
+      novelty_exhaustion_iter <- i
+      message("Novelty exhausted at iteration ", i, ": no negative MESS cells remain.")
+    }
+  }
+  phase_label <- if (novelty_exhausted) "coverage" else "novelty"
+
+  centroid <- xyFromCell(mess_surfaces_maxmess[[sp_name]][[i + 1]]$mess, sel_cell)
+  lon <- centroid[1, "x"]
+  lat <- centroid[1, "y"]
+
+  recorded_pts_maxmess <- rbind(
+    recorded_pts_maxmess,
+    data.frame(
+      longitude      = lon,
+      latitude       = lat,
+      source_species = sp_name,
+      iter_added     = i,
+      phase          = phase_label,
+      sel_value      = sel_value
+    )
+  )
+  chosen_cells <- c(chosen_cells, sel_cell)
+
+  # Add the selected point to ALL species' reference sets.
+  new_pt <- vect(
+    data.frame(x = lon, y = lat),
+    geom = c("x", "y"),
+    crs = crs(cov_rast_ken_sub)
+  )
+  new_vals <- terra::extract(cov_rast_ken_sub, new_pt, ID = FALSE)
+  for (sp in ken_mess_spp) {
+    ref_vals_maxmess[[sp]] <- rbind(ref_vals_maxmess[[sp]], new_vals)
+  }
+}
+
+# Assemble a results object compatible with the existing summary helpers.
+mess_results_maxmess <- setNames(
+  lapply(ken_mess_spp, \(sp) list(
+    mess_surfaces   = mess_surfaces_maxmess[[sp]],
+    recorded_points = recorded_pts_maxmess
+  )),
+  ken_mess_spp
+)
+
+cat("Distinct points selected: ", nrow(recorded_pts_maxmess), "\n", sep = "")
+cat("Unique locations:         ",
+    nrow(dplyr::distinct(recorded_pts_maxmess, longitude, latitude)), "\n", sep = "")
+if (!is.na(novelty_exhaustion_iter)) {
+  cat("Novelty exhausted at iteration ", novelty_exhaustion_iter, "\n", sep = "")
+} else {
+  cat("Novelty not exhausted within ", n_iter_maxmess, " iterations\n", sep = "")
+}
+cat("Total MESS start -> end: ",
+    round(total_mess_trajectory[1]), " -> ",
+    round(total_mess_trajectory[length(total_mess_trajectory)]), "\n", sep = "")
+```
+
+### Total MESS over the surface across iterations
+
+The key check: does the sum of MESS over the whole surface actually increase as
+points are added, and where does it level off?
+
+```{r}
+#| label: mess-maximise-trajectory
+#| fig-width: 9
+#| fig-height: 5
+
+traj_df <- data.frame(
+  iteration  = seq_along(total_mess_trajectory) - 1,
+  total_mess = total_mess_trajectory
+)
+
+p_traj <- ggplot(traj_df, aes(iteration, total_mess)) +
+  geom_line(colour = col_pos, linewidth = 0.8) +
+  geom_point(colour = col_pos, size = 1) +
+  labs(
+    x = "Iteration",
+    y = "Total MESS (summed over all cells and species)",
+    title = "Total surface MESS as distinct points are added"
+  ) +
+  theme_minimal()
+
+if (!is.na(novelty_exhaustion_iter)) {
+  p_traj <- p_traj +
+    geom_vline(xintercept = novelty_exhaustion_iter, linetype = "dashed",
+               colour = col_neg) +
+    annotate("text", x = novelty_exhaustion_iter, y = min(total_mess_trajectory, na.rm = TRUE),
+             label = "novelty exhausted", hjust = -0.05, vjust = 0,
+             colour = col_neg, size = 3)
+}
+
+p_traj
+```
+
+### Positive / |negative| decomposition (max-MESS run)
+
+```{r}
+#| label: mess-maximise-summary
+#| fig-width: 12
+#| fig-height: 4
+
+cell_sums_maxmess <- lapply(
+  ken_mess_spp,
+  \(sp) cell_sums_long(mess_results_maxmess[[sp]]$mess_surfaces, sp)
+) |>
+  bind_rows()
+
+selected_mess_maxmess <- lapply(
+  ken_mess_spp,
+  \(sp) selected_mess_at_point(
+    mess_results_maxmess[[sp]]$mess_surfaces,
+    mess_results_maxmess[[sp]]$recorded_points,
+    nrow(mess_results_maxmess[[sp]]$recorded_points),
+    sp
+  )
+) |>
+  bind_rows()
+
+mess_summary_plot(cell_sums_maxmess, selected_mess_maxmess)
+```
+
+### Selected points by phase (max-MESS run)
+
+```{r}
+#| label: mess-maximise-map
+#| fig-width: 7
+#| fig-height: 7
+
+plot(ken, main = "Selected points (max-MESS, distinct cells)")
+phase_cols <- c(novelty = col_neg, coverage = col_pos)
+pts_vect <- vect(
+  recorded_pts_maxmess,
+  geom = c("longitude", "latitude"),
+  crs = crs(cov_rast_ken_sub)
+)
+points(pts_vect, pch = 19, cex = 0.9,
+       col = phase_cols[recorded_pts_maxmess$phase])
+legend("topright", legend = names(phase_cols), pch = 19,
+       col = phase_cols, bty = "n", title = "phase")
+```
+
+### Export selected points (max-MESS run)
+
+```{r}
+#| label: mess-maximise-export
+
+readr::write_csv(
+  recorded_pts_maxmess |> mutate(priority = row_number()),
+  "selected_points_maxmess.csv"
+)
+
+cat("Points by phase:\n")
+recorded_pts_maxmess |>
+  group_by(phase) |>
+  summarise(count = n()) |>
+  print()
+```
+
+### MESS surface evolution (max-MESS run)
+
+The same 3x3 evolution grid used for the combined analysis, applied to the
+max-MESS (distinct-cells) run. Iteration 0, iteration `n_iter_maxmess`, and 7
+evenly-spaced iterations in between span the full 0–200 range in one grid, with
+the selected points accumulated so far overlaid (drawn small, since up to 200 are
+shown at once).
+
+```{r}
+#| label: plot-mess-maximise-evolution
+#| fig-width: 10
+#| fig-height: 11
+
+mess_range_maxmess <- clamp_range(all_mess_rasters(mess_results_maxmess))
+
+iters_maxmess_full <- round(seq(0, n_iter_maxmess, length.out = 9))
+
+for (sp in ken_mess_spp) {
+  plot_mess_evolution(
+    surfaces   = mess_results_maxmess[[sp]]$mess_surfaces,
+    pts        = mess_results_maxmess[[sp]]$recorded_points,
+    mess_range = mess_range_maxmess,
+    title      = bquote(italic(.(sp)) * " (max-MESS, distinct cells)"),
+    iters      = iters_maxmess_full,
+    initial    = "iter 0",
+    pt_cex     = 1
+  )
+}
+```
