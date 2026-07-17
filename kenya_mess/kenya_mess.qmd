@@ -1261,14 +1261,22 @@ for (sp in ken_mess_spp) {
 
 Total Type 1 and Type 2 novelty, summed over every cell and species, as the 200
 CV-weighted MESS points are added. **Type 1** (univariate extrapolation)
-collapses to zero within the first ~20 points: each extreme MESS point widens the
-observed range of some covariate, quickly bringing every cell inside the
-univariate envelope. **Type 2** (combinational novelty) behaves very differently
-— it *rises* at first, because those same extreme points distort the reference
-correlation structure and push more cells outside the combinational envelope,
-before slowly declining as later points fill the space in. It never reaches zero
-within the budget: combinational novelty is much harder to eliminate than
-univariate novelty.
+collapses to zero within the first ~16 points (grey dotted line): each extreme
+MESS point widens the observed range of some covariate, quickly bringing every
+cell inside the univariate envelope.
+
+**Type 2** (combinational novelty) swings around only *while Type 1 is still
+collapsing* — all the wobble sits to the left of the grey line — and settles into
+a clean, slow decline once Type 1 reaches zero. This is an artefact of how ExDet
+encodes the two types, not novelty being created. A cell reports its ExDet score
+as `ifelse(nt1 == 0, nt2, nt1)`, so while a cell is univariately novel its
+combinational novelty is *masked*; as Type 1 collapses, those cells reveal their
+Type 2 values and swell the Type 2 sum. On top of that, `nt2 = mahalanobis /
+mah_max` is normalised by the most-extreme reference point, so adding an extreme
+MESS point transiently inflates `mah_max` and rescales the whole surface. Once the
+reference set is univariately saturated (past the grey line) both effects stop and
+Type 2 declines monotonically. It never reaches zero within the budget:
+combinational novelty is much harder to eliminate than univariate novelty.
 
 ```{r}
 #| label: exdet-novelty-trajectory
@@ -1281,7 +1289,13 @@ exdet_traj_long <- exdet_novelty_traj |>
     type1 = "Type 1 (univariate)",
     type2 = "Type 2 (combinational)"))
 
-ggplot(exdet_traj_long, aes(iteration, total, colour = novelty)) +
+# Iteration at which Type 1 novelty first hits zero. This is where the Type 2
+# curve settles: once every cell is univariately in-range, the previously
+# Type-1-masked cells reveal their combinational novelty and the mah_max
+# normaliser stops swinging.
+type1_zero_iter <- exdet_novelty_traj$iteration[which(exdet_novelty_traj$type1 == 0)[1]]
+
+p_exdet_traj <- ggplot(exdet_traj_long, aes(iteration, total, colour = novelty)) +
   geom_line(linewidth = 0.9) +
   scale_colour_manual(values = c(
     "Type 1 (univariate)"    = "#D6604D",
@@ -1295,4 +1309,12 @@ ggplot(exdet_traj_long, aes(iteration, total, colour = novelty)) +
   ) +
   theme_minimal() +
   theme(legend.position = "top")
+
+if (!is.na(type1_zero_iter)) {
+  p_exdet_traj <- p_exdet_traj +
+    geom_vline(xintercept = type1_zero_iter, linetype = "dotted",
+               colour = "grey50", linewidth = 0.6)
+}
+
+p_exdet_traj
 ```
