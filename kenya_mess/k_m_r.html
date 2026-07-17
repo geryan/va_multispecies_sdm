@@ -1,0 +1,1310 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.38">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2026-07-17">
+
+<title>Selecting 200 survey points for Anopheles in Kenya</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="k_m_r_files/libs/clipboard/clipboard.min.js"></script>
+<script src="k_m_r_files/libs/quarto-html/quarto.js" type="module"></script>
+<script src="k_m_r_files/libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="k_m_r_files/libs/quarto-html/popper.min.js"></script>
+<script src="k_m_r_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="k_m_r_files/libs/quarto-html/anchor.min.js"></script>
+<link href="k_m_r_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="k_m_r_files/libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="k_m_r_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="k_m_r_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="k_m_r_files/libs/bootstrap/bootstrap-8ffd5f67044e5306d9846f29df41dda5.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+
+
+</head>
+
+<body class="quarto-light">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article toc-left">
+<div id="quarto-sidebar-toc-left" class="sidebar toc-left">
+  <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#summary" id="toc-summary" class="nav-link active" data-scroll-target="#summary"><span class="header-section-number">1</span> Summary</a></li>
+  <li><a href="#data" id="toc-data" class="nav-link" data-scroll-target="#data"><span class="header-section-number">2</span> Data</a>
+  <ul class="collapse">
+  <li><a href="#environmental-covariates" id="toc-environmental-covariates" class="nav-link" data-scroll-target="#environmental-covariates"><span class="header-section-number">2.1</span> Environmental covariates</a></li>
+  <li><a href="#existing-occurrence-records" id="toc-existing-occurrence-records" class="nav-link" data-scroll-target="#existing-occurrence-records"><span class="header-section-number">2.2</span> Existing occurrence records</a></li>
+  <li><a href="#model-uncertainty" id="toc-model-uncertainty" class="nav-link" data-scroll-target="#model-uncertainty"><span class="header-section-number">2.3</span> Model uncertainty</a></li>
+  </ul></li>
+  <li><a href="#measuring-environmental-novelty-mess" id="toc-measuring-environmental-novelty-mess" class="nav-link" data-scroll-target="#measuring-environmental-novelty-mess"><span class="header-section-number">3</span> Measuring environmental novelty (MESS)</a></li>
+  <li><a href="#the-selection-method" id="toc-the-selection-method" class="nav-link" data-scroll-target="#the-selection-method"><span class="header-section-number">4</span> The selection method</a></li>
+  <li><a href="#running-the-selection" id="toc-running-the-selection" class="nav-link" data-scroll-target="#running-the-selection"><span class="header-section-number">5</span> Running the selection</a></li>
+  <li><a href="#results" id="toc-results" class="nav-link" data-scroll-target="#results"><span class="header-section-number">6</span> Results</a>
+  <ul class="collapse">
+  <li><a href="#novelty-is-reduced-as-points-are-added" id="toc-novelty-is-reduced-as-points-are-added" class="nav-link" data-scroll-target="#novelty-is-reduced-as-points-are-added"><span class="header-section-number">6.1</span> Novelty is reduced as points are added</a></li>
+  <li><a href="#the-200-selected-points" id="toc-the-200-selected-points" class="nav-link" data-scroll-target="#the-200-selected-points"><span class="header-section-number">6.2</span> The 200 selected points</a></li>
+  <li><a href="#evolution-of-the-novelty-surface" id="toc-evolution-of-the-novelty-surface" class="nav-link" data-scroll-target="#evolution-of-the-novelty-surface"><span class="header-section-number">6.3</span> Evolution of the novelty surface</a></li>
+  <li><a href="#exported-points" id="toc-exported-points" class="nav-link" data-scroll-target="#exported-points"><span class="header-section-number">6.4</span> Exported points</a></li>
+  </ul></li>
+  <li><a href="#validation-with-exdet" id="toc-validation-with-exdet" class="nav-link" data-scroll-target="#validation-with-exdet"><span class="header-section-number">7</span> Validation with ExDet</a>
+  <ul class="collapse">
+  <li><a href="#novelty-trajectories" id="toc-novelty-trajectories" class="nav-link" data-scroll-target="#novelty-trajectories"><span class="header-section-number">7.1</span> Novelty trajectories</a></li>
+  <li><a href="#surface-evolution" id="toc-surface-evolution" class="nav-link" data-scroll-target="#surface-evolution"><span class="header-section-number">7.2</span> Surface evolution</a></li>
+  </ul></li>
+  </ul>
+</nav>
+</div>
+<div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
+</div>
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Selecting 200 survey points for <em>Anopheles</em> in Kenya</h1>
+<p class="subtitle lead">Uncertainty-weighted novelty sampling with MESS, validated with ExDet</p>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">July 17, 2026</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="summary" class="level1" data-number="1">
+<h1 data-number="1"><span class="header-section-number">1</span> Summary</h1>
+<p>Large parts of Kenya have environments that are poorly represented by the existing <em>Anopheles</em> occurrence records, so species-distribution predictions there are extrapolated and uncertain. This report selects <strong>200 new survey locations</strong> that best fill that gap for three vectors — <em>An. arabiensis</em>, <em>An. gambiae</em> and <em>An. funestus</em> — with a greedy, uncertainty-weighted novelty-sampling scheme:</p>
+<ul>
+<li><strong>Novelty</strong> is measured with <strong>MESS</strong> (the Multivariate Environmental Similarity Surface): how far each pixel’s environment falls outside the covariate ranges seen at existing records.</li>
+<li><strong>Uncertainty</strong> is the per-pixel <strong>coefficient of variation (CV)</strong> of the current distribution models.</li>
+<li>Each iteration adds the single <strong>most-novel × most-uncertain</strong> unsampled pixel, <em>shared</em> across all three species, then recomputes — so the whole set is built around common points.</li>
+</ul>
+<p>The 200 points, in priority order, are exported to <code>k_m_r_selected_points.csv</code>. An independent metric (<strong>ExDet</strong>) confirms the design eliminates <em>univariate</em> environmental novelty within the first ~16 points and then steadily reduces the harder <em>combinational</em> novelty.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(targets)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(terra)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyr)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(readr)</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(bssdm)</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="co"># ---- Spatial inputs (targets store) ----------------------------------------</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="fu">tar_load</span>(</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">c</span>(covariate_rast_5, model_data_spatial, ken, target_covariate_names),</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">store =</span> <span class="st">"~/Documents/tki_work/vector_atlas/va_multispecies_sdm/_targets/"</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Covariate stack cropped/masked to Kenya, reduced to the modelling covariates.</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>cov_rast_ken_sub <span class="ot">&lt;-</span> <span class="fu">crop</span>(covariate_rast_5, ken) <span class="sc">|&gt;</span></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mask</span>(ken) <span class="sc">|&gt;</span></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">subset</span>(target_covariate_names)</span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a><span class="co"># Species and the representative species used for the per-species evolution</span></span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a><span class="co"># grids (the three species' novelty patterns are near-identical, see below).</span></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>ken_mess_spp <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"arabiensis"</span>, <span class="st">"gambiae"</span>, <span class="st">"funestus"</span>)</span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>rep_sp       <span class="ot">&lt;-</span> <span class="st">"gambiae"</span></span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a><span class="co"># ---- Model uncertainty: per-species coefficient of variation ----------------</span></span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>cv <span class="ot">&lt;-</span> <span class="fu">rast</span>(<span class="fu">paste0</span>(</span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>  <span class="st">"~/Documents/tki_work/vector_atlas/va_multispecies_sdm/"</span>,</span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>  <span class="st">"spartan_model_comparison/m6/m6_mask_p_cv.tif"</span></span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>)) <span class="sc">|&gt;</span></span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>  <span class="fu">crop</span>(ken) <span class="sc">|&gt;</span></span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mask</span>(ken)</span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a>cv <span class="ot">&lt;-</span> cv[[ken_mess_spp]]</span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a>cv <span class="ot">&lt;-</span> <span class="fu">resample</span>(cv, cov_rast_ken_sub, <span class="at">method =</span> <span class="st">"bilinear"</span>)   <span class="co"># align to covariates</span></span>
+<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a><span class="co"># ---- Existing occurrence points within Kenya, per species -------------------</span></span>
+<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a>ken_points <span class="ot">&lt;-</span> <span class="fu">vect</span>(</span>
+<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a>  model_data_spatial <span class="sc">|&gt;</span></span>
+<span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span>(species, longitude, latitude) <span class="sc">|&gt;</span></span>
+<span id="cb1-39"><a href="#cb1-39" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span>(species <span class="sc">%in%</span> ken_mess_spp),</span>
+<span id="cb1-40"><a href="#cb1-40" aria-hidden="true" tabindex="-1"></a>  <span class="at">geom =</span> <span class="fu">c</span>(<span class="st">"longitude"</span>, <span class="st">"latitude"</span>), <span class="at">crs =</span> <span class="fu">crs</span>(ken)</span>
+<span id="cb1-41"><a href="#cb1-41" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb1-42"><a href="#cb1-42" aria-hidden="true" tabindex="-1"></a>ken_points <span class="ot">&lt;-</span> ken_points[ken, ]</span>
+<span id="cb1-43"><a href="#cb1-43" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-44"><a href="#cb1-44" aria-hidden="true" tabindex="-1"></a><span class="co"># Reference environmental values per species (their observation points only).</span></span>
+<span id="cb1-45"><a href="#cb1-45" aria-hidden="true" tabindex="-1"></a>ref_vals_0 <span class="ot">&lt;-</span> <span class="fu">setNames</span>(</span>
+<span id="cb1-46"><a href="#cb1-46" aria-hidden="true" tabindex="-1"></a>  <span class="fu">lapply</span>(ken_mess_spp, \(sp) {</span>
+<span id="cb1-47"><a href="#cb1-47" aria-hidden="true" tabindex="-1"></a>    terra<span class="sc">::</span><span class="fu">extract</span>(cov_rast_ken_sub, ken_points[ken_points<span class="sc">$</span>species <span class="sc">==</span> sp, ],</span>
+<span id="cb1-48"><a href="#cb1-48" aria-hidden="true" tabindex="-1"></a>                   <span class="at">ID =</span> <span class="cn">FALSE</span>) <span class="sc">|&gt;</span> <span class="fu">na.omit</span>()</span>
+<span id="cb1-49"><a href="#cb1-49" aria-hidden="true" tabindex="-1"></a>  }),</span>
+<span id="cb1-50"><a href="#cb1-50" aria-hidden="true" tabindex="-1"></a>  ken_mess_spp</span>
+<span id="cb1-51"><a href="#cb1-51" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+</div>
+<div class="cell">
+<details class="code-fold">
+<summary>code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Palette / colours reused throughout. Red = novel, blue = similar.</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>col_neg <span class="ot">&lt;-</span> <span class="st">"#D6604D"</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>col_pos <span class="ot">&lt;-</span> <span class="st">"#4393C3"</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>divergent_pal <span class="ot">&lt;-</span> <span class="fu">colorRampPalette</span>(<span class="fu">c</span>(col_neg, <span class="st">"white"</span>, col_pos))(<span class="dv">255</span>)</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="co"># 3x3 map grid plus a colourbar/legend strip below it.</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>layout_mat <span class="ot">&lt;-</span> <span class="fu">rbind</span>(<span class="fu">matrix</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">9</span>, <span class="at">nrow =</span> <span class="dv">3</span>, <span class="at">byrow =</span> <span class="cn">TRUE</span>), <span class="fu">rep</span>(<span class="dv">10</span>, <span class="dv">3</span>))</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Symmetric colour range clamped to the 1st/99th percentile of a list of</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="co"># rasters, so outliers don't wash out the variation.</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>clamp_range <span class="ot">&lt;-</span> <span class="cf">function</span>(rasters) {</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>  absmax <span class="ot">&lt;-</span> <span class="fu">max</span>(<span class="fu">abs</span>(<span class="fu">unlist</span>(<span class="fu">lapply</span>(</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>    rasters, \(r) <span class="fu">quantile</span>(<span class="fu">values</span>(r), <span class="fu">c</span>(<span class="fl">0.01</span>, <span class="fl">0.99</span>), <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>  ))))</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">c</span>(<span class="sc">-</span>absmax, absmax)</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a><span class="co"># Horizontal colourbar spanning a panel.</span></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>colorbar_h <span class="ot">&lt;-</span> <span class="cf">function</span>(rng, label, <span class="at">pal =</span> divergent_pal) {</span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>  vals <span class="ot">&lt;-</span> <span class="fu">seq</span>(rng[<span class="dv">1</span>], rng[<span class="dv">2</span>], <span class="at">length.out =</span> <span class="fu">length</span>(pal))</span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">image</span>(<span class="at">x =</span> vals, <span class="at">y =</span> <span class="dv">1</span>, <span class="at">z =</span> <span class="fu">matrix</span>(vals, <span class="at">ncol =</span> <span class="dv">1</span>), <span class="at">col =</span> pal,</span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>        <span class="at">axes =</span> <span class="cn">FALSE</span>, <span class="at">xlab =</span> label, <span class="at">ylab =</span> <span class="st">""</span>)</span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">axis</span>(<span class="dv">1</span>)</span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a><span class="co"># ExDet is shown with deterministic discrete classes (fixed `breaks`), NOT a</span></span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a><span class="co"># continuous palette: terra re-interpolates a long `col` vector and bleeds the</span></span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a><span class="co"># near-zero colour into the most *typical* cells, which multiply as points are</span></span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a><span class="co"># added and look misleadingly like growing novelty. Fixed breaks keep the</span></span>
+<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a><span class="co"># [0, 1] "similar" band grey. Lower "similar" bound is -1e-9 so exdet == 0 is</span></span>
+<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a><span class="co"># grey, not the reddest class.</span></span>
+<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a>exdet_breaks <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="sc">-</span><span class="cn">Inf</span>, <span class="sc">-</span><span class="dv">1</span>, <span class="sc">-</span><span class="fl">0.25</span>, <span class="sc">-</span><span class="fl">1e-9</span>, <span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">4</span>, <span class="cn">Inf</span>)</span>
+<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a>exdet_cols   <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"#67001F"</span>, <span class="st">"#D6604D"</span>, <span class="st">"#FDDBC7"</span>,   <span class="co"># Type 1: strong -&gt; weak</span></span>
+<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a>                  <span class="st">"#f0f0f0"</span>,                          <span class="co"># similar</span></span>
+<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a>                  <span class="st">"#E7D4E8"</span>, <span class="st">"#9970AB"</span>, <span class="st">"#40004B"</span>)    <span class="co"># Type 2: weak -&gt; strong</span></span>
+<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a>exdet_class_labels <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
+<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Type 1 (&lt; -1)"</span>, <span class="st">"Type 1 (-1 to -0.25)"</span>, <span class="st">"Type 1 (-0.25 to 0)"</span>,</span>
+<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a>  <span class="st">"similar (0-1)"</span>, <span class="st">"Type 2 (1-2)"</span>, <span class="st">"Type 2 (2-4)"</span>, <span class="st">"Type 2 (&gt; 4)"</span></span>
+<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a><span class="co"># 3x3 evolution grid of continuous MESS surfaces (list of 9), with the points</span></span>
+<span id="cb2-42"><a href="#cb2-42" aria-hidden="true" tabindex="-1"></a><span class="co"># selected so far overlaid, coloured by selection order (dark -&gt; light).</span></span>
+<span id="cb2-43"><a href="#cb2-43" aria-hidden="true" tabindex="-1"></a>plot_mess_evolution <span class="ot">&lt;-</span> <span class="cf">function</span>(surfaces, iters, pts, mess_range, title,</span>
+<span id="cb2-44"><a href="#cb2-44" aria-hidden="true" tabindex="-1"></a>                                 <span class="at">pt_cex =</span> <span class="dv">1</span>, <span class="at">pt_pal =</span> \(n) <span class="fu">hcl.colors</span>(n, <span class="st">"viridis"</span>)) {</span>
+<span id="cb2-45"><a href="#cb2-45" aria-hidden="true" tabindex="-1"></a>  <span class="fu">stopifnot</span>(<span class="fu">length</span>(surfaces) <span class="sc">==</span> <span class="dv">9</span>, <span class="fu">length</span>(iters) <span class="sc">==</span> <span class="dv">9</span>)</span>
+<span id="cb2-46"><a href="#cb2-46" aria-hidden="true" tabindex="-1"></a>  pt_cols <span class="ot">&lt;-</span> <span class="fu">pt_pal</span>(<span class="fu">nrow</span>(pts))</span>
+<span id="cb2-47"><a href="#cb2-47" aria-hidden="true" tabindex="-1"></a>  <span class="fu">layout</span>(layout_mat, <span class="at">heights =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="fl">0.4</span>))</span>
+<span id="cb2-48"><a href="#cb2-48" aria-hidden="true" tabindex="-1"></a>  <span class="fu">par</span>(<span class="at">mar =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">2</span>, <span class="fl">0.5</span>), <span class="at">oma =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">3</span>, <span class="dv">0</span>))</span>
+<span id="cb2-49"><a href="#cb2-49" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (k <span class="cf">in</span> <span class="fu">seq_len</span>(<span class="dv">9</span>)) {</span>
+<span id="cb2-50"><a href="#cb2-50" aria-hidden="true" tabindex="-1"></a>    iter <span class="ot">&lt;-</span> iters[k]</span>
+<span id="cb2-51"><a href="#cb2-51" aria-hidden="true" tabindex="-1"></a>    <span class="fu">plot</span>(surfaces[[k]], <span class="at">main =</span> <span class="cf">if</span> (iter <span class="sc">==</span> <span class="dv">0</span>) <span class="st">"iter 0"</span> <span class="cf">else</span> <span class="fu">paste0</span>(<span class="st">"iter "</span>, iter),</span>
+<span id="cb2-52"><a href="#cb2-52" aria-hidden="true" tabindex="-1"></a>         <span class="at">col =</span> divergent_pal, <span class="at">range =</span> mess_range, <span class="at">legend =</span> <span class="cn">FALSE</span>, <span class="at">axes =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb2-53"><a href="#cb2-53" aria-hidden="true" tabindex="-1"></a>    <span class="fu">lines</span>(ken)</span>
+<span id="cb2-54"><a href="#cb2-54" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (iter <span class="sc">&gt;=</span> <span class="dv">1</span>) {</span>
+<span id="cb2-55"><a href="#cb2-55" aria-hidden="true" tabindex="-1"></a>      psf <span class="ot">&lt;-</span> pts[<span class="fu">seq_len</span>(iter), , drop <span class="ot">=</span> <span class="cn">FALSE</span>]</span>
+<span id="cb2-56"><a href="#cb2-56" aria-hidden="true" tabindex="-1"></a>      <span class="fu">points</span>(<span class="fu">vect</span>(psf, <span class="at">geom =</span> <span class="fu">c</span>(<span class="st">"longitude"</span>, <span class="st">"latitude"</span>), <span class="at">crs =</span> <span class="fu">crs</span>(cov_rast_ken_sub)),</span>
+<span id="cb2-57"><a href="#cb2-57" aria-hidden="true" tabindex="-1"></a>             <span class="at">pch =</span> <span class="dv">19</span>, <span class="at">col =</span> pt_cols[<span class="fu">seq_len</span>(iter)], <span class="at">cex =</span> pt_cex)</span>
+<span id="cb2-58"><a href="#cb2-58" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb2-59"><a href="#cb2-59" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb2-60"><a href="#cb2-60" aria-hidden="true" tabindex="-1"></a>  <span class="fu">par</span>(<span class="at">mar =</span> <span class="fu">c</span>(<span class="fl">2.5</span>, <span class="dv">3</span>, <span class="fl">0.5</span>, <span class="dv">3</span>))</span>
+<span id="cb2-61"><a href="#cb2-61" aria-hidden="true" tabindex="-1"></a>  <span class="fu">colorbar_h</span>(mess_range, <span class="st">"MESS (clamped to 1st/99th pctile)"</span>)</span>
+<span id="cb2-62"><a href="#cb2-62" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mtext</span>(title, <span class="at">outer =</span> <span class="cn">TRUE</span>, <span class="at">cex =</span> <span class="fl">1.4</span>, <span class="at">font =</span> <span class="dv">2</span>)</span>
+<span id="cb2-63"><a href="#cb2-63" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb2-64"><a href="#cb2-64" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-65"><a href="#cb2-65" aria-hidden="true" tabindex="-1"></a><span class="co"># 3x3 evolution grid of discrete-class ExDet surfaces (list of 9), same overlay.</span></span>
+<span id="cb2-66"><a href="#cb2-66" aria-hidden="true" tabindex="-1"></a>plot_exdet_evolution <span class="ot">&lt;-</span> <span class="cf">function</span>(surfaces, iters, pts, title,</span>
+<span id="cb2-67"><a href="#cb2-67" aria-hidden="true" tabindex="-1"></a>                                 <span class="at">pt_cex =</span> <span class="dv">1</span>, <span class="at">pt_pal =</span> \(n) <span class="fu">hcl.colors</span>(n, <span class="st">"viridis"</span>)) {</span>
+<span id="cb2-68"><a href="#cb2-68" aria-hidden="true" tabindex="-1"></a>  <span class="fu">stopifnot</span>(<span class="fu">length</span>(surfaces) <span class="sc">==</span> <span class="dv">9</span>, <span class="fu">length</span>(iters) <span class="sc">==</span> <span class="dv">9</span>)</span>
+<span id="cb2-69"><a href="#cb2-69" aria-hidden="true" tabindex="-1"></a>  pt_cols <span class="ot">&lt;-</span> <span class="fu">pt_pal</span>(<span class="fu">nrow</span>(pts))</span>
+<span id="cb2-70"><a href="#cb2-70" aria-hidden="true" tabindex="-1"></a>  <span class="fu">layout</span>(layout_mat, <span class="at">heights =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="fl">0.5</span>))</span>
+<span id="cb2-71"><a href="#cb2-71" aria-hidden="true" tabindex="-1"></a>  <span class="fu">par</span>(<span class="at">mar =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">2</span>, <span class="fl">0.5</span>), <span class="at">oma =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">3</span>, <span class="dv">0</span>))</span>
+<span id="cb2-72"><a href="#cb2-72" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (k <span class="cf">in</span> <span class="fu">seq_len</span>(<span class="dv">9</span>)) {</span>
+<span id="cb2-73"><a href="#cb2-73" aria-hidden="true" tabindex="-1"></a>    iter <span class="ot">&lt;-</span> iters[k]</span>
+<span id="cb2-74"><a href="#cb2-74" aria-hidden="true" tabindex="-1"></a>    <span class="fu">plot</span>(surfaces[[k]], <span class="at">main =</span> <span class="cf">if</span> (iter <span class="sc">==</span> <span class="dv">0</span>) <span class="st">"iter 0"</span> <span class="cf">else</span> <span class="fu">paste0</span>(<span class="st">"iter "</span>, iter),</span>
+<span id="cb2-75"><a href="#cb2-75" aria-hidden="true" tabindex="-1"></a>         <span class="at">breaks =</span> exdet_breaks, <span class="at">col =</span> exdet_cols, <span class="at">legend =</span> <span class="cn">FALSE</span>, <span class="at">axes =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb2-76"><a href="#cb2-76" aria-hidden="true" tabindex="-1"></a>    <span class="fu">lines</span>(ken)</span>
+<span id="cb2-77"><a href="#cb2-77" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (iter <span class="sc">&gt;=</span> <span class="dv">1</span>) {</span>
+<span id="cb2-78"><a href="#cb2-78" aria-hidden="true" tabindex="-1"></a>      psf <span class="ot">&lt;-</span> pts[<span class="fu">seq_len</span>(iter), , drop <span class="ot">=</span> <span class="cn">FALSE</span>]</span>
+<span id="cb2-79"><a href="#cb2-79" aria-hidden="true" tabindex="-1"></a>      <span class="fu">points</span>(<span class="fu">vect</span>(psf, <span class="at">geom =</span> <span class="fu">c</span>(<span class="st">"longitude"</span>, <span class="st">"latitude"</span>), <span class="at">crs =</span> <span class="fu">crs</span>(cov_rast_ken_sub)),</span>
+<span id="cb2-80"><a href="#cb2-80" aria-hidden="true" tabindex="-1"></a>             <span class="at">pch =</span> <span class="dv">19</span>, <span class="at">col =</span> pt_cols[<span class="fu">seq_len</span>(iter)], <span class="at">cex =</span> pt_cex)</span>
+<span id="cb2-81"><a href="#cb2-81" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb2-82"><a href="#cb2-82" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb2-83"><a href="#cb2-83" aria-hidden="true" tabindex="-1"></a>  <span class="fu">par</span>(<span class="at">mar =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">1</span>)); <span class="fu">plot.new</span>()</span>
+<span id="cb2-84"><a href="#cb2-84" aria-hidden="true" tabindex="-1"></a>  <span class="fu">legend</span>(<span class="st">"center"</span>, <span class="at">legend =</span> exdet_class_labels, <span class="at">fill =</span> exdet_cols, <span class="at">border =</span> <span class="cn">NA</span>,</span>
+<span id="cb2-85"><a href="#cb2-85" aria-hidden="true" tabindex="-1"></a>         <span class="at">ncol =</span> <span class="dv">4</span>, <span class="at">bty =</span> <span class="st">"n"</span>, <span class="at">title =</span> <span class="st">"ExDet class"</span>, <span class="at">cex =</span> <span class="fl">1.1</span>)</span>
+<span id="cb2-86"><a href="#cb2-86" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mtext</span>(title, <span class="at">outer =</span> <span class="cn">TRUE</span>, <span class="at">cex =</span> <span class="fl">1.4</span>, <span class="at">font =</span> <span class="dv">2</span>)</span>
+<span id="cb2-87"><a href="#cb2-87" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+</div>
+</section>
+<section id="data" class="level1" data-number="2">
+<h1 data-number="2"><span class="header-section-number">2</span> Data</h1>
+<section id="environmental-covariates" class="level2" data-number="2.1">
+<h2 data-number="2.1" class="anchored" data-anchor-id="environmental-covariates"><span class="header-section-number">2.1</span> Environmental covariates</h2>
+<p>Ten covariates describe the environment across Kenya; these are the predictors the selection works in.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">5</span>, <span class="dv">2</span>))</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_len</span>(<span class="fu">nlyr</span>(cov_rast_ken_sub))) {</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">plot</span>(cov_rast_ken_sub[[i]], <span class="at">legend =</span> <span class="cn">FALSE</span>, <span class="at">axes =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>       <span class="at">main =</span> <span class="fu">names</span>(cov_rast_ken_sub)[i])</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output-display">
+<div id="fig-covariates" class="quarto-float quarto-figure quarto-figure-center anchored" width="1152">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-covariates-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="k_m_r_files/figure-html/fig-covariates-1.png" id="fig-covariates" class="img-fluid figure-img" width="1152">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig quarto-uncaptioned" id="fig-covariates-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;1
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="existing-occurrence-records" class="level2" data-number="2.2">
+<h2 data-number="2.2" class="anchored" data-anchor-id="existing-occurrence-records"><span class="header-section-number">2.2</span> Existing occurrence records</h2>
+<p>The reference set: where each species has already been recorded within Kenya. Coverage is patchy and concentrated, which is exactly why novel environment remains to be sampled.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">3</span>), <span class="at">mar =</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">1</span>))</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (sp <span class="cf">in</span> ken_mess_spp) {</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">plot</span>(ken); <span class="fu">title</span>(<span class="at">main =</span> <span class="fu">bquote</span>(<span class="fu">italic</span>(.(sp))))</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">points</span>(ken_points[ken_points<span class="sc">$</span>species <span class="sc">==</span> sp, ], <span class="at">pch =</span> <span class="dv">16</span>, <span class="at">col =</span> col_pos, <span class="at">cex =</span> <span class="fl">0.8</span>)</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output-display">
+<div id="fig-points" class="quarto-float quarto-figure quarto-figure-center anchored" width="1152">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-points-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="k_m_r_files/figure-html/fig-points-1.png" id="fig-points" class="img-fluid figure-img" width="1152">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig quarto-uncaptioned" id="fig-points-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;2
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="model-uncertainty" class="level2" data-number="2.3">
+<h2 data-number="2.3" class="anchored" data-anchor-id="model-uncertainty"><span class="header-section-number">2.3</span> Model uncertainty</h2>
+<p>Per-species coefficient of variation (CV) of the current distribution models. High CV marks where the models are least constrained — the selection favours sampling there.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>cv_range <span class="ot">&lt;-</span> <span class="fu">range</span>(<span class="fu">unlist</span>(<span class="fu">lapply</span>(</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  ken_mess_spp, \(sp) <span class="fu">quantile</span>(<span class="fu">values</span>(cv[[sp]]), <span class="fu">c</span>(<span class="fl">0.01</span>, <span class="fl">0.99</span>), <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>)), <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>magma_pal <span class="ot">&lt;-</span> <span class="fu">rev</span>(<span class="fu">map.pal</span>(<span class="st">"magma"</span>, <span class="dv">100</span>))</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="fu">layout</span>(<span class="fu">rbind</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>, <span class="fu">c</span>(<span class="dv">4</span>, <span class="dv">4</span>, <span class="dv">4</span>)), <span class="at">heights =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="fl">0.28</span>))</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mar =</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">1</span>))</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (sp <span class="cf">in</span> ken_mess_spp) {</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">plot</span>(cv[[sp]], <span class="at">col =</span> magma_pal, <span class="at">range =</span> cv_range, <span class="at">legend =</span> <span class="cn">FALSE</span>, <span class="at">axes =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">title</span>(<span class="at">main =</span> <span class="fu">bquote</span>(<span class="fu">italic</span>(.(sp)))); <span class="fu">lines</span>(ken)</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mar =</span> <span class="fu">c</span>(<span class="dv">3</span>, <span class="dv">6</span>, <span class="fl">0.5</span>, <span class="dv">6</span>))</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a><span class="fu">colorbar_h</span>(cv_range, <span class="st">"Coefficient of variation (CV)"</span>, <span class="at">pal =</span> magma_pal)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output-display">
+<div id="fig-cv" class="quarto-float quarto-figure quarto-figure-center anchored" width="1152">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-cv-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="k_m_r_files/figure-html/fig-cv-1.png" id="fig-cv" class="img-fluid figure-img" width="1152">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig quarto-uncaptioned" id="fig-cv-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;3
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="measuring-environmental-novelty-mess" class="level1" data-number="3">
+<h1 data-number="3"><span class="header-section-number">3</span> Measuring environmental novelty (MESS)</h1>
+<p>MESS compares each pixel’s covariates to the range of values in the reference set (the occurrence records):</p>
+<ul>
+<li><strong>Positive (blue)</strong> — similar to the reference; the pixel sits inside the observed covariate ranges.</li>
+<li><strong>Negative (red)</strong> — <em>novel</em>; the pixel falls outside the observed range of at least one covariate, so a model trained on the reference set is extrapolating.</li>
+<li><strong>Near zero (white)</strong> — at the edge of the observed environmental space.</li>
+</ul>
+<p>The baseline (iteration 0) surfaces below use each species’ own records. Note how similar the three are: the novel (red) regions fall in the same places, so a <strong>single shared set of survey points</strong> serves all three species.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>mess_baseline <span class="ot">&lt;-</span> <span class="fu">setNames</span>(</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">lapply</span>(ref_vals_0, \(rv) <span class="fu">mess</span>(cov_rast_ken_sub, rv)<span class="sc">$</span>mess), ken_mess_spp</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>baseline_range <span class="ot">&lt;-</span> <span class="fu">clamp_range</span>(mess_baseline)</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="fu">layout</span>(<span class="fu">rbind</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>, <span class="fu">c</span>(<span class="dv">4</span>, <span class="dv">4</span>, <span class="dv">4</span>)), <span class="at">heights =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="fl">0.28</span>))</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mar =</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">1</span>))</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (sp <span class="cf">in</span> ken_mess_spp) {</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">plot</span>(mess_baseline[[sp]], <span class="at">col =</span> divergent_pal, <span class="at">range =</span> baseline_range,</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>       <span class="at">legend =</span> <span class="cn">FALSE</span>, <span class="at">axes =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">title</span>(<span class="at">main =</span> <span class="fu">bquote</span>(<span class="fu">italic</span>(.(sp)))); <span class="fu">lines</span>(ken)</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mar =</span> <span class="fu">c</span>(<span class="dv">3</span>, <span class="dv">6</span>, <span class="fl">0.5</span>, <span class="dv">6</span>))</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a><span class="fu">colorbar_h</span>(baseline_range, <span class="st">"MESS (iteration 0)"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output-display">
+<div id="fig-baseline-mess" class="quarto-float quarto-figure quarto-figure-center anchored" width="672">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-baseline-mess-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="k_m_r_files/figure-html/fig-baseline-mess-1.png" id="fig-baseline-mess" class="img-fluid figure-img" width="672">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig quarto-uncaptioned" id="fig-baseline-mess-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;4
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<details class="code-fold">
+<summary>code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Quantify how much the novel (negative) regions coincide across species, as</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="co"># justification for a single shared point set.</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>is_neg   <span class="ot">&lt;-</span> <span class="fu">lapply</span>(mess_baseline, \(r) <span class="fu">values</span>(r)[, <span class="dv">1</span>] <span class="sc">&lt;</span> <span class="dv">0</span>)</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>overlap  <span class="ot">&lt;-</span> \(a, b) <span class="fu">sum</span>(a <span class="sc">&amp;</span> b, <span class="at">na.rm =</span> <span class="cn">TRUE</span>) <span class="sc">/</span> <span class="fu">sum</span>(a <span class="sc">|</span> b, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>ov_pairs <span class="ot">&lt;-</span> <span class="fu">combn</span>(ken_mess_spp, <span class="dv">2</span>, \(p) <span class="fu">overlap</span>(is_neg[[p[<span class="dv">1</span>]]], is_neg[[p[<span class="dv">2</span>]]]))</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Overlap of novel (negative-MESS) regions between species pairs: %.2f-%.2f</span><span class="sc">\n</span><span class="st">"</span>,</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">min</span>(ov_pairs), <span class="fu">max</span>(ov_pairs)</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>Overlap of novel (negative-MESS) regions between species pairs: 0.82-1.00</code></pre>
+</div>
+</div>
+</section>
+<section id="the-selection-method" class="level1" data-number="4">
+<h1 data-number="4"><span class="header-section-number">4</span> The selection method</h1>
+<p>A single shared point is chosen each iteration and added to <strong>every</strong> species’ reference set, so all three evolve around common locations. Two features define the search:</p>
+<ol type="1">
+<li><strong>Weighted by uncertainty.</strong> The selection surface is <code>MESS × CV</code>, so the pick is the pixel that is both environmentally novel (strongly negative MESS) <em>and</em> poorly constrained by the current models (high CV). Across species, each pixel is driven by its most-dissimilar species.</li>
+<li><strong>Distinct cells.</strong> Once a pixel is chosen it is masked out, forcing a <em>new</em> location every iteration. This matters after novel space is used up: otherwise the search re-picks the same near-zero pixel repeatedly, instead of spreading points to improve coverage.</li>
+</ol>
+<p>Selection runs in two phases, tracked for reporting only (the criterion never changes): a <strong>novelty</strong> phase while any pixel is still novel (negative MESS somewhere), then a <strong>coverage</strong> phase once every pixel is inside the envelope.</p>
+</section>
+<section id="running-the-selection" class="level1" data-number="5">
+<h1 data-number="5"><span class="header-section-number">5</span> Running the selection</h1>
+<p>The loop below does everything in one pass. At each iteration it holds the reference set (records + points chosen so far) and, for every species,</p>
+<ul>
+<li>computes <strong>MESS</strong> (drives the pick and the objective trajectory), and</li>
+<li>computes <strong>ExDet</strong> (the independent validation metric, §6),</li>
+</ul>
+<p>recording per-iteration totals and keeping only 9 evenly-spaced surfaces per metric for the evolution grids. It then selects and adds the next shared point.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>n_points   <span class="ot">&lt;-</span> <span class="dv">200</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>grid_iters <span class="ot">&lt;-</span> <span class="fu">round</span>(<span class="fu">seq</span>(<span class="dv">0</span>, n_points, <span class="at">length.out =</span> <span class="dv">9</span>))  <span class="co"># 9 iters shown in grids</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>ref_vals     <span class="ot">&lt;-</span> ref_vals_0        <span class="co"># grows as points are added (shared)</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>chosen_cells <span class="ot">&lt;-</span> <span class="fu">integer</span>(<span class="dv">0</span>)        <span class="co"># grid cells already selected (kept distinct)</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>selected_points <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">longitude =</span> <span class="fu">numeric</span>(<span class="dv">0</span>), <span class="at">latitude =</span> <span class="fu">numeric</span>(<span class="dv">0</span>),</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">source_species =</span> <span class="fu">character</span>(<span class="dv">0</span>), <span class="at">iteration =</span> <span class="fu">integer</span>(<span class="dv">0</span>), <span class="at">phase =</span> <span class="fu">character</span>(<span class="dv">0</span>)</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Per-iteration scalar trajectories, summed over all cells and species.</span></span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>traj <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>  <span class="at">iteration   =</span> <span class="dv">0</span><span class="sc">:</span>n_points,</span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>  <span class="at">total_mess  =</span> <span class="cn">NA_real_</span>,   <span class="co"># sum of MESS (the objective)</span></span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>  <span class="at">exdet_type1 =</span> <span class="cn">NA_real_</span>,   <span class="co"># sum |exdet| where exdet &lt; 0  (univariate novelty)</span></span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>  <span class="at">exdet_type2 =</span> <span class="cn">NA_real_</span>    <span class="co"># sum (exdet - 1) where exdet &gt; 1 (combinational)</span></span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a><span class="co"># Retained surfaces at the 9 grid iterations, per species (light: 9 per metric).</span></span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a>mess_grid  <span class="ot">&lt;-</span> <span class="fu">setNames</span>(<span class="fu">lapply</span>(ken_mess_spp, \(s) <span class="fu">vector</span>(<span class="st">"list"</span>, <span class="dv">9</span>)), ken_mess_spp)</span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a>exdet_grid <span class="ot">&lt;-</span> <span class="fu">setNames</span>(<span class="fu">lapply</span>(ken_mess_spp, \(s) <span class="fu">vector</span>(<span class="st">"list"</span>, <span class="dv">9</span>)), ken_mess_spp)</span>
+<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a>novelty_exhausted       <span class="ot">&lt;-</span> <span class="cn">FALSE</span></span>
+<span id="cb9-25"><a href="#cb9-25" aria-hidden="true" tabindex="-1"></a>novelty_exhaustion_iter <span class="ot">&lt;-</span> <span class="cn">NA_integer_</span></span>
+<span id="cb9-26"><a href="#cb9-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-27"><a href="#cb9-27" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">0</span><span class="sc">:</span>n_points) {</span>
+<span id="cb9-28"><a href="#cb9-28" aria-hidden="true" tabindex="-1"></a>  g <span class="ot">&lt;-</span> <span class="fu">match</span>(i, grid_iters)</span>
+<span id="cb9-29"><a href="#cb9-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-30"><a href="#cb9-30" aria-hidden="true" tabindex="-1"></a>  <span class="co"># MESS (selection + objective) and ExDet (validation) for every species.</span></span>
+<span id="cb9-31"><a href="#cb9-31" aria-hidden="true" tabindex="-1"></a>  mess_i  <span class="ot">&lt;-</span> <span class="fu">setNames</span>(<span class="fu">lapply</span>(ref_vals, \(rv) <span class="fu">mess</span>(cov_rast_ken_sub, rv)<span class="sc">$</span>mess),  ken_mess_spp)</span>
+<span id="cb9-32"><a href="#cb9-32" aria-hidden="true" tabindex="-1"></a>  exdet_i <span class="ot">&lt;-</span> <span class="fu">setNames</span>(<span class="fu">lapply</span>(ref_vals, \(rv) <span class="fu">exdet</span>(cov_rast_ken_sub, rv)<span class="sc">$</span>exdet), ken_mess_spp)</span>
+<span id="cb9-33"><a href="#cb9-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-34"><a href="#cb9-34" aria-hidden="true" tabindex="-1"></a>  mess_vals  <span class="ot">&lt;-</span> <span class="fu">lapply</span>(mess_i,  \(r) <span class="fu">values</span>(r)[, <span class="dv">1</span>])</span>
+<span id="cb9-35"><a href="#cb9-35" aria-hidden="true" tabindex="-1"></a>  exdet_vals <span class="ot">&lt;-</span> <span class="fu">lapply</span>(exdet_i, \(r) <span class="fu">values</span>(r)[, <span class="dv">1</span>])</span>
+<span id="cb9-36"><a href="#cb9-36" aria-hidden="true" tabindex="-1"></a>  traj<span class="sc">$</span>total_mess[i <span class="sc">+</span> <span class="dv">1</span>]  <span class="ot">&lt;-</span> <span class="fu">sum</span>(<span class="fu">sapply</span>(mess_vals,  \(v) <span class="fu">sum</span>(v, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)))</span>
+<span id="cb9-37"><a href="#cb9-37" aria-hidden="true" tabindex="-1"></a>  traj<span class="sc">$</span>exdet_type1[i <span class="sc">+</span> <span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="fu">sum</span>(<span class="fu">sapply</span>(exdet_vals, \(v) <span class="fu">sum</span>(<span class="fu">abs</span>(v[v <span class="sc">&lt;</span> <span class="dv">0</span>]), <span class="at">na.rm =</span> <span class="cn">TRUE</span>)))</span>
+<span id="cb9-38"><a href="#cb9-38" aria-hidden="true" tabindex="-1"></a>  traj<span class="sc">$</span>exdet_type2[i <span class="sc">+</span> <span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="fu">sum</span>(<span class="fu">sapply</span>(exdet_vals, \(v) <span class="fu">sum</span>(v[v <span class="sc">&gt;</span> <span class="dv">1</span>] <span class="sc">-</span> <span class="dv">1</span>,  <span class="at">na.rm =</span> <span class="cn">TRUE</span>)))</span>
+<span id="cb9-39"><a href="#cb9-39" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-40"><a href="#cb9-40" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.na</span>(g)) <span class="cf">for</span> (sp <span class="cf">in</span> ken_mess_spp) {</span>
+<span id="cb9-41"><a href="#cb9-41" aria-hidden="true" tabindex="-1"></a>    mess_grid[[sp]][[g]]  <span class="ot">&lt;-</span> mess_i[[sp]]</span>
+<span id="cb9-42"><a href="#cb9-42" aria-hidden="true" tabindex="-1"></a>    exdet_grid[[sp]][[g]] <span class="ot">&lt;-</span> exdet_i[[sp]]</span>
+<span id="cb9-43"><a href="#cb9-43" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb9-44"><a href="#cb9-44" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-45"><a href="#cb9-45" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (i <span class="sc">==</span> n_points) <span class="cf">break</span></span>
+<span id="cb9-46"><a href="#cb9-46" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-47"><a href="#cb9-47" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Selection surface: MESS x CV, most-dissimilar species drives each pixel;</span></span>
+<span id="cb9-48"><a href="#cb9-48" aria-hidden="true" tabindex="-1"></a>  <span class="co"># already-chosen pixels are masked so every pick is distinct.</span></span>
+<span id="cb9-49"><a href="#cb9-49" aria-hidden="true" tabindex="-1"></a>  sel_cols <span class="ot">&lt;-</span> <span class="fu">setNames</span>(<span class="fu">lapply</span>(ken_mess_spp, \(sp) <span class="fu">values</span>(mess_i[[sp]] <span class="sc">*</span> cv[[sp]])[, <span class="dv">1</span>]),</span>
+<span id="cb9-50"><a href="#cb9-50" aria-hidden="true" tabindex="-1"></a>                       ken_mess_spp)</span>
+<span id="cb9-51"><a href="#cb9-51" aria-hidden="true" tabindex="-1"></a>  cell_min <span class="ot">&lt;-</span> <span class="fu">do.call</span>(pmin, <span class="fu">c</span>(sel_cols, <span class="at">na.rm =</span> <span class="cn">TRUE</span>))</span>
+<span id="cb9-52"><a href="#cb9-52" aria-hidden="true" tabindex="-1"></a>  cell_min[chosen_cells] <span class="ot">&lt;-</span> <span class="cn">NA</span></span>
+<span id="cb9-53"><a href="#cb9-53" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">all</span>(<span class="fu">is.na</span>(cell_min))) { <span class="fu">message</span>(<span class="st">"All cells chosen at iter "</span>, i); <span class="cf">break</span> }</span>
+<span id="cb9-54"><a href="#cb9-54" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-55"><a href="#cb9-55" aria-hidden="true" tabindex="-1"></a>  sel_cell <span class="ot">&lt;-</span> <span class="fu">which.min</span>(cell_min)                                   <span class="co"># global pick</span></span>
+<span id="cb9-56"><a href="#cb9-56" aria-hidden="true" tabindex="-1"></a>  sp_name  <span class="ot">&lt;-</span> ken_mess_spp[<span class="fu">which.min</span>(<span class="fu">sapply</span>(sel_cols, \(v) v[sel_cell]))]</span>
+<span id="cb9-57"><a href="#cb9-57" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-58"><a href="#cb9-58" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Phase bookkeeping: novelty until no negative MESS remains anywhere.</span></span>
+<span id="cb9-59"><a href="#cb9-59" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span>novelty_exhausted <span class="sc">&amp;&amp;</span> <span class="fu">min</span>(<span class="fu">sapply</span>(mess_vals, \(v) <span class="fu">min</span>(v, <span class="at">na.rm =</span> <span class="cn">TRUE</span>))) <span class="sc">&gt;=</span> <span class="dv">0</span>) {</span>
+<span id="cb9-60"><a href="#cb9-60" aria-hidden="true" tabindex="-1"></a>    novelty_exhausted <span class="ot">&lt;-</span> <span class="cn">TRUE</span></span>
+<span id="cb9-61"><a href="#cb9-61" aria-hidden="true" tabindex="-1"></a>    novelty_exhaustion_iter <span class="ot">&lt;-</span> i</span>
+<span id="cb9-62"><a href="#cb9-62" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb9-63"><a href="#cb9-63" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-64"><a href="#cb9-64" aria-hidden="true" tabindex="-1"></a>  xy <span class="ot">&lt;-</span> <span class="fu">xyFromCell</span>(mess_i[[sp_name]], sel_cell)</span>
+<span id="cb9-65"><a href="#cb9-65" aria-hidden="true" tabindex="-1"></a>  selected_points <span class="ot">&lt;-</span> <span class="fu">rbind</span>(selected_points, <span class="fu">data.frame</span>(</span>
+<span id="cb9-66"><a href="#cb9-66" aria-hidden="true" tabindex="-1"></a>    <span class="at">longitude =</span> xy[<span class="dv">1</span>, <span class="st">"x"</span>], <span class="at">latitude =</span> xy[<span class="dv">1</span>, <span class="st">"y"</span>], <span class="at">source_species =</span> sp_name,</span>
+<span id="cb9-67"><a href="#cb9-67" aria-hidden="true" tabindex="-1"></a>    <span class="at">iteration =</span> i, <span class="at">phase =</span> <span class="cf">if</span> (novelty_exhausted) <span class="st">"coverage"</span> <span class="cf">else</span> <span class="st">"novelty"</span></span>
+<span id="cb9-68"><a href="#cb9-68" aria-hidden="true" tabindex="-1"></a>  ))</span>
+<span id="cb9-69"><a href="#cb9-69" aria-hidden="true" tabindex="-1"></a>  chosen_cells <span class="ot">&lt;-</span> <span class="fu">c</span>(chosen_cells, sel_cell)</span>
+<span id="cb9-70"><a href="#cb9-70" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-71"><a href="#cb9-71" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Add the chosen point to every species' reference set.</span></span>
+<span id="cb9-72"><a href="#cb9-72" aria-hidden="true" tabindex="-1"></a>  new_vals <span class="ot">&lt;-</span> terra<span class="sc">::</span><span class="fu">extract</span>(</span>
+<span id="cb9-73"><a href="#cb9-73" aria-hidden="true" tabindex="-1"></a>    cov_rast_ken_sub,</span>
+<span id="cb9-74"><a href="#cb9-74" aria-hidden="true" tabindex="-1"></a>    <span class="fu">vect</span>(<span class="fu">data.frame</span>(<span class="at">x =</span> xy[<span class="dv">1</span>, <span class="st">"x"</span>], <span class="at">y =</span> xy[<span class="dv">1</span>, <span class="st">"y"</span>]), <span class="at">geom =</span> <span class="fu">c</span>(<span class="st">"x"</span>, <span class="st">"y"</span>),</span>
+<span id="cb9-75"><a href="#cb9-75" aria-hidden="true" tabindex="-1"></a>         <span class="at">crs =</span> <span class="fu">crs</span>(cov_rast_ken_sub)),</span>
+<span id="cb9-76"><a href="#cb9-76" aria-hidden="true" tabindex="-1"></a>    <span class="at">ID =</span> <span class="cn">FALSE</span></span>
+<span id="cb9-77"><a href="#cb9-77" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb9-78"><a href="#cb9-78" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (sp <span class="cf">in</span> ken_mess_spp) ref_vals[[sp]] <span class="ot">&lt;-</span> <span class="fu">rbind</span>(ref_vals[[sp]], new_vals)</span>
+<span id="cb9-79"><a href="#cb9-79" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb9-80"><a href="#cb9-80" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-81"><a href="#cb9-81" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"Selected %d distinct points.</span><span class="sc">\n</span><span class="st">"</span>, <span class="fu">nrow</span>(selected_points)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>Selected 200 distinct points.</code></pre>
+</div>
+<details open="" class="code-fold">
+<summary>code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"Novelty exhausted at iteration %s.</span><span class="sc">\n</span><span class="st">"</span>,</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>            <span class="fu">ifelse</span>(<span class="fu">is.na</span>(novelty_exhaustion_iter), <span class="st">"never"</span>, novelty_exhaustion_iter)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>Novelty exhausted at iteration 16.</code></pre>
+</div>
+<details open="" class="code-fold">
+<summary>code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"Total MESS: %.0f (start) -&gt; %.0f (end).</span><span class="sc">\n</span><span class="st">"</span>,</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>            traj<span class="sc">$</span>total_mess[<span class="dv">1</span>], traj<span class="sc">$</span>total_mess[<span class="fu">nrow</span>(traj)]))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>Total MESS: -836459 (start) -&gt; 514437 (end).</code></pre>
+</div>
+</div>
+</section>
+<section id="results" class="level1" data-number="6">
+<h1 data-number="6"><span class="header-section-number">6</span> Results</h1>
+<section id="novelty-is-reduced-as-points-are-added" class="level2" data-number="6.1">
+<h2 data-number="6.1" class="anchored" data-anchor-id="novelty-is-reduced-as-points-are-added"><span class="header-section-number">6.1</span> Novelty is reduced as points are added</h2>
+<p>The objective — total MESS summed over every pixel and species — rises steeply as the strongly-novel pixels are absorbed and the covariate envelope widens to cover them (dashed line: novelty exhausted, no negative MESS left anywhere). Gains continue past that point: each distinct new pixel keeps shifting the reference distribution and pulling more area toward higher similarity, so the full 200-point budget does useful work. The climb is not strictly monotonic — the criterion picks the <em>most-dissimilar</em> pixel, not the one that maximises the sum — but the trend is clearly upward.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>p <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(traj, <span class="fu">aes</span>(iteration, total_mess)) <span class="sc">+</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">colour =</span> col_pos, <span class="at">linewidth =</span> <span class="fl">0.8</span>) <span class="sc">+</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Iteration"</span>, <span class="at">y =</span> <span class="st">"Total MESS (summed over cells and species)"</span>,</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>       <span class="at">title =</span> <span class="st">"Total surface MESS as distinct points are added"</span>) <span class="sc">+</span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.na</span>(novelty_exhaustion_iter)) {</span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>  p <span class="ot">&lt;-</span> p <span class="sc">+</span> <span class="fu">geom_vline</span>(<span class="at">xintercept =</span> novelty_exhaustion_iter, <span class="at">linetype =</span> <span class="st">"dashed"</span>,</span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>                      <span class="at">colour =</span> col_neg) <span class="sc">+</span></span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">annotate</span>(<span class="st">"text"</span>, <span class="at">x =</span> novelty_exhaustion_iter,</span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>             <span class="at">y =</span> <span class="fu">min</span>(traj<span class="sc">$</span>total_mess, <span class="at">na.rm =</span> <span class="cn">TRUE</span>), <span class="at">label =</span> <span class="st">"novelty exhausted"</span>,</span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>             <span class="at">hjust =</span> <span class="sc">-</span><span class="fl">0.05</span>, <span class="at">vjust =</span> <span class="dv">0</span>, <span class="at">colour =</span> col_neg, <span class="at">size =</span> <span class="dv">3</span>)</span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a>p</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output-display">
+<div id="fig-mess-trajectory" class="quarto-float quarto-figure quarto-figure-center anchored" width="864">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-mess-trajectory-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="k_m_r_files/figure-html/fig-mess-trajectory-1.png" id="fig-mess-trajectory" class="img-fluid figure-img" width="864">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig quarto-uncaptioned" id="fig-mess-trajectory-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;5
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="the-200-selected-points" class="level2" data-number="6.2">
+<h2 data-number="6.2" class="anchored" data-anchor-id="the-200-selected-points"><span class="header-section-number">6.2</span> The 200 selected points</h2>
+<p>The deliverable: 200 shared survey locations. Points chosen during the <strong>novelty</strong> phase (red) target environmentally extrapolated areas; <strong>coverage</strong> points (blue) spread through the remaining space once novelty is used up.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(ken, <span class="at">main =</span> <span class="fu">sprintf</span>(<span class="st">"%d selected survey points"</span>, <span class="fu">nrow</span>(selected_points)))</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>phase_cols <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="at">novelty =</span> col_neg, <span class="at">coverage =</span> col_pos)</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="fu">points</span>(<span class="fu">vect</span>(selected_points, <span class="at">geom =</span> <span class="fu">c</span>(<span class="st">"longitude"</span>, <span class="st">"latitude"</span>), <span class="at">crs =</span> <span class="fu">crs</span>(cov_rast_ken_sub)),</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>       <span class="at">pch =</span> <span class="dv">19</span>, <span class="at">cex =</span> <span class="fl">0.9</span>, <span class="at">col =</span> phase_cols[selected_points<span class="sc">$</span>phase])</span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a><span class="fu">legend</span>(<span class="st">"topright"</span>, <span class="at">legend =</span> <span class="fu">names</span>(phase_cols), <span class="at">pch =</span> <span class="dv">19</span>, <span class="at">col =</span> phase_cols,</span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>       <span class="at">bty =</span> <span class="st">"n"</span>, <span class="at">title =</span> <span class="st">"phase"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output-display">
+<div id="fig-selected-points" class="quarto-float quarto-figure quarto-figure-center anchored" width="672">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-selected-points-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="k_m_r_files/figure-html/fig-selected-points-1.png" id="fig-selected-points" class="img-fluid figure-img" width="672">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig quarto-uncaptioned" id="fig-selected-points-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;6
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<details class="code-fold">
+<summary>code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>selected_points <span class="sc">|&gt;</span> <span class="fu">count</span>(phase, <span class="at">name =</span> <span class="st">"points"</span>) <span class="sc">|&gt;</span> knitr<span class="sc">::</span><span class="fu">kable</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output-display">
+<table class="caption-top table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th style="text-align: left;">phase</th>
+<th style="text-align: right;">points</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">coverage</td>
+<td style="text-align: right;">184</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">novelty</td>
+<td style="text-align: right;">16</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<section id="evolution-of-the-novelty-surface" class="level2" data-number="6.3">
+<h2 data-number="6.3" class="anchored" data-anchor-id="evolution-of-the-novelty-surface"><span class="header-section-number">6.3</span> Evolution of the novelty surface</h2>
+<p>How the MESS surface fills in for the representative species (<em>gambiae</em>; the others are near-identical). Iteration 0, iteration 200, and 7 evenly-spaced steps between, with the points selected so far overlaid (dark = first selected, yellow = last).</p>
+<div class="cell">
+<details class="code-fold">
+<summary>code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_mess_evolution</span>(</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">surfaces   =</span> mess_grid[[rep_sp]],</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">iters      =</span> grid_iters,</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">pts        =</span> selected_points,</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">mess_range =</span> <span class="fu">clamp_range</span>(mess_grid[[rep_sp]]),</span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">title      =</span> <span class="fu">bquote</span>(<span class="fu">italic</span>(.(rep_sp)) <span class="sc">*</span> <span class="st">" — MESS over the selected points"</span>)</span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output-display">
+<div id="fig-mess-evolution" class="quarto-float quarto-figure quarto-figure-center anchored" width="960">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-mess-evolution-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="k_m_r_files/figure-html/fig-mess-evolution-1.png" id="fig-mess-evolution" class="img-fluid figure-img" width="960">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig quarto-uncaptioned" id="fig-mess-evolution-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;7
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="exported-points" class="level2" data-number="6.4">
+<h2 data-number="6.4" class="anchored" data-anchor-id="exported-points"><span class="header-section-number">6.4</span> Exported points</h2>
+<p>The full point set with priority (selection order), source species, and phase, written to <code>k_m_r_selected_points.csv</code>.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>selected_points <span class="ot">&lt;-</span> selected_points <span class="sc">|&gt;</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">priority =</span> <span class="fu">row_number</span>(), <span class="at">.before =</span> <span class="dv">1</span>)</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="fu">write_csv</span>(selected_points, <span class="st">"k_m_r_selected_points.csv"</span>)</span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(selected_points, <span class="dv">10</span>) <span class="sc">|&gt;</span> knitr<span class="sc">::</span><span class="fu">kable</span>(<span class="at">digits =</span> <span class="dv">3</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output-display">
+<table class="caption-top table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th style="text-align: left;"></th>
+<th style="text-align: right;">priority</th>
+<th style="text-align: right;">longitude</th>
+<th style="text-align: right;">latitude</th>
+<th style="text-align: left;">source_species</th>
+<th style="text-align: right;">iteration</th>
+<th style="text-align: left;">phase</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">x</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">40.979</td>
+<td style="text-align: right;">-2.146</td>
+<td style="text-align: left;">funestus</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: left;">novelty</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">x1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">34.937</td>
+<td style="text-align: right;">4.687</td>
+<td style="text-align: left;">gambiae</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: left;">novelty</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">x2</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">39.271</td>
+<td style="text-align: right;">-4.604</td>
+<td style="text-align: left;">funestus</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: left;">novelty</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">x3</td>
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">35.562</td>
+<td style="text-align: right;">2.646</td>
+<td style="text-align: left;">funestus</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: left;">novelty</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">x4</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">36.896</td>
+<td style="text-align: right;">-1.271</td>
+<td style="text-align: left;">funestus</td>
+<td style="text-align: right;">4</td>
+<td style="text-align: left;">novelty</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">x5</td>
+<td style="text-align: right;">6</td>
+<td style="text-align: right;">38.687</td>
+<td style="text-align: right;">1.396</td>
+<td style="text-align: left;">gambiae</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: left;">novelty</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">x6</td>
+<td style="text-align: right;">7</td>
+<td style="text-align: right;">37.521</td>
+<td style="text-align: right;">-0.271</td>
+<td style="text-align: left;">funestus</td>
+<td style="text-align: right;">6</td>
+<td style="text-align: left;">novelty</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">x7</td>
+<td style="text-align: right;">8</td>
+<td style="text-align: right;">34.854</td>
+<td style="text-align: right;">4.646</td>
+<td style="text-align: left;">gambiae</td>
+<td style="text-align: right;">7</td>
+<td style="text-align: left;">novelty</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">x8</td>
+<td style="text-align: right;">9</td>
+<td style="text-align: right;">39.396</td>
+<td style="text-align: right;">-1.188</td>
+<td style="text-align: left;">funestus</td>
+<td style="text-align: right;">8</td>
+<td style="text-align: left;">novelty</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">x9</td>
+<td style="text-align: right;">10</td>
+<td style="text-align: right;">36.854</td>
+<td style="text-align: right;">-1.313</td>
+<td style="text-align: left;">funestus</td>
+<td style="text-align: right;">9</td>
+<td style="text-align: left;">novelty</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+</section>
+<section id="validation-with-exdet" class="level1" data-number="7">
+<h1 data-number="7"><span class="header-section-number">7</span> Validation with ExDet</h1>
+<p>MESS drives the selection, so it is not an independent check. <strong>ExDet</strong> (Extrapolation Detection) is a second, richer novelty metric computed on the same growing reference set (already recorded in the loop above). It splits novelty into two kinds, encoded in a single value per pixel:</p>
+<ul>
+<li><strong><code>exdet &lt; 0</code> — Type 1 (univariate):</strong> outside the observed range of at least one covariate. This is the same regime MESS flags as negative.</li>
+<li><strong><code>0 ≤ exdet ≤ 1</code> — similar:</strong> in range univariately and inside the combinational (Mahalanobis) envelope.</li>
+<li><strong><code>exdet &gt; 1</code> — Type 2 (combinational):</strong> every covariate is individually in range, but their <em>combination</em> is novel.</li>
+</ul>
+<section id="novelty-trajectories" class="level2" data-number="7.1">
+<h2 data-number="7.1" class="anchored" data-anchor-id="novelty-trajectories"><span class="header-section-number">7.1</span> Novelty trajectories</h2>
+<p><strong>Type 1</strong> novelty collapses to zero within the first ~16 points (grey dotted line): each extreme point widens some covariate’s observed range, quickly bringing every pixel univariately in-range — exactly what the MESS objective is driving.</p>
+<p><strong>Type 2</strong> novelty only wobbles <em>while Type 1 is still collapsing</em> (all the movement is left of the grey line), then settles into a slow decline. It never reaches zero: combinational novelty is much harder to eliminate than univariate novelty, so some pixels remain novel <em>combinations</em> even after 200 points.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-1-contents" aria-controls="callout-1" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Why Type 2 rises before the grey line (an ExDet artefact, not created novelty)
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-1" class="callout-1-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<p>A pixel reports its ExDet score as <code>ifelse(nt1 == 0, nt2, nt1)</code>, so while it is univariately novel its combinational novelty is <strong>masked</strong>; as Type 1 collapses, those pixels reveal their Type 2 values and swell the sum. On top of that, <code>nt2 = mahalanobis / mah_max</code> is normalised by the <em>most-extreme reference point</em>, so adding an extreme point transiently inflates <code>mah_max</code> and rescales the whole surface. Both effects are active only while the reference set is univariately unsaturated — i.e.&nbsp;left of the grey line — after which Type 2 declines cleanly.</p>
+</div>
+</div>
+</div>
+<div class="cell">
+<details class="code-fold">
+<summary>code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>exdet_long <span class="ot">&lt;-</span> traj <span class="sc">|&gt;</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(iteration, exdet_type1, exdet_type2) <span class="sc">|&gt;</span></span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_longer</span>(<span class="sc">-</span>iteration, <span class="at">names_to =</span> <span class="st">"novelty"</span>, <span class="at">values_to =</span> <span class="st">"total"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">novelty =</span> <span class="fu">recode</span>(novelty, <span class="at">exdet_type1 =</span> <span class="st">"Type 1 (univariate)"</span>,</span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>                          <span class="at">exdet_type2 =</span> <span class="st">"Type 2 (combinational)"</span>))</span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>type1_zero_iter <span class="ot">&lt;-</span> traj<span class="sc">$</span>iteration[<span class="fu">which</span>(traj<span class="sc">$</span>exdet_type1 <span class="sc">==</span> <span class="dv">0</span>)[<span class="dv">1</span>]]</span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>p <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(exdet_long, <span class="fu">aes</span>(iteration, total, <span class="at">colour =</span> novelty)) <span class="sc">+</span></span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">linewidth =</span> <span class="fl">0.9</span>) <span class="sc">+</span></span>
+<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_colour_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="st">"Type 1 (univariate)"</span> <span class="ot">=</span> <span class="st">"#D6604D"</span>,</span>
+<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a>                                 <span class="st">"Type 2 (combinational)"</span> <span class="ot">=</span> <span class="st">"#762A83"</span>)) <span class="sc">+</span></span>
+<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Iteration"</span>, <span class="at">y =</span> <span class="st">"Total novelty (summed over cells and species)"</span>,</span>
+<span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a>       <span class="at">colour =</span> <span class="cn">NULL</span>, <span class="at">title =</span> <span class="st">"ExDet novelty as points are added"</span>) <span class="sc">+</span></span>
+<span id="cb20-14"><a href="#cb20-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>() <span class="sc">+</span> <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">"top"</span>)</span>
+<span id="cb20-15"><a href="#cb20-15" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.na</span>(type1_zero_iter)) {</span>
+<span id="cb20-16"><a href="#cb20-16" aria-hidden="true" tabindex="-1"></a>  p <span class="ot">&lt;-</span> p <span class="sc">+</span> <span class="fu">geom_vline</span>(<span class="at">xintercept =</span> type1_zero_iter, <span class="at">linetype =</span> <span class="st">"dotted"</span>,</span>
+<span id="cb20-17"><a href="#cb20-17" aria-hidden="true" tabindex="-1"></a>                      <span class="at">colour =</span> <span class="st">"grey50"</span>, <span class="at">linewidth =</span> <span class="fl">0.6</span>)</span>
+<span id="cb20-18"><a href="#cb20-18" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb20-19"><a href="#cb20-19" aria-hidden="true" tabindex="-1"></a>p</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output-display">
+<div id="fig-exdet-trajectory" class="quarto-float quarto-figure quarto-figure-center anchored" width="864">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-exdet-trajectory-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="k_m_r_files/figure-html/fig-exdet-trajectory-1.png" id="fig-exdet-trajectory" class="img-fluid figure-img" width="864">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig quarto-uncaptioned" id="fig-exdet-trajectory-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;8
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="surface-evolution" class="level2" data-number="7.2">
+<h2 data-number="7.2" class="anchored" data-anchor-id="surface-evolution"><span class="header-section-number">7.2</span> Surface evolution</h2>
+<p>The ExDet surface for the representative species. Type 1 (red) extrapolation covers most of Kenya at iteration 0 and is essentially gone within the first grid step; a residual Type 2 (purple) combinational-novelty patch in the highlands persists and slowly shrinks.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_exdet_evolution</span>(</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">surfaces =</span> exdet_grid[[rep_sp]],</span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">iters    =</span> grid_iters,</span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">pts      =</span> selected_points,</span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">title    =</span> <span class="fu">bquote</span>(<span class="fu">italic</span>(.(rep_sp)) <span class="sc">*</span> <span class="st">" — ExDet over the selected points"</span>)</span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output-display">
+<div id="fig-exdet-evolution" class="quarto-float quarto-figure quarto-figure-center anchored" width="960">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-exdet-evolution-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="k_m_r_files/figure-html/fig-exdet-evolution-1.png" id="fig-exdet-evolution" class="img-fluid figure-img" width="960">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig quarto-uncaptioned" id="fig-exdet-evolution-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;9
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</section>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
