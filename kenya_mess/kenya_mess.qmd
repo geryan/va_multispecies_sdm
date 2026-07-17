@@ -108,8 +108,13 @@ plot_mess_evolution <- function(surfaces, pts, mess_range, title,
                                  iters = 0:8,
                                  initial = "initial",
                                  cbar_label = "MESS (clamped to 1st/99th pctile)",
-                                 pt_cex = 2) {
+                                 pt_cex = 2,
+                                 pt_col = "goldenrod",
+                                 pt_pal = NULL) {
   stopifnot(length(iters) == 9)
+  # When pt_pal is supplied, colour each point by its selection order (first to
+  # last selected) using a colour ramp; otherwise fall back to the single pt_col.
+  pt_cols <- if (is.null(pt_pal)) NULL else pt_pal(nrow(pts))
   layout(layout_mat, heights = c(1, 1, 1, 0.4))
   par(mar = c(1, 1, 2, 0.5), oma = c(0, 0, 3, 0))
   for (iter in iters) {
@@ -125,7 +130,8 @@ plot_mess_evolution <- function(surfaces, pts, mess_range, title,
         geom = c("longitude", "latitude"),
         crs = crs(cov_rast_ken_sub)
       )
-      points(pts_vect, pch = 19, col = "goldenrod", cex = pt_cex)
+      col_iter <- if (is.null(pt_cols)) pt_col else pt_cols[seq_len(iter)]
+      points(pts_vect, pch = 19, col = col_iter, cex = pt_cex)
     }
   }
   par(
@@ -1353,7 +1359,243 @@ for (sp in ken_mess_spp) {
     title      = bquote(italic(.(sp)) * " (max-MESS, distinct cells)"),
     iters      = iters_maxmess_full,
     initial    = "iter 0",
-    pt_cex     = 1
+    pt_cex     = 1,
+    pt_pal     = \(n) hcl.colors(n, "viridis")
   )
 }
 ```
+
+## Comparison: CV weighting × prox_to_sea inclusion
+
+The max-MESS run above uses the raw MESS surface (`use_cv_weight <- FALSE`) with
+the full covariate set. Here we run three more variants of the same
+distinct-cells algorithm so the effect of two choices can be compared side by
+side:
+
+1. **CV weighting** — selecting on `MESS × CV` (model uncertainty) instead of raw
+   MESS (`use_cv_weight = TRUE`).
+2. **`prox_to_sea`** — whether the proximity-to-sea covariate is included in
+   `cov_rast_ken_sub` and therefore considered in the MESS calculation at all.
+
+Crossing the two gives four runs (raw vs CV-weighted × all covariates vs
+`prox_to_sea` removed), which are then compared with the same absolute-sum-of-MESS
+decomposition used for the individual runs.
+
+```{r}
+#| label: maxmess-run-function
+
+# Refactor of the max-MESS (distinct-cells) loop into a reusable function so the
+# same algorithm can be driven with different covariate sets and selection
+# surfaces. Behaviour is identical to the `mess-maximise-run` chunk above; only
+# the inputs (covariate raster, initial reference values, iteration-0 surfaces,
+# CV weighting) are parameterised.
+run_maxmess <- function(cov_rast, ref_vals_init, mess_iter0, spp, n_iter,
+                        use_cv_weight = FALSE, cv = NULL) {
+  ref_vals <- ref_vals_init
+  recorded_pts <- data.frame(
+    longitude      = numeric(0),
+    latitude       = numeric(0),
+    source_species = character(0),
+    iter_added     = integer(0),
+    phase          = character(0),
+    sel_value      = numeric(0)
+  )
+  mess_surfaces <- setNames(lapply(spp, \(sp) vector("list", n_iter + 1)), spp)
+  total_mess_trajectory <- rep(NA_real_, n_iter + 1)
+
+  chosen_cells <- integer(0)          # shared-grid cell indices already selected
+  novelty_exhausted <- FALSE
+  novelty_exhaustion_iter <- NA_integer_
+
+  for (i in 0:n_iter) {
+
+    # (Re)compute MESS for every species with the current shared reference sets.
+    for (sp in spp) {
+      mess_surfaces[[sp]][[i + 1]] <-
+        if (i == 0) mess_iter0[[sp]] else mess(cov_rast, ref_vals[[sp]])
+    }
+
+    # Objective: total MESS over the whole surface (all cells, all species).
+    total_mess_trajectory[i + 1] <- sum(
+      sapply(spp, \(sp) sum(values(mess_surfaces[[sp]][[i + 1]]$mess), na.rm = TRUE))
+    )
+
+    if (i == n_iter) break
+
+    # Per-species selection surface: raw MESS, optionally CV-weighted.
+    sel_cols <- lapply(spp, function(sp) {
+      m <- mess_surfaces[[sp]][[i + 1]]$mess
+      if (use_cv_weight) values(m * cv[[sp]])[, 1] else values(m)[, 1]
+    })
+    names(sel_cols) <- spp
+
+    # For each cell, the most-dissimilar species drives its selection value.
+    cell_min <- do.call(pmin, c(sel_cols, na.rm = TRUE))
+
+    # Exclude already-chosen cells so every pick is a distinct location.
+    cell_min[chosen_cells] <- NA
+
+    if (all(is.na(cell_min))) {
+      message("All selectable cells chosen; stopping at iteration ", i)
+      break
+    }
+
+    sel_cell  <- which.min(cell_min)      # global most-dissimilar un-chosen cell
+    sel_value <- cell_min[sel_cell]
+    sp_name   <- spp[which.min(sapply(sel_cols, \(v) v[sel_cell]))]
+
+    # Novelty exhaustion: no negative MESS remains anywhere (bookkeeping only).
+    if (!novelty_exhausted) {
+      global_min_mess <- min(
+        sapply(spp, \(sp) min(values(mess_surfaces[[sp]][[i + 1]]$mess), na.rm = TRUE))
+      )
+      if (global_min_mess >= 0) {
+        novelty_exhausted <- TRUE
+        novelty_exhaustion_iter <- i
+      }
+    }
+    phase_label <- if (novelty_exhausted) "coverage" else "novelty"
+
+    centroid <- xyFromCell(mess_surfaces[[sp_name]][[i + 1]]$mess, sel_cell)
+    lon <- centroid[1, "x"]
+    lat <- centroid[1, "y"]
+
+    recorded_pts <- rbind(
+      recorded_pts,
+      data.frame(
+        longitude      = lon,
+        latitude       = lat,
+        source_species = sp_name,
+        iter_added     = i,
+        phase          = phase_label,
+        sel_value      = sel_value
+      )
+    )
+    chosen_cells <- c(chosen_cells, sel_cell)
+
+    # Add the selected point to ALL species' reference sets.
+    new_pt <- vect(
+      data.frame(x = lon, y = lat),
+      geom = c("x", "y"),
+      crs = crs(cov_rast)
+    )
+    new_vals <- terra::extract(cov_rast, new_pt, ID = FALSE)
+    for (sp in spp) {
+      ref_vals[[sp]] <- rbind(ref_vals[[sp]], new_vals)
+    }
+  }
+
+  results <- setNames(
+    lapply(spp, \(sp) list(
+      mess_surfaces   = mess_surfaces[[sp]],
+      recorded_points = recorded_pts
+    )),
+    spp
+  )
+  list(
+    results                 = results,
+    trajectory              = total_mess_trajectory,
+    recorded_points         = recorded_pts,
+    novelty_exhaustion_iter = novelty_exhaustion_iter
+  )
+}
+```
+
+### Reduced covariate set (prox_to_sea removed)
+
+For the two "no `prox_to_sea`" runs, the covariate raster, the per-species
+reference values, and the iteration-0 MESS surfaces are all rebuilt without that
+layer so it plays no part in the MESS calculation.
+
+```{r}
+#| label: maxmess-nosea-inputs
+
+nosea_names        <- setdiff(target_covariate_names, "prox_to_sea")
+cov_rast_ken_nosea <- cov_rast_ken_sub[[nosea_names]]
+
+# Drop the prox_to_sea column from each species' reference values.
+ref_vals_0_nosea <- lapply(ref_vals_0, \(rv) rv[, nosea_names, drop = FALSE])
+
+# Iteration-0 MESS surfaces for the reduced covariate set.
+mess_iter0_nosea <- setNames(
+  lapply(ken_mess_spp, \(sp) mess(cov_rast_ken_nosea, ref_vals_0_nosea[[sp]])),
+  ken_mess_spp
+)
+```
+
+### Run the four variants
+
+The raw-MESS / all-covariates run is the `mess_results_maxmess` object produced
+above; the other three are generated here with `run_maxmess()`.
+
+```{r}
+#| label: maxmess-run-variants
+
+run_cvw_full <- run_maxmess(
+  cov_rast_ken_sub, ref_vals_0, mess_iter0, ken_mess_spp, n_iter_maxmess,
+  use_cv_weight = TRUE, cv = cv
+)
+
+run_raw_nosea <- run_maxmess(
+  cov_rast_ken_nosea, ref_vals_0_nosea, mess_iter0_nosea, ken_mess_spp, n_iter_maxmess,
+  use_cv_weight = FALSE
+)
+
+run_cvw_nosea <- run_maxmess(
+  cov_rast_ken_nosea, ref_vals_0_nosea, mess_iter0_nosea, ken_mess_spp, n_iter_maxmess,
+  use_cv_weight = TRUE, cv = cv
+)
+```
+
+### Absolute sum of MESS cells across the four runs
+
+The same positive / |negative| decomposition used for the individual runs, now
+overlaid so the four configurations can be compared directly. Rows are the two
+signs (positive = similar, |negative| = novel); columns are species; each panel
+holds one line per configuration.
+
+```{r}
+#| label: maxmess-compare-abs-sum
+#| fig-width: 12
+#| fig-height: 7
+
+# Absolute cell sums for one results object, tagged with a run label.
+cell_sums_run <- function(results, run_label) {
+  lapply(ken_mess_spp, \(sp) cell_sums_long(results[[sp]]$mess_surfaces, sp)) |>
+    bind_rows() |>
+    mutate(run = run_label)
+}
+
+run_levels <- c(
+  "raw MESS, all covariates",
+  "CV-weighted, all covariates",
+  "raw MESS, no prox_to_sea",
+  "CV-weighted, no prox_to_sea"
+)
+
+cell_sums_compare <- bind_rows(
+  cell_sums_run(mess_results_maxmess,  run_levels[1]),
+  cell_sums_run(run_cvw_full$results,  run_levels[2]),
+  cell_sums_run(run_raw_nosea$results, run_levels[3]),
+  cell_sums_run(run_cvw_nosea$results, run_levels[4])
+) |>
+  mutate(
+    run  = factor(run, levels = run_levels),
+    sign = factor(sign, levels = c("negative", "positive"),
+                  labels = c("|negative| (novel)", "positive (similar)"))
+  )
+
+ggplot(cell_sums_compare, aes(iteration, abs_sum, colour = run)) +
+  geom_line(linewidth = 0.6) +
+  facet_grid(sign ~ species, scales = "free_y", switch = "y") +
+  scale_colour_manual(values = setNames(hcl.colors(4, "Dark 3"), run_levels)) +
+  labs(
+    x = "Iteration",
+    y = "Absolute sum of MESS cells",
+    colour = NULL,
+    title = "Absolute sum of MESS cells: CV weighting × prox_to_sea inclusion"
+  ) +
+  theme_minimal() +
+  theme(strip.placement = "outside", legend.position = "bottom")
+```
+
