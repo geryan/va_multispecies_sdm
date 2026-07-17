@@ -322,8 +322,9 @@ reference set (records + points chosen so far) and, for every species,
 - computes **MESS** (drives the pick and the objective trajectory), and
 - computes **ExDet** (the independent validation metric, §6),
 
-recording per-iteration totals and keeping only 9 evenly-spaced surfaces per
-metric for the evolution grids. It then selects and adds the next shared point.
+recording per-iteration totals and keeping every iteration's surface (the rasters
+are small). It then selects and adds the next shared point. The evolution grids
+below just pick 9 evenly-spaced iterations out of the full history.
 
 ```{r}
 #| label: run-selection
@@ -349,15 +350,15 @@ traj <- data.frame(
   exdet_type2 = NA_real_    # sum (exdet - 1) where exdet > 1 (combinational)
 )
 
-# Retained surfaces at the 9 grid iterations, per species (light: 9 per metric).
-mess_grid  <- setNames(lapply(ken_mess_spp, \(s) vector("list", 9)), ken_mess_spp)
-exdet_grid <- setNames(lapply(ken_mess_spp, \(s) vector("list", 9)), ken_mess_spp)
+# Keep every iteration's surface, per species (the rasters are small). Indexed by
+# iteration: [[sp]][[i + 1]] is the surface after i points have been added.
+mess_surfaces  <- setNames(lapply(ken_mess_spp, \(s) vector("list", n_points + 1)), ken_mess_spp)
+exdet_surfaces <- setNames(lapply(ken_mess_spp, \(s) vector("list", n_points + 1)), ken_mess_spp)
 
 novelty_exhausted       <- FALSE
 novelty_exhaustion_iter <- NA_integer_
 
 for (i in 0:n_points) {
-  g <- match(i, grid_iters)
 
   # MESS (selection + objective) and ExDet (validation) for every species.
   mess_i  <- setNames(lapply(ref_vals, \(rv) mess(cov_rast_ken_sub, rv)$mess),  ken_mess_spp)
@@ -369,9 +370,9 @@ for (i in 0:n_points) {
   traj$exdet_type1[i + 1] <- sum(sapply(exdet_vals, \(v) sum(abs(v[v < 0]), na.rm = TRUE)))
   traj$exdet_type2[i + 1] <- sum(sapply(exdet_vals, \(v) sum(v[v > 1] - 1,  na.rm = TRUE)))
 
-  if (!is.na(g)) for (sp in ken_mess_spp) {
-    mess_grid[[sp]][[g]]  <- mess_i[[sp]]
-    exdet_grid[[sp]][[g]] <- exdet_i[[sp]]
+  for (sp in ken_mess_spp) {
+    mess_surfaces[[sp]][[i + 1]]  <- mess_i[[sp]]
+    exdet_surfaces[[sp]][[i + 1]] <- exdet_i[[sp]]
   }
 
   if (i == n_points) break
@@ -463,8 +464,8 @@ plot(ken, main = sprintf("%d selected survey points", nrow(selected_points)))
 phase_cols <- c(novelty = col_neg, coverage = col_pos)
 points(vect(selected_points, geom = c("longitude", "latitude"), crs = crs(cov_rast_ken_sub)),
        pch = 19, cex = 0.9, col = phase_cols[selected_points$phase])
-legend("topright", legend = names(phase_cols), pch = 19, col = phase_cols,
-       bty = "n", title = "phase")
+legend("bottomleft", legend = names(phase_cols), pch = 19, col = phase_cols,
+       bty = "n", title = "phase", inset = 0.02)
 ```
 
 ```{r}
@@ -483,11 +484,12 @@ first selected, yellow = last).
 #| label: fig-mess-evolution
 #| fig-width: 10
 #| fig-height: 11
+mess_shown <- mess_surfaces[[rep_sp]][grid_iters + 1]   # 9 surfaces to display
 plot_mess_evolution(
-  surfaces   = mess_grid[[rep_sp]],
+  surfaces   = mess_shown,
   iters      = grid_iters,
   pts        = selected_points,
-  mess_range = clamp_range(mess_grid[[rep_sp]]),
+  mess_range = clamp_range(mess_shown),
   title      = bquote(italic(.(rep_sp)) * " — MESS over the selected points")
 )
 ```
@@ -581,7 +583,7 @@ highlands persists and slowly shrinks.
 #| fig-width: 10
 #| fig-height: 11
 plot_exdet_evolution(
-  surfaces = exdet_grid[[rep_sp]],
+  surfaces = exdet_surfaces[[rep_sp]][grid_iters + 1],   # 9 surfaces to display
   iters    = grid_iters,
   pts      = selected_points,
   title    = bquote(italic(.(rep_sp)) * " — ExDet over the selected points")

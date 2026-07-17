@@ -1318,3 +1318,223 @@ if (!is.na(type1_zero_iter)) {
 
 p_exdet_traj
 ```
+
+## CV-weighted three-phase selection (fixing the MESS × CV inversion)
+
+The CV-weighted MESS run above selects on `min(MESS × CV)`. That ordering only
+means "novel **and** uncertain" while `MESS < 0`. Once univariate novelty is
+exhausted (~iteration 16) `MESS ≥ 0` everywhere, so `MESS × CV ≥ 0`, and
+`which.min` collapses onto the lowest-CV cells (`MESS × CV = 0` at any `CV ≈ 0`
+cell). The criterion **inverts**: for the remaining ~184 points it actively
+*avoids* the high-uncertainty areas it was meant to target. (In that run only 8
+of 200 points land in the top 10% of CV; the high-CV north-west is never
+sampled.)
+
+This section keeps uncertainty attractive throughout with a three-phase
+criterion built on ExDet, so the sign never flips:
+
+1. **Phase 1 — maximise `CV × Type-1 novelty`** (`-exdet` where `exdet < 0`):
+   the most uncertain, *univariately*-novel cell. Runs until no `exdet < 0` cell
+   remains.
+2. **Phase 2 — maximise `CV × Type-2 novelty`** (`exdet − 1` where `exdet > 1`):
+   the most uncertain, *combinationally*-novel cell. Runs until no `exdet > 1`
+   cell remains.
+3. **Phase 3 — minimise `MESS × (1 − CV)`**: once ExDet novelty is gone, target
+   the most *marginal* (lowest-MESS) and most *uncertain* (highest-CV) cell.
+   Valid because `CV < 1` everywhere here so `(1 − CV) > 0`; the value falls as
+   MESS falls **and** as CV rises, so unlike `MESS × CV` it never inverts.
+
+As before, one shared point per iteration (the most-extreme species drives each
+cell) is added to every species' reference set, and each cell is chosen at most
+once.
+
+**Does `min(MESS × (1 − CV))` really select for novelty *and* uncertainty?**
+Checked at a representative saturated state: its value correlates **+0.99 with
+MESS** (lower MESS → lower value → picked) and **−0.45 with CV** (higher CV →
+lower value → picked), and top-decile-CV cells rank in the lowest 13% (picked
+early). So yes — with one caveat: MESS spans a far wider range than
+`(1 − CV) ∈ [0.4, 1]`, so **MESS dominates and CV is a secondary modulator**; at
+the hard edge (`MESS ≈ 0`) the product ≈ 0 and CV barely discriminates. It picks
+the most marginal cells, leaning toward the uncertain ones.
+
+```{r}
+#| label: three-phase-run
+
+n_iter_3ph <- 200
+
+# ExDet novelty magnitudes (positive = novel; NA where not that type, so a phase
+# is "exhausted" once no eligible cell remains).
+type1_mag <- function(v) ifelse(v < 0, -v,    NA_real_)   # univariate:   exdet < 0
+type2_mag <- function(v) ifelse(v > 1, v - 1, NA_real_)   # combinational: exdet > 1
+
+# Cross-species reducers (shared point ⇒ the most-extreme species drives a cell).
+pmax_na <- function(cols) suppressWarnings(do.call(pmax, c(cols, na.rm = TRUE)))
+pmin_na <- function(cols) suppressWarnings(do.call(pmin, c(cols, na.rm = TRUE)))
+
+cv_cols <- setNames(lapply(ken_mess_spp, \(sp) values(cv[[sp]])[, 1]), ken_mess_spp)
+
+ref_vals_3ph <- ref_vals_0
+chosen_cells <- integer(0)
+recorded_pts_3ph <- data.frame(
+  longitude = numeric(0), latitude = numeric(0), source_species = character(0),
+  iter_added = integer(0), phase = character(0), sel_value = numeric(0)
+)
+# Novelty trajectories, summed over cells and species.
+nov_traj_3ph <- data.frame(iteration = 0:n_iter_3ph, type1 = NA_real_, type2 = NA_real_)
+
+for (i in 0:n_iter_3ph) {
+  ex_cols <- setNames(
+    lapply(ref_vals_3ph, \(rv) values(exdet(cov_rast_ken_sub, rv)$exdet)[, 1]),
+    ken_mess_spp
+  )
+  nov_traj_3ph$type1[i + 1] <- sum(sapply(ex_cols, \(v) sum(-v[v < 0], na.rm = TRUE)))
+  nov_traj_3ph$type2[i + 1] <- sum(sapply(ex_cols, \(v) sum(v[v > 1] - 1, na.rm = TRUE)))
+
+  if (i == n_iter_3ph) break
+
+  # Phase 1: maximise CV × Type-1 novelty.
+  s1 <- lapply(ken_mess_spp, \(sp) cv_cols[[sp]] * type1_mag(ex_cols[[sp]]))
+  cell1 <- pmax_na(s1); cell1[chosen_cells] <- NA
+
+  if (any(!is.na(cell1))) {
+    phase <- "type1"; sel_cell <- which.max(cell1); sel_value <- cell1[sel_cell]
+    sp_name <- ken_mess_spp[which.max(sapply(s1, \(v) v[sel_cell]))]
+  } else {
+    # Phase 2: maximise CV × Type-2 novelty.
+    s2 <- lapply(ken_mess_spp, \(sp) cv_cols[[sp]] * type2_mag(ex_cols[[sp]]))
+    cell2 <- pmax_na(s2); cell2[chosen_cells] <- NA
+    if (any(!is.na(cell2))) {
+      phase <- "type2"; sel_cell <- which.max(cell2); sel_value <- cell2[sel_cell]
+      sp_name <- ken_mess_spp[which.max(sapply(s2, \(v) v[sel_cell]))]
+    } else {
+      # Phase 3: minimise MESS × (1 − CV).  (CV < 1 everywhere ⇒ 1 − CV > 0.)
+      ms_cols <- setNames(
+        lapply(ref_vals_3ph, \(rv) values(mess(cov_rast_ken_sub, rv)$mess)[, 1]),
+        ken_mess_spp
+      )
+      s3 <- lapply(ken_mess_spp, \(sp) ms_cols[[sp]] * (1 - cv_cols[[sp]]))
+      cell3 <- pmin_na(s3); cell3[chosen_cells] <- NA
+      if (all(is.na(cell3))) { message("All cells chosen at iter ", i); break }
+      phase <- "residual"; sel_cell <- which.min(cell3); sel_value <- cell3[sel_cell]
+      sp_name <- ken_mess_spp[which.min(sapply(s3, \(v) v[sel_cell]))]
+    }
+  }
+
+  xy <- xyFromCell(cov_rast_ken_sub, sel_cell)
+  recorded_pts_3ph <- rbind(recorded_pts_3ph, data.frame(
+    longitude = xy[1, "x"], latitude = xy[1, "y"], source_species = sp_name,
+    iter_added = i, phase = phase, sel_value = sel_value
+  ))
+  chosen_cells <- c(chosen_cells, sel_cell)
+
+  new_vals <- terra::extract(
+    cov_rast_ken_sub,
+    vect(data.frame(x = xy[1, "x"], y = xy[1, "y"]), geom = c("x", "y"),
+         crs = crs(cov_rast_ken_sub)),
+    ID = FALSE
+  )
+  for (sp in ken_mess_spp) ref_vals_3ph[[sp]] <- rbind(ref_vals_3ph[[sp]], new_vals)
+}
+
+phase_levels_3ph <- c("type1", "type2", "residual")
+recorded_pts_3ph$phase <- factor(recorded_pts_3ph$phase, levels = phase_levels_3ph)
+
+readr::write_csv(
+  recorded_pts_3ph |> mutate(priority = row_number()),
+  "selected_points_3phase.csv"
+)
+
+cat("Points per phase:\n")
+print(table(recorded_pts_3ph$phase))
+```
+
+**Phase breakdown (this run):** Type-1 exhausts at iteration 16 (as in the MESS
+run). Type-2 exhausts after only ~2 picks — largely a `mah_max` artefact: adding
+two extreme points inflates the Mahalanobis normaliser enough that no cell
+exceeds `nt2 > 1`, rather than combinational novelty being genuinely resolved. So
+**phase 3 (`min MESS × (1 − CV)`) drives ~90% of the budget.**
+
+### Novelty trajectories (three-phase run)
+
+Type-1 novelty is driven to zero by iteration 16 (end of phase 1); Type-2 is
+knocked out in the next couple of picks and does not return.
+
+```{r}
+#| label: three-phase-novelty-traj
+#| fig-width: 9
+#| fig-height: 5
+
+nov_long_3ph <- nov_traj_3ph |>
+  pivot_longer(c(type1, type2), names_to = "novelty", values_to = "total") |>
+  mutate(novelty = recode(novelty, type1 = "Type 1 (univariate)",
+                          type2 = "Type 2 (combinational)"))
+
+ggplot(nov_long_3ph, aes(iteration, total, colour = novelty)) +
+  geom_line(linewidth = 0.9) +
+  scale_colour_manual(values = c("Type 1 (univariate)" = "#D6604D",
+                                 "Type 2 (combinational)" = "#762A83")) +
+  labs(x = "Iteration", y = "Total novelty (summed over cells and species)",
+       colour = NULL, title = "ExDet novelty as three-phase points are added") +
+  theme_minimal() + theme(legend.position = "top")
+```
+
+### Selected points on the uncertainty surface
+
+Points overlaid on model uncertainty (max CV across species). Unlike the
+`MESS × CV` run, the three-phase selection lands points in the **high-CV
+north-west** (dark) — the region the old criterion abandoned.
+
+```{r}
+#| label: three-phase-map
+#| fig-width: 8
+#| fig-height: 8
+
+cv_max <- max(cv)
+phase_cols_3ph <- c(type1 = "#D6604D", type2 = "#762A83", residual = "#1A9850")
+
+plot(cv_max, col = rev(map.pal("magma", 100)), axes = FALSE,
+     main = "Three-phase selected points on max-CV surface")
+lines(ken)
+points(vect(recorded_pts_3ph, geom = c("longitude", "latitude"), crs = crs(cv)),
+       pch = 21, bg = phase_cols_3ph[as.character(recorded_pts_3ph$phase)],
+       col = "white", cex = 1.2, lwd = 0.4)
+legend("bottomleft", legend = phase_levels_3ph, pt.bg = phase_cols_3ph,
+       pch = 21, col = "white", bty = "n", title = "phase", inset = c(0.04, 0.04))
+```
+
+### Does it sample the uncertain areas? (vs the MESS × CV run)
+
+```{r}
+#| label: three-phase-validate
+
+cv_max_vals <- values(cv_max)[, 1]
+hi_cv       <- cv_max_vals >= quantile(cv_max_vals, 0.90, na.rm = TRUE)
+
+top_cv_hits <- function(pts) {
+  cells <- cellFromXY(cv_max, as.matrix(pts[, c("longitude", "latitude")]))
+  sum(hi_cv[cells], na.rm = TRUE)
+}
+
+# CV percentile (max-CV surface) of each three-phase point, by phase.
+recorded_pts_3ph$cv_pctile <- sapply(
+  cellFromXY(cv_max, as.matrix(recorded_pts_3ph[, c("longitude", "latitude")])),
+  \(c) mean(cv_max_vals <= cv_max_vals[c], na.rm = TRUE)
+)
+
+cat("Three-phase points — median CV percentile by phase:\n")
+recorded_pts_3ph |>
+  group_by(phase) |>
+  summarise(n = n(), median_cv_pctile = round(median(cv_pctile), 2)) |>
+  print()
+
+cat(sprintf(
+  "\nPoints landing in the top 10%% of CV cells:\n  three-phase: %d / %d\n  MESS × CV:   %d / %d\n",
+  top_cv_hits(recorded_pts_3ph), nrow(recorded_pts_3ph),
+  top_cv_hits(recorded_pts_maxmess), nrow(recorded_pts_maxmess)
+))
+```
+
+The three-phase criterion places roughly ten times as many points in the
+highest-uncertainty cells as `min(MESS × CV)` did, and — as the map shows —
+finally samples the north-west. The residual phase leans uncertain (median CV
+percentile well above 0.5) rather than collapsing onto the lowest-CV cells.
