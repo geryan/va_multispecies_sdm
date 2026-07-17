@@ -1100,3 +1100,199 @@ for (sp in ken_mess_spp) {
 }
 ```
 
+## ExDet surface evolution over the CV-weighted MESS points
+
+Rather than running a separate ExDet-driven search, here we reuse the **same 200
+points** selected by the CV-weighted MESS run above (`recorded_pts_maxmess`, in
+selection order) and recompute the **Extrapolation Detection** surface
+(`bssdm::exdet`) as those points are progressively added to the reference set.
+This shows how environmental novelty — resolved into its two ExDet components —
+evolves under the MESS-chosen sampling design.
+
+ExDet packs both novelty types into a single value per cell:
+
+- **`exdet < 0` — Type 1 (univariate) novelty:** the cell lies *outside* the
+  observed range of at least one covariate; more negative = more novel.
+- **`0 ≤ exdet ≤ 1` — within the reference envelope** (no univariate
+  extrapolation, inside the combinational Mahalanobis envelope).
+- **`exdet > 1` — Type 2 (combinational) novelty:** every covariate is
+  individually in range but their *combination* is novel; larger = more novel.
+
+```{r}
+#| label: exdet-over-maxmess-setup
+
+# ExDet is coloured with *deterministic discrete classes*, not a continuous
+# ramp. A hand-built continuous palette passed to terra as a long `col` vector
+# is re-interpolated by terra's continuous renderer, which bleeds the near-zero
+# "Type 1" colour into cells with exdet just above 0 (the most *typical* cells).
+# Those typical cells multiply as points are added, so the map grows a spurious
+# reddish region that looks — misleadingly — like novelty increasing. Fixed
+# `breaks` assign each cell to a class by value, with no interpolation, so the
+# [0, 1] "similar" band is always grey.
+#
+# Classes:      exdet < 0  -> Type 1 (univariate), reds, darker = more novel
+#          0 <= exdet <= 1 -> similar, grey
+#               exdet > 1  -> Type 2 (combinational), purples, darker = more novel
+# Note the lower "similar" bound is -1e-9 so that exdet == 0 lands in the grey
+# band rather than the reddest class.
+exdet_breaks <- c(-Inf, -1, -0.25, -1e-9, 1, 2, 4, Inf)
+exdet_cols   <- c("#67001F", "#D6604D", "#FDDBC7",   # Type 1: strong -> weak
+                  "#f0f0f0",                          # similar
+                  "#E7D4E8", "#9970AB", "#40004B")    # Type 2: weak -> strong
+exdet_class_labels <- c(
+  "Type 1 (< -1)", "Type 1 (-1 to -0.25)", "Type 1 (-0.25 to 0)",
+  "similar (0-1)",
+  "Type 2 (1-2)", "Type 2 (2-4)", "Type 2 (> 4)"
+)
+
+# Covariate values at the 200 CV-weighted MESS points, in selection order. The
+# same shared points are added to every species' reference set.
+maxmess_pts_cov <- terra::extract(
+  cov_rast_ken_sub,
+  vect(recorded_pts_maxmess, geom = c("longitude", "latitude"),
+       crs = crs(cov_rast_ken_sub)),
+  ID = FALSE
+)
+
+# Iterations to display in the evolution grid: iteration 0, iteration 200, and 7
+# evenly spaced in between (same grid as the MESS evolution plot).
+iters_exdet_full <- round(seq(0, n_iter_maxmess, length.out = 9))
+
+# Recompute the ExDet surface as each MESS point is added, for *every* iteration
+# 0..n_iter_maxmess and every species. Per iteration we record the total novelty
+# of each type, summed over all cells and species:
+#   * Type 1 total: sum of |exdet| where exdet < 0 (univariate extrapolation), and
+#   * Type 2 total: sum of (exdet - 1) where exdet > 1 (combinational novelty
+#     above the reference envelope).
+# Only the 9 grid iterations' surfaces are retained (for the evolution plot); the
+# rest are used for the trajectory sums and then discarded to save memory.
+exdet_surfaces_maxmess <- setNames(
+  lapply(ken_mess_spp, \(sp) vector("list", length(iters_exdet_full))),
+  ken_mess_spp
+)
+exdet_novelty_traj <- data.frame(
+  iteration = 0:n_iter_maxmess,
+  type1     = NA_real_,
+  type2     = NA_real_
+)
+
+for (i in 0:n_iter_maxmess) {
+  t1 <- 0
+  t2 <- 0
+  g  <- match(i, iters_exdet_full)   # grid slot, or NA if not a displayed iter
+  for (sp in ken_mess_spp) {
+    ref <- if (i == 0) {
+      ref_vals_0[[sp]]
+    } else {
+      rbind(ref_vals_0[[sp]], maxmess_pts_cov[seq_len(i), , drop = FALSE])
+    }
+    ex <- exdet(cov_rast_ken_sub, ref)$exdet
+    v  <- values(ex)[, 1]
+    t1 <- t1 + sum(abs(v[v < 0]), na.rm = TRUE)
+    t2 <- t2 + sum(v[v > 1] - 1,  na.rm = TRUE)
+    if (!is.na(g)) exdet_surfaces_maxmess[[sp]][[g]] <- ex
+  }
+  exdet_novelty_traj$type1[i + 1] <- t1
+  exdet_novelty_traj$type2[i + 1] <- t2
+}
+message("ExDet trajectory + grid surfaces computed over ",
+        n_iter_maxmess, " iterations")
+```
+
+### ExDet surface evolution grid
+
+A 3x3 grid per species showing the ExDet surface at each displayed iteration,
+with the MESS-selected points accumulated so far overlaid (coloured on a viridis
+ramp from first selected, dark, to last, yellow). As expected, the Type 1
+(red) extrapolation region collapses almost entirely once the first handful of
+extreme points are added; a residual Type 2 (purple) combinational-novelty patch
+in the highlands persists and slowly shrinks — total novel area only ever
+decreases.
+
+```{r}
+#| label: plot-exdet-over-maxmess
+#| fig-width: 10
+#| fig-height: 11
+
+# 3x3 grid of ExDet surfaces (supplied for the 9 displayed iterations) with the
+# points selected so far overlaid, coloured by selection order. Colours are
+# assigned by fixed `breaks` (discrete classes) rather than a continuous palette,
+# so the [0, 1] "similar" band is always grey.
+plot_exdet_evolution <- function(surfaces, iters, pts, title,
+                                 pt_cex = 1, pt_pal = \(n) hcl.colors(n, "viridis")) {
+  stopifnot(length(surfaces) == 9, length(iters) == 9)
+  pt_cols <- pt_pal(nrow(pts))
+  layout(layout_mat, heights = c(1, 1, 1, 0.5))
+  par(mar = c(1, 1, 2, 0.5), oma = c(0, 0, 3, 0))
+  for (k in seq_len(9)) {
+    iter <- iters[k]
+    plot(surfaces[[k]],
+         main = if (iter == 0) "iter 0" else paste0("iter ", iter),
+         breaks = exdet_breaks, col = exdet_cols, legend = FALSE, axes = FALSE)
+    lines(ken)
+    if (iter >= 1) {
+      pts_so_far <- pts[seq_len(iter), , drop = FALSE]
+      pv <- vect(pts_so_far, geom = c("longitude", "latitude"),
+                 crs = crs(cov_rast_ken_sub))
+      points(pv, pch = 19, col = pt_cols[seq_len(iter)], cex = pt_cex)
+    }
+  }
+  # Discrete class legend spanning the bottom row.
+  par(mar = c(0, 1, 0, 1))
+  plot.new()
+  legend("center", legend = exdet_class_labels, fill = exdet_cols,
+         border = NA, horiz = FALSE, ncol = 4, bty = "n",
+         title = "ExDet class", cex = 1.1)
+  mtext(title, outer = TRUE, cex = 1.4, font = 2)
+}
+
+for (sp in ken_mess_spp) {
+  plot_exdet_evolution(
+    surfaces = exdet_surfaces_maxmess[[sp]],
+    iters    = iters_exdet_full,
+    pts      = recorded_pts_maxmess,
+    title    = bquote(italic(.(sp)) * " — ExDet over CV-weighted MESS points"),
+    pt_cex   = 1
+  )
+}
+```
+
+### Total novelty over iterations
+
+Total Type 1 and Type 2 novelty, summed over every cell and species, as the 200
+CV-weighted MESS points are added. **Type 1** (univariate extrapolation)
+collapses to zero within the first ~20 points: each extreme MESS point widens the
+observed range of some covariate, quickly bringing every cell inside the
+univariate envelope. **Type 2** (combinational novelty) behaves very differently
+— it *rises* at first, because those same extreme points distort the reference
+correlation structure and push more cells outside the combinational envelope,
+before slowly declining as later points fill the space in. It never reaches zero
+within the budget: combinational novelty is much harder to eliminate than
+univariate novelty.
+
+```{r}
+#| label: exdet-novelty-trajectory
+#| fig-width: 9
+#| fig-height: 5
+
+exdet_traj_long <- exdet_novelty_traj |>
+  pivot_longer(c(type1, type2), names_to = "novelty", values_to = "total") |>
+  mutate(novelty = recode(novelty,
+    type1 = "Type 1 (univariate)",
+    type2 = "Type 2 (combinational)"))
+
+ggplot(exdet_traj_long, aes(iteration, total, colour = novelty)) +
+  geom_line(linewidth = 0.9) +
+  scale_colour_manual(values = c(
+    "Type 1 (univariate)"    = "#D6604D",
+    "Type 2 (combinational)" = "#762A83"
+  )) +
+  labs(
+    x = "Iteration",
+    y = "Total novelty (summed over cells and species)",
+    colour = NULL,
+    title = "ExDet novelty as CV-weighted MESS points are added"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "top")
+```
