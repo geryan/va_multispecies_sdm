@@ -627,7 +627,7 @@ validation_and_checking <- function(
   )
   ggsave(
     sprintf(
-      "%s/sm_alpha.png",
+      "%s/trace_alpha.png",
       plotdir
     )
   )
@@ -647,7 +647,7 @@ validation_and_checking <- function(
   )
   ggsave(
     sprintf(
-      "%s/sm_delta_gamma.png",
+      "%s/trace_delta_gamma.png",
       plotdir
     )
   )
@@ -658,7 +658,7 @@ validation_and_checking <- function(
   )
   ggsave(
     sprintf(
-      "%s/sm_sampling.png",
+      "%s/trace_sampling.png",
       plotdir
     )
   )
