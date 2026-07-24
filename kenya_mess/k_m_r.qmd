@@ -1,6 +1,6 @@
 ---
-title: "Selecting 200 survey points for *Anopheles* in Kenya"
-subtitle: "Uncertainty-weighted novelty sampling with MESS, validated with ExDet"
+title: "Selecting survey points for *Anopheles* in Kenya"
+subtitle: "Three-phase sampling for environmental novelty weighted by uncertainty"
 date: today
 format:
   html:
@@ -11,7 +11,7 @@ format:
     code-fold: true
     code-summary: "code"
     fig-align: center
-    theme: cosmo
+    theme: lux
 execute:
   warning: false
   message: false
@@ -19,26 +19,46 @@ execute:
 
 # Summary
 
-Large parts of Kenya have environments that are poorly represented by the
-existing *Anopheles* occurrence records, so species-distribution predictions
-there are extrapolated and uncertain. This report selects **200 new survey
-locations** that best fill that gap for three vectors — *An. arabiensis*,
-*An. gambiae* and *An. funestus* — with a greedy, uncertainty-weighted
-novelty-sampling scheme:
+Vector Atlas records do not cover Kenya's environments evenly. Records for three
+malaria vectors — *An. arabiensis*, *An. gambiae* and *An. funestus* — sit mostly
+in the wetter, farmed south-west, and the arid north and east barely appear at
+all. Where a model has never seen an environment it has to extrapolate, and those
+are exactly the places its predictions are least trustworthy. This analysis
+chooses 50 places to survey next, to close that gap, weighted by where the models
+are least certain. Some of these sites may be in inaccessible or insecure
+locations. Skip them and move on.
 
-- **Novelty** is measured with **MESS** (the Multivariate Environmental
-  Similarity Surface): how far each pixel's environment falls outside the
-  covariate ranges seen at existing records.
-- **Uncertainty** is the per-pixel **coefficient of variation (CV)** of the
-  current distribution models.
-- Each iteration adds the single **most-novel × most-uncertain** unsampled
-  pixel, *shared* across all three species, then recomputes — so the whole set
-  is built around common points.
+**Measuring the gap.** For every 5x5 km pixel in Kenya we ask how unlike the
+places we have already surveyed its environment is. We use three measures of
+environmental novelty: the Multivariate Environmental Similarity Surface (MESS,
+Elith et al. 2010), ExDet (Mesgaran et al. 2014), and Shape (Velazco et al.
+2024). MESS and ExDet Type 1 find pixels that fall outside the range of anything
+we have sampled so far, e.g. more shrubland or less tree cover than at any
+existing record. ExDet Type 2 finds pixels that are within the existing range of
+every variable individually, but have novel combinations of those variables.
+Shape sets that distinction aside and reports one number: how far a pixel sits,
+in environmental terms, from the nearest place we have already surveyed.
 
-The 200 points, in priority order, are exported to
-`k_m_r_selected_points.csv`. An independent metric (**ExDet**) confirms the
-design eliminates *univariate* environmental novelty within the first ~16 points
-and then steadily reduces the harder *combinational* novelty.
+**Choosing a site.** We multiply each measure by how uncertain the current models
+are at that pixel via the coefficient of variation, so the highest-weighted sites
+are both environmentally unfamiliar and poorly predicted. To select a new survey
+point, we take the highest-scoring pixel, add it to the set of existing points,
+and recalculate all three measures before making the next choice. This repeats
+until we have 50 points. No pixel appears twice, and a single shared set of
+points serves all three species; at each step the site with the highest weight
+value across the three species is the one chosen.
+
+**Three phases.** Our selection process works through types of novelty in the
+order it can remove them: first the out-of-range pixels, then the unusual
+combinations, then whatever remains. The last phase works differently. We first
+divide Kenya into 150 multivariate environmental clusters, each with a single
+typical point (its "medoid"). The design picks among those, ranking them by
+model uncertainty and Shape value.
+
+**Result.** A ranked list of 50 sites (`k_m_r_selected_points.csv`), maps
+tracking how much of Kenya's environment is still unrepresented as we add points,
+a record of which species drove each choice, and a map of which environment types
+remain without any sampling at all.
 
 ```{r}
 #| label: setup
@@ -50,6 +70,7 @@ library(tidyr)
 library(ggplot2)
 library(readr)
 library(bssdm)
+library(flexsdm)
 
 # ---- Spatial inputs (targets store) ----------------------------------------
 tar_load(
@@ -62,10 +83,14 @@ cov_rast_ken_sub <- crop(covariate_rast_5, ken) |>
   mask(ken) |>
   subset(target_covariate_names)
 
-# Species and the representative species used for the per-species evolution
-# grids (the three species' novelty patterns are near-identical, see below).
 ken_mess_spp <- c("arabiensis", "gambiae", "funestus")
-rep_sp       <- "gambiae"
+
+# ---- Design parameters ------------------------------------------------------
+# Defined here so every mention of them downstream can be read off the values
+# rather than typed in (the numbers in the summary above are the exception -
+# inline code cannot run before this chunk).
+n_points <- 50     # survey locations to select
+n_clust  <- 150    # environmental clusters for the phase-3 medoid pool
 
 # ---- Model uncertainty: per-species coefficient of variation ----------------
 cv <- rast(paste0(
@@ -80,6 +105,7 @@ cv <- resample(cv, cov_rast_ken_sub, method = "bilinear")   # align to covariate
 # ---- Existing occurrence points within Kenya, per species -------------------
 ken_points <- vect(
   model_data_spatial |>
+    filter(!inferred) |> 
     select(species, longitude, latitude) |>
     filter(species %in% ken_mess_spp),
   geom = c("longitude", "latitude"), crs = crs(ken)
@@ -94,6 +120,12 @@ ref_vals_0 <- setNames(
   }),
   ken_mess_spp
 )
+
+# Per-species CV as plain vectors over the grid, reused as the selection weight.
+cv_cols <- setNames(lapply(ken_mess_spp, \(sp) values(cv[[sp]])[, 1]), ken_mess_spp)
+
+# Land cells (complete covariates): the pool the k-medoid partition works over.
+land_cells <- which(stats::complete.cases(values(cov_rast_ken_sub)))
 ```
 
 ```{r}
@@ -103,6 +135,13 @@ ref_vals_0 <- setNames(
 col_neg <- "#D6604D"
 col_pos <- "#4393C3"
 divergent_pal <- colorRampPalette(c(col_neg, "white", col_pos))(255)
+magma_pal     <- map.pal("magma", 100)        # dark = in-niche, bright = novel
+
+# One colour per selection phase, reused in maps and trajectory markers.
+phase_cols <- c(type1 = "#D6604D", type2 = "#762A83", medoid = "#F98C0A")
+phase_labels <- c(type1  = "Phase 1: Type 1 (univariate)",
+                  type2  = "Phase 2: Type 2 (combinational)",
+                  medoid = "Phase 3: k-medoid clusters (CV x Shape)")
 
 # 3x3 map grid plus a colourbar/legend strip below it.
 layout_mat <- rbind(matrix(1:9, nrow = 3, byrow = TRUE), rep(10, 3))
@@ -124,6 +163,56 @@ colorbar_h <- function(rng, label, pal = divergent_pal) {
   axis(1)
 }
 
+# One row of three species maps (continuous surface) over a shared colourbar.
+# terra's plot() rejects bquote() in `main`, so titles go on afterwards with
+# title() - see the same pattern in the CV and occurrence figures.
+plot_species_row <- function(rl, rng, label, pal = divergent_pal) {
+  layout(rbind(1:3, c(4, 4, 4)), heights = c(1, 0.28))
+  par(mar = c(2, 2, 3, 1))
+  for (sp in ken_mess_spp) {
+    plot(rl[[sp]], col = pal, range = rng, legend = FALSE, axes = FALSE)
+    title(main = bquote(italic(.(sp)))); lines(ken)
+  }
+  par(mar = c(3, 6, 0.5, 6))
+  colorbar_h(rng, label, pal = pal)
+}
+
+# ---- Novelty metrics --------------------------------------------------------
+
+# Shape: multivariate extrapolation surface for a reference set, via
+# flexsdm::extra_eval (the "Shape" metric of Velazco et al. 2024). Presence-only
+# reference (all rows pr_ab = 1), so extrapolation is measured against that
+# environmental cloud alone. What it returns, precisely: the Mahalanobis distance
+# from a cell to the NEAREST reference record (not to the cloud's centroid),
+# divided by the mean Mahalanobis distance of the reference records from their
+# own centroid, x 100. So it is a nearest-neighbour distance expressed as a
+# percentage of the reference set's own spread: 100 means "as far from the
+# closest record as a typical record is from the middle of the record cloud".
+# Always >= 0, ~0 at a record, rising with distance from the nearest one.
+shape_eval <- function(rv) {
+  td <- as.data.frame(rv)
+  td$pr_ab <- 1L
+  flexsdm::extra_eval(
+    training_data   = td,
+    pr_ab           = "pr_ab",
+    projection_data = cov_rast_ken_sub,
+    metric          = "mahalanobis"
+  )
+}
+
+# ExDet novelty magnitudes (positive = novel; NA where a cell is not that type,
+# so a phase is "exhausted" once no eligible cell remains).
+type1_mag <- function(v) ifelse(v < 0, -v,    NA_real_)   # univariate:    exdet < 0
+type2_mag <- function(v) ifelse(v > 1, v - 1, NA_real_)   # combinational: exdet > 1
+
+# Cross-species reducer: a shared point => the most-extreme species drives a cell.
+pmax_na <- function(cols) suppressWarnings(do.call(pmax, c(cols, na.rm = TRUE)))
+
+# Wrap a vector of cell values back into a raster for plotting.
+as_rast <- function(v) {
+  r <- rast(cov_rast_ken_sub[[1]]); values(r) <- v; r
+}
+
 # ExDet is shown with deterministic discrete classes (fixed `breaks`), NOT a
 # continuous palette: terra re-interpolates a long `col` vector and bleeds the
 # near-zero colour into the most *typical* cells, which multiply as points are
@@ -139,8 +228,67 @@ exdet_class_labels <- c(
   "similar (0-1)", "Type 2 (1-2)", "Type 2 (2-4)", "Type 2 (> 4)"
 )
 
-# 3x3 evolution grid of continuous MESS surfaces (list of 9), with the points
-# selected so far overlaid, coloured by selection order (dark -> light).
+# One row of three species ExDet maps over a shared discrete-class legend.
+plot_exdet_row <- function(rl) {
+  layout(rbind(1:3, c(4, 4, 4)), heights = c(1, 0.32))
+  par(mar = c(2, 2, 3, 1))
+  for (sp in ken_mess_spp) {
+    plot(rl[[sp]], breaks = exdet_breaks, col = exdet_cols,
+         legend = FALSE, axes = FALSE)
+    title(main = bquote(italic(.(sp)))); lines(ken)
+  }
+  par(mar = c(0, 1, 0, 1)); plot.new()
+  legend("center", legend = exdet_class_labels, fill = exdet_cols, border = NA,
+         ncol = 4, bty = "n", title = "ExDet class", cex = 1.1)
+}
+
+# ---- k-medoid partition -----------------------------------------------------
+
+# k-medoids by the alternating (Voronoi) algorithm, seeded from k-means:
+# assign every cell to its nearest medoid, then replace each medoid by the
+# cluster member with the smallest total distance to the rest of its cluster.
+# Unlike a k-means centroid, a medoid is always a REAL land cell, so it can be
+# visited; and it is the most *typical* member of its cluster rather than an
+# extreme one. Clusters larger than `pool` are costed against a random subset of
+# `pool` members to keep the update linear in the number of cells.
+kmedoids <- function(Z, k, seed = 1, iter_max = 15, pool = 400) {
+  set.seed(seed)
+  n  <- nrow(Z)
+  km <- stats::kmeans(Z, centers = k, iter.max = 50, nstart = 5)
+
+  # Start from the cell nearest each k-means centroid.
+  med <- vapply(seq_len(k), function(cl) {
+    idx <- which(km$cluster == cl)
+    ctr <- matrix(km$centers[cl, ], length(idx), ncol(Z), byrow = TRUE)
+    idx[which.min(rowSums((Z[idx, , drop = FALSE] - ctr)^2))]
+  }, integer(1))
+
+  cl_of <- km$cluster
+  for (it in seq_len(iter_max)) {
+    d2  <- sapply(med, \(r) rowSums((Z - rep(Z[r, ], each = n))^2))
+    new_cl <- max.col(-d2, ties.method = "first")
+
+    med_new <- vapply(seq_len(k), function(cl) {
+      idx <- which(new_cl == cl)
+      if (!length(idx)) return(med[cl])
+      ref  <- if (length(idx) > pool) sample(idx, pool) else idx
+      cost <- sapply(idx, \(i) sum(sqrt(rowSums(
+        (Z[ref, , drop = FALSE] - rep(Z[i, ], each = length(ref)))^2))))
+      idx[which.min(cost)]
+    }, integer(1))
+
+    changed <- sum(med_new != med)
+    med <- med_new; cl_of <- new_cl
+    if (changed == 0) break
+  }
+  list(k = k, medoid = med, cluster = cl_of, iters = it)
+}
+
+# ---- Evolution grids --------------------------------------------------------
+# Each takes 9 surfaces + the iteration numbers they correspond to, and overlays
+# the points selected so far, coloured by selection order (dark -> light).
+
+# 3x3 grid of continuous MESS surfaces (divergent palette).
 plot_mess_evolution <- function(surfaces, iters, pts, mess_range, title,
                                  pt_cex = 1, pt_pal = \(n) hcl.colors(n, "viridis")) {
   stopifnot(length(surfaces) == 9, length(iters) == 9)
@@ -163,7 +311,7 @@ plot_mess_evolution <- function(surfaces, iters, pts, mess_range, title,
   mtext(title, outer = TRUE, cex = 1.4, font = 2)
 }
 
-# 3x3 evolution grid of discrete-class ExDet surfaces (list of 9), same overlay.
+# 3x3 grid of discrete-class ExDet surfaces.
 plot_exdet_evolution <- function(surfaces, iters, pts, title,
                                  pt_cex = 1, pt_pal = \(n) hcl.colors(n, "viridis")) {
   stopifnot(length(surfaces) == 9, length(iters) == 9)
@@ -186,14 +334,37 @@ plot_exdet_evolution <- function(surfaces, iters, pts, title,
          ncol = 4, bty = "n", title = "ExDet class", cex = 1.1)
   mtext(title, outer = TRUE, cex = 1.4, font = 2)
 }
+
+# 3x3 grid of continuous Shape surfaces (sequential magma; bright = more novel).
+plot_shape_evolution <- function(surfaces, iters, pts, shape_range, title,
+                                 pt_cex = 1, pt_pal = \(n) hcl.colors(n, "viridis")) {
+  stopifnot(length(surfaces) == 9, length(iters) == 9)
+  pt_cols <- pt_pal(nrow(pts))
+  layout(layout_mat, heights = c(1, 1, 1, 0.4))
+  par(mar = c(1, 1, 2, 0.5), oma = c(0, 0, 3, 0))
+  for (k in seq_len(9)) {
+    iter <- iters[k]
+    plot(surfaces[[k]], main = if (iter == 0) "iter 0" else paste0("iter ", iter),
+         col = magma_pal, range = shape_range, legend = FALSE, axes = FALSE)
+    lines(ken)
+    if (iter >= 1) {
+      psf <- pts[seq_len(iter), , drop = FALSE]
+      points(vect(psf, geom = c("longitude", "latitude"), crs = crs(cov_rast_ken_sub)),
+             pch = 19, col = pt_cols[seq_len(iter)], cex = pt_cex)
+    }
+  }
+  par(mar = c(2.5, 3, 0.5, 3))
+  colorbar_h(shape_range, "Shape extrapolation (higher = more novel)", pal = magma_pal)
+  mtext(title, outer = TRUE, cex = 1.4, font = 2)
+}
 ```
 
 # Data
 
 ## Environmental covariates
 
-Ten covariates describe the environment across Kenya; these are the predictors
-the selection works in.
+`r nlyr(cov_rast_ken_sub)` covariates describe the environment across Kenya;
+these are the predictors the selection works in.
 
 ```{r}
 #| label: fig-covariates
@@ -208,9 +379,9 @@ for (i in seq_len(nlyr(cov_rast_ken_sub))) {
 
 ## Existing occurrence records
 
-The reference set: where each species has already been recorded within Kenya.
-Coverage is patchy and concentrated, which is exactly why novel environment
-remains to be sampled.
+The reference set: where we already have records for each species within Kenya.
+Coverage is patchy and concentrated, which is exactly why so much novel
+environment still remains.
 
 ```{r}
 #| label: fig-points
@@ -226,7 +397,7 @@ for (sp in ken_mess_spp) {
 ## Model uncertainty
 
 Per-species coefficient of variation (CV) of the current distribution models.
-High CV marks where the models are least constrained — the selection favours
+High CV marks where the models have least to go on — the selection favours
 sampling there.
 
 ```{r}
@@ -236,56 +407,249 @@ sampling there.
 cv_range <- range(unlist(lapply(
   ken_mess_spp, \(sp) quantile(values(cv[[sp]]), c(0.01, 0.99), na.rm = TRUE)
 )), na.rm = TRUE)
-magma_pal <- rev(map.pal("magma", 100))
+cv_pal <- rev(map.pal("magma", 100))
 
 layout(rbind(1:3, c(4, 4, 4)), heights = c(1, 0.28))
 par(mar = c(2, 2, 3, 1))
 for (sp in ken_mess_spp) {
-  plot(cv[[sp]], col = magma_pal, range = cv_range, legend = FALSE, axes = FALSE)
+  plot(cv[[sp]], col = cv_pal, range = cv_range, legend = FALSE, axes = FALSE)
   title(main = bquote(italic(.(sp)))); lines(ken)
 }
 par(mar = c(3, 6, 0.5, 6))
-colorbar_h(cv_range, "Coefficient of variation (CV)", pal = magma_pal)
+colorbar_h(cv_range, "Coefficient of variation (CV)", pal = cv_pal)
 ```
 
-# Measuring environmental novelty (MESS)
+# Environmental novelty at the existing records
 
-MESS compares each pixel's covariates to the range of values in the reference
-set (the occurrence records):
-
-- **Positive (blue)** — similar to the reference; the pixel sits inside the
-  observed covariate ranges.
-- **Negative (red)** — *novel*; the pixel falls outside the observed range of at
-  least one covariate, so a model trained on the reference set is extrapolating.
-- **Near zero (white)** — at the edge of the observed environmental space.
-
-The baseline (iteration 0) surfaces below use each species' own records. Note
-how similar the three are: the novel (red) regions fall in the same places, so a
-**single shared set of survey points** serves all three species.
+Before choosing any point, we ask the same question of every pixel in Kenya:
+*how unlike the environments we have already recorded this species in is it?*
+The three metrics below answer it in three different ways, each against that
+species' own reference records.
 
 ```{r}
-#| label: fig-baseline-mess
+#| label: baseline-metrics
 
-mess_baseline <- setNames(
-  lapply(ref_vals_0, \(rv) mess(cov_rast_ken_sub, rv)$mess), ken_mess_spp
-)
+# All three metrics at iteration 0, for each species, against its own records.
+mess_out       <- setNames(lapply(ref_vals_0, \(rv) mess(cov_rast_ken_sub, rv)), ken_mess_spp)
+mess_baseline  <- lapply(mess_out, \(m) m$mess)
+mod_baseline   <- lapply(mess_out, \(m) m$mod)
+exdet_baseline <- setNames(lapply(ref_vals_0, \(rv) exdet(cov_rast_ken_sub, rv)$exdet), ken_mess_spp)
+shape_baseline <- setNames(lapply(ref_vals_0, \(rv) shape_eval(rv)), ken_mess_spp)
+
+n_land <- length(land_cells)
+pct    <- \(x) 100 * sum(x, na.rm = TRUE) / n_land
+```
+
+## MESS — outside the *range* of the records
+
+**In plain language:** for each covariate, MESS asks whether a pixel's value
+falls inside the minimum–maximum range of the records, and reports the single
+worst covariate as a percentage of that range. Positive (blue) means every
+covariate falls inside the range the records span — the pixel is
+*interpolation*. Negative (red) means at least one covariate lies outside
+anything we have sampled, and the more negative the further outside. MESS is fast
+and easy to explain, but it only ever looks at one covariate at a time.
+
+```{r}
+#| label: fig-mess-baseline
+#| fig-width: 12
+#| fig-height: 5
 baseline_range <- clamp_range(mess_baseline)
+plot_species_row(mess_baseline, baseline_range, "MESS (negative = outside sampled range)")
+```
 
-layout(rbind(1:3, c(4, 4, 4)), heights = c(1, 0.28))
-par(mar = c(2, 2, 3, 1))
+Which covariate is responsible? The maps below give the *most dissimilar
+variable* (MOD) at every cell where MESS is negative — the covariate whose value
+sits furthest outside the range of that species' records. Cells that are inside
+the sampled range on every covariate have no MOD and stay blank.
+
+```{r}
+#| label: fig-mod
+#| fig-width: 12
+#| fig-height: 5
+
+# Fixed category order and palette, identical across the three panels, so a
+# colour always means the same covariate rather than "whatever ranked here".
+# Seven covariates account for essentially all the novelty; the rest fold into
+# "other". Hues were chosen to clear all-pairs colour-vision separation against
+# the pale "not novel" background (a map puts any two categories side by side,
+# so every pair has to be separable, not just neighbouring legend entries).
+mod_levels <- c("shrubs", "trees", "grassland", "cropland",
+                "built", "footprint", "prox_to_sea")
+mod_cols   <- c("#884422", "#228866", "#aa8800", "#ee4488",
+                "#880088", "#4444cc", "#0088cc")
+mod_other_col <- "#7a7a76"
+mod_bg_col    <- "#f2f2f0"
+mod_fill      <- c(mod_cols, mod_other_col)
+
+# Per-species tally over the novel cells; kept for the numbers quoted in the
+# text below, and for deciding what "other" has to absorb.
+mod_counts <- setNames(lapply(ken_mess_spp, \(sp) {
+  novel <- values(mess_baseline[[sp]])[, 1] < 0
+  modv  <- values(mod_baseline[[sp]])[, 1][which(novel)]
+  sort(table(names(cov_rast_ken_sub)[modv]), decreasing = TRUE)
+}), ken_mess_spp)
+
+mod_tab <- do.call(rbind, lapply(ken_mess_spp, \(sp) {
+  tt <- mod_counts[[sp]]
+  data.frame(
+    species        = sp,
+    `novel cells (%)` = round(pct(values(mess_baseline[[sp]])[, 1] < 0), 1),
+    `worst covariate` = names(tt)[1],
+    `share of novel cells (%)` = round(100 * tt[[1]] / sum(tt), 1),
+    `next covariate` = names(tt)[2],
+    check.names = FALSE
+  )
+}))
+
+# What "other" absorbs, and the largest share it ever reaches.
+mod_other_names <- sort(unique(unlist(lapply(
+  mod_counts, \(tt) setdiff(names(tt), mod_levels)))))
+mod_other_max <- max(sapply(mod_counts, \(tt) {
+  o <- tt[!names(tt) %in% mod_levels]
+  if (!length(o)) 0 else 100 * max(o) / sum(tt)
+}))
+
+# Land background: every cell with complete covariates, novel or not.
+land_mask <- rast(cov_rast_ken_sub[[1]])
+values(land_mask) <- NA_real_
+values(land_mask)[land_cells] <- 1
+
+# MOD as a category code, NA wherever the cell is not univariately novel.
+mod_code_rast <- function(sp) {
+  novel <- values(mess_baseline[[sp]])[, 1] < 0
+  nm    <- names(cov_rast_ken_sub)[values(mod_baseline[[sp]])[, 1]]
+  code  <- match(nm, mod_levels)
+  code[is.na(code) & !is.na(nm)] <- length(mod_levels) + 1L   # "other"
+  code[is.na(novel) | !novel] <- NA
+  r <- rast(cov_rast_ken_sub[[1]]); values(r) <- code; r
+}
+mod_rasts <- setNames(lapply(ken_mess_spp, mod_code_rast), ken_mess_spp)
+
+layout(rbind(1:3, c(4, 4, 4)), heights = c(1, 0.22))
+par(mar = c(0.5, 1, 2.5, 1))
 for (sp in ken_mess_spp) {
-  plot(mess_baseline[[sp]], col = divergent_pal, range = baseline_range,
-       legend = FALSE, axes = FALSE)
+  plot(land_mask, col = mod_bg_col, legend = FALSE, axes = FALSE)
+  # Fixed breaks, one per category, so a code always draws the same colour.
+  plot(mod_rasts[[sp]], breaks = seq(0.5, length(mod_fill) + 0.5, 1),
+       col = mod_fill, legend = FALSE, axes = FALSE, add = TRUE)
   title(main = bquote(italic(.(sp)))); lines(ken)
 }
-par(mar = c(3, 6, 0.5, 6))
-colorbar_h(baseline_range, "MESS (iteration 0)")
+par(mar = c(0, 1, 0, 1)); plot.new()
+legend("center", legend = c(mod_levels, "other", "not novel"),
+       fill = c(mod_fill, mod_bg_col),
+       border = c(rep(NA, length(mod_fill)), "grey60"),
+       ncol = 5, bty = "n", cex = 1.1,
+       title = "most dissimilar variable at cells where MESS < 0")
 ```
+
+The covariates folded into "other"
+(`r paste(mod_other_names, collapse = ", ")`) are the most dissimilar variable
+for at most `r round(mod_other_max, 1)`% of novel cells in any species.
+
+## ExDet — range novelty *and* novel combinations
+
+**In plain language:** ExDet keeps the MESS idea (Type 1, `exdet < 0`: at least
+one covariate outside the range the records cover) and adds the part MESS is
+blind to (Type 2, `exdet > 1`: every covariate sits individually in range, but no
+record shows the *combination* — high tree cover together with high human
+footprint would be one such combination, though this report does not check which
+combinations are responsible here). Values between 0 and 1 mean "similar" — the
+pixel sits inside the environmental cloud the records span. The map uses fixed
+classes, reds for Type 1, purples for Type 2, grey for similar.
+
+A reporting rule matters for everything that follows: a pixel's ExDet score is
+`nt1` where the pixel is Type 1 and `nt2` only where it is not. Type 2 is
+therefore invisible wherever Type 1 applies, which is most of Kenya at the
+outset — so the small Type-2 area below is a floor, not a measure of how much
+combinational novelty exists.
+
+```{r}
+#| label: fig-exdet-baseline
+#| fig-width: 12
+#| fig-height: 5.5
+plot_exdet_row(exdet_baseline)
+```
+
+## Shape — one continuous distance from the nearest record
+
+**In plain language:** Shape drops the Type 1 / Type 2 distinction and reports a
+single number per pixel: how far that pixel is, in environmental terms, from the
+nearest existing record. Distance is Mahalanobis, so it accounts for correlations
+between covariates, and Shape expresses it as a percentage of the reference set's
+own spread — the mean distance of the records from the middle of their own cloud.
+A value of 100 means "as far from the closest record as a typical record is from
+the centre of the record cloud"; the values of several thousand below therefore
+mean tens of times the typical spread.
+
+Two consequences are worth holding on to. It is a *nearest-neighbour* distance,
+so a single new record inside a novel region collapses Shape across that whole
+region — which is exactly what happens at iteration 20 below. And it is
+always `≥ 0` and defined everywhere, so unlike the ExDet types it never "runs
+out"; that is why it is the measure phase 3 keeps shrinking.
+
+```{r}
+#| label: fig-shape-baseline
+#| fig-width: 12
+#| fig-height: 5
+shape_hi <- max(unlist(lapply(shape_baseline, \(r) quantile(values(r), 0.99, na.rm = TRUE))))
+plot_species_row(shape_baseline, c(0, shape_hi),
+                 "Shape (Mahalanobis extrapolation; higher = more novel)",
+                 pal = magma_pal)
+```
+
+## What is outside the reference values, by species
+
+```{r}
+#| label: tbl-novelty-baseline
+novelty_tab <- do.call(rbind, lapply(ken_mess_spp, \(sp) {
+  mv <- values(mess_baseline[[sp]])[, 1]
+  ev <- values(exdet_baseline[[sp]])[, 1]
+  sv <- values(shape_baseline[[sp]])[, 1]
+  data.frame(
+    species = sp,
+    `records` = nrow(ref_vals_0[[sp]]),
+    `MESS < 0 (%)`      = round(pct(mv < 0), 1),
+    `ExDet Type 1 (%)`  = round(pct(ev < 0), 1),
+    `ExDet Type 2 (%)`  = round(pct(ev > 1), 1),
+    `similar (%)`       = round(pct(ev >= 0 & ev <= 1), 1),
+    `median Shape`      = round(median(sv, na.rm = TRUE), 2),
+    `max Shape`         = round(max(sv, na.rm = TRUE), 1),
+    check.names = FALSE
+  )
+}))
+knitr::kable(novelty_tab, row.names = FALSE)
+
+# Ranges quoted in the text below, read off the tables so they cannot drift.
+rng_txt  <- \(x, fmt = "%.1f") sprintf(paste0(fmt, "-", fmt), min(x), max(x))
+t1_txt   <- rng_txt(novelty_tab[["ExDet Type 1 (%)"]], "%.0f")
+t2_txt   <- rng_txt(novelty_tab[["ExDet Type 2 (%)"]], "%.2f")
+mod1_txt <- rng_txt(mod_tab[["share of novel cells (%)"]], "%.0f")
+t2_worst <- novelty_tab$species[which.max(novelty_tab[["ExDet Type 2 (%)"]])]
+```
+
+The three species tell nearly the same story. Univariate (Type 1) novelty is
+the dominant problem: `r t1_txt`% of Kenya lies outside the sampled range of at
+least one covariate — everything but the well-surveyed south-west. For all three
+species the covariate most often responsible is *shrubs* (`r mod1_txt`% of novel
+pixels; the runner-up differs by species, see the maps above): the records
+simply do not span the arid shrubland that covers most of the country.
+
+Combinational (Type 2) novelty looks rare at this stage — `r t2_txt`% of
+pixels, at most a few dozen cells, largest for *`r t2_worst`* — and sits mostly
+in the north-west around Lake Turkana, with a scatter further south. That
+near-absence is largely the masking rule noted above: ExDet only reports Type 2
+where a pixel is not already Type 1, and Type 1 covers most of the country. Once
+phase 1 strips the range novelty away, Type 2 grows by more than an order of
+magnitude before it collapses — see the trajectories.
+
+Shape rises away from the south-west, peaking in the same north-western block.
+Because the novel regions coincide closely across species, a single shared set
+of survey points serves all three.
 
 ```{r}
 #| label: species-similarity
-# Quantify how much the novel (negative) regions coincide across species, as
-# justification for a single shared point set.
+# Quantify how much the novel (negative) regions coincide across species.
 is_neg   <- lapply(mess_baseline, \(r) values(r)[, 1] < 0)
 overlap  <- \(a, b) sum(a & b, na.rm = TRUE) / sum(a | b, na.rm = TRUE)
 ov_pairs <- combn(ken_mess_spp, 2, \(p) overlap(is_neg[[p[1]]], is_neg[[p[2]]]))
@@ -295,109 +659,294 @@ cat(sprintf(
 ))
 ```
 
-# The selection method
+# Weighting novelty by uncertainty
 
-A single shared point is chosen each iteration and added to **every** species'
-reference set, so all three evolve around common locations. Two features define
-the search:
+Novelty alone would send researchers to the most extreme corner of the covariate
+space regardless of whether the models need help there. Every phase therefore
+multiplies its novelty measure by the per-pixel CV, so a pixel is attractive
+only if it is *both* environmentally new *and* one the current models predict
+poorly. The three products below are exactly the surfaces the three phases
+maximise (blank = the pixel is not of that novelty type, so it never becomes a
+candidate for that phase).
 
-1. **Weighted by uncertainty.** The selection surface is `MESS × CV`, so the
-   pick is the pixel that is both environmentally novel (strongly negative MESS)
-   *and* poorly constrained by the current models (high CV). Across species,
-   each pixel is driven by its most-dissimilar species.
-2. **Distinct cells.** Once a pixel is chosen it is masked out, forcing a *new*
-   location every iteration. This matters after novel space is used up:
-   otherwise the search re-picks the same near-zero pixel repeatedly, instead of
-   spreading points to improve coverage.
+```{r}
+#| label: baseline-weights
+exdet_vals_0 <- lapply(exdet_baseline, \(r) values(r)[, 1])
+shape_vals_0 <- lapply(shape_baseline, \(r) values(r)[, 1])
 
-Selection runs in two phases, tracked for reporting only (the criterion never
-changes): a **novelty** phase while any pixel is still novel (negative MESS
-somewhere), then a **coverage** phase once every pixel is inside the envelope.
+w_t1    <- setNames(lapply(ken_mess_spp, \(sp) cv_cols[[sp]] * type1_mag(exdet_vals_0[[sp]])), ken_mess_spp)
+w_t2    <- setNames(lapply(ken_mess_spp, \(sp) cv_cols[[sp]] * type2_mag(exdet_vals_0[[sp]])), ken_mess_spp)
+w_shape <- setNames(lapply(ken_mess_spp, \(sp) cv_cols[[sp]] * shape_vals_0[[sp]]),            ken_mess_spp)
+
+w_rng <- \(wl) c(0, max(unlist(lapply(wl, \(v) quantile(v, 0.99, na.rm = TRUE))), na.rm = TRUE))
+```
+
+## CV × ExDet Type 1 — the phase 1 weighting
+
+Bright cells lie far outside the sampled range *and* the models predict them
+poorly. The Type-1 region covers most of the country outside the south-west, but
+the CV weight concentrates the attractive part of it in the north and east. Note
+how differently the three species score the *same* pixels: because the
+cross-species reducer is `pmax`, whichever species is most
+extrapolated-and-uncertain at a pixel sets its score, and we record it as having
+driven that pick. The table at the end of the report lists which species that
+turns out to be, point by point.
+
+```{r}
+#| label: fig-weight-type1
+#| fig-width: 12
+#| fig-height: 5
+plot_species_row(lapply(w_t1, as_rast), w_rng(w_t1),
+                 "CV x ExDet Type 1 (phase 1 selection surface)", pal = magma_pal)
+```
+
+## CV × ExDet Type 2 — the phase 2 weighting
+
+Only the combinationally novel pixels are candidates, so almost all of Kenya is
+blank at iteration 0 — a scatter of pixels around Lake Turkana and the northern
+rangelands. This is *not* why phase 2 turns out to be short: by the time phase 2
+actually begins, phase 1 has cleared Type 1 and the Type-2 set is at its largest.
+What ends phase 2 after two picks is the renormalisation the note below the
+trajectories describes.
+
+```{r}
+#| label: fig-weight-type2
+#| fig-width: 12
+#| fig-height: 5
+plot_species_row(lapply(w_t2, as_rast), w_rng(w_t2),
+                 "CV x ExDet Type 2 (phase 2 selection surface)", pal = magma_pal)
+```
+
+## CV × Shape — the phase 3 weighting
+
+Defined everywhere, so it never runs out. Phase 3 does *not* read this surface
+over all of Kenya: it reads it only at the k-medoid cluster centres below.
+
+```{r}
+#| label: fig-weight-shape
+#| fig-width: 12
+#| fig-height: 5
+plot_species_row(lapply(w_shape, as_rast), w_rng(w_shape),
+                 "CV x Shape (phase 3 selection surface)", pal = magma_pal)
+```
+
+# The three-phase selection method
+
+Each iteration chooses a single shared point and adds it to every species'
+reference set, so all three evolve around common locations. Three features stay
+constant across all phases:
+
+1. **All species, every iteration.** We recompute MESS, ExDet and Shape for all
+   three species on the current shared reference set, and combine the candidate
+   surfaces across species with `pmax` — the most novel-and-uncertain species
+   drives each cell.
+2. **Weighted by uncertainty.** Every phase maximises a non-negative
+   `CV × novelty` product, so the criterion can never flip sign — the failure
+   mode of a `min(MESS × CV)` rule, which inverts to *avoid* uncertain pixels
+   once nothing univariately novel remains.
+3. **Distinct cells.** We mask out each pixel as we choose it, forcing a new
+   location every iteration.
+
+The phases differ in *which* novelty measure they maximise and *which pixels are
+eligible*:
+
+1. **Phase 1 — maximise `CV × Type-1`** (`−exdet` where `exdet < 0`) over all
+   pixels. Runs until no `exdet < 0` pixel remains.
+2. **Phase 2 — maximise `CV × Type-2`** (`exdet − 1` where `exdet > 1`) over all
+   pixels. Runs until no `exdet > 1` pixel remains.
+3. **Phase 3 — maximise `CV × Shape` over cluster medoids only.** We partition
+   the landscape into `n_clust` environmental clusters with k-medoids on the
+   standardised covariates. Each cluster contributes exactly one candidate — its
+   medoid, the most typical land cell in that cluster. The phase repeatedly
+   takes the unused medoid with the highest `CV × Shape` and adds it.
+
+Phase 3 is the deliberate change of intent. Phases 1 and 2 chase extremes,
+because extremes are what create range and combination extrapolation. Once those
+run out, maximising `CV × Shape` pixel-by-pixel would send researchers to
+whatever single pixel is furthest from the nearest existing record — which will
+tend to be an environmental outlier representing little else in the country.
+Restricting phase 3 to medoids replaces "the most extreme pixel" with "the most
+representative pixel of an environment we haven't sampled": it bounds how
+novel a chosen site can be, rather than maximising it, while still ranking the
+candidates by uncertainty. (This report does not run the unrestricted-Shape
+alternative, so the comparison is an argument for the design, not a measured
+result.)
+
+## Partitioning the landscape into k-medoid clusters
+
+```{r}
+#| label: kmedoid-partition
+
+# Standardise over the whole landscape so Euclidean distances weight every
+# covariate equally, then partition the land cells.
+Z_land <- scale(values(cov_rast_ken_sub)[land_cells, , drop = FALSE])
+
+km <- kmedoids(Z_land, k = n_clust, seed = 1)
+medoid_cells <- land_cells[km$medoid]           # raster cell of each medoid
+
+clust_rast <- rast(cov_rast_ken_sub[[1]])
+values(clust_rast) <- NA_real_
+values(clust_rast)[land_cells] <- km$cluster
+
+# Clusters that already hold at least one existing record, pooled over species:
+# a visited site is sampling effort whichever species were caught there, and the
+# design is shared. Every other cluster is an environment type never sampled.
+record_cells   <- unique(cellFromXY(cov_rast_ken_sub, crds(ken_points)))
+record_cells   <- record_cells[!is.na(record_cells)]
+sampled_clust  <- unique(km$cluster[match(record_cells, land_cells)])
+sampled_clust  <- sampled_clust[!is.na(sampled_clust)]
+
+# Binary derivative of clust_rast: 1 = cluster already sampled, 0 = gap, NA off
+# land (`%in%` would turn the off-land NAs into 0, so carry them through).
+clust_vals    <- values(clust_rast)[, 1]
+sampled_rast  <- rast(clust_rast)
+values(sampled_rast) <- ifelse(is.na(clust_vals), NA_real_,
+                               as.numeric(clust_vals %in% sampled_clust))
+
+cat(sprintf(
+  "%d land cells partitioned into %d clusters (converged in %d iterations).\n",
+  length(land_cells), n_clust, km$iters))
+clust_sizes <- as.integer(table(km$cluster))
+cat(sprintf("Cluster sizes: median %.0f cells, range %d-%d.\n",
+            median(clust_sizes), min(clust_sizes), max(clust_sizes)))
+cat(sprintf("%d of %d clusters already hold an existing record; %d are gaps.\n",
+            length(sampled_clust), n_clust, n_clust - length(sampled_clust)))
+```
+
+Each cluster is one "type" of environment, and its medoid is the real land cell
+that best represents it — the only site phase 3 can ever pick from that cluster.
+The right-hand panel collapses the partition to what matters for the design:
+white clusters already hold an existing record, black clusters are environment
+types nobody has ever sampled.
+
+The black area is the gap the design is working into, but note what phase 3 does
+*not* do: it does not confine itself to that gap. Every unused medoid is a
+candidate, so it can still pick a white cluster if the `CV × Shape` there is
+high, and nothing stops two points landing in the same cluster. The end of the
+report says how much of that happens in this run.
+
+```{r}
+#| label: fig-kmedoids
+#| fig-width: 12
+#| fig-height: 6.5
+med_xy <- xyFromCell(cov_rast_ken_sub, medoid_cells)
+# Bottom margin reserved on both panels for the legend: Kenya fills its panel,
+# so a legend inside the map area clips against the panel edge.
+par(mfrow = c(1, 2), mar = c(3, 1, 3, 1))
+plot(clust_rast, col = sample(hcl.colors(n_clust, "Spectral")), legend = FALSE,
+     axes = FALSE, main = sprintf("%d environmental clusters", n_clust))
+lines(ken)
+
+# Fixed breaks (not a continuous ramp) so 0 is always black and 1 always white.
+plot(sampled_rast, breaks = c(-0.5, 0.5, 1.5), col = c("black", "white"),
+     legend = FALSE, axes = FALSE,
+     main = sprintf("%d of %d clusters already sampled",
+                    length(sampled_clust), n_clust))
+lines(ken, col = "grey60")
+# Medoids in orange: legible on both the black and the white clusters.
+points(med_xy, pch = 21, cex = 0.8, bg = phase_cols[["medoid"]], col = "grey30")
+legend("bottom", inset = c(0, -0.06), xpd = NA, horiz = TRUE, bty = "n",
+       cex = 0.9, legend = c("holds a record", "never sampled", "medoid"),
+       pch = c(22, 22, 21), pt.cex = c(1.7, 1.7, 1),
+       pt.bg = c("white", "black", phase_cols[["medoid"]]),
+       col = c("grey40", "grey40", "grey30"))
+```
 
 # Running the selection
 
 The loop below does everything in one pass. At each iteration it holds the
-reference set (records + points chosen so far) and, for every species,
-
-- computes **MESS** (drives the pick and the objective trajectory), and
-- computes **ExDet** (the independent validation metric, §6),
-
-recording per-iteration totals and keeping every iteration's surface (the rasters
-are small). It then selects and adds the next shared point. The evolution grids
-below just pick 9 evenly-spaced iterations out of the full history.
+reference set (records + points chosen so far) and, for every species, computes
+MESS, ExDet and Shape; records per-species per-iteration totals;
+keeps every iteration's surface (the rasters are small); then selects and adds
+the next shared point using the phase rule above.
 
 ```{r}
 #| label: run-selection
 #| code-fold: show
 #| cache: false
 
-n_points   <- 200
 grid_iters <- round(seq(0, n_points, length.out = 9))  # 9 iters shown in grids
 
 ref_vals     <- ref_vals_0        # grows as points are added (shared)
 chosen_cells <- integer(0)        # grid cells already selected (kept distinct)
 
 selected_points <- data.frame(
-  longitude = numeric(0), latitude = numeric(0),
-  source_species = character(0), iteration = integer(0), phase = character(0)
+  longitude = numeric(0), latitude = numeric(0), source_species = character(0),
+  iteration = integer(0), phase = character(0), sel_value = numeric(0),
+  cluster = integer(0)
 )
 
-# Per-iteration scalar trajectories, summed over all cells and species.
-traj <- data.frame(
-  iteration   = 0:n_points,
-  total_mess  = NA_real_,   # sum of MESS (the objective)
-  exdet_type1 = NA_real_,   # sum |exdet| where exdet < 0  (univariate novelty)
-  exdet_type2 = NA_real_    # sum (exdet - 1) where exdet > 1 (combinational)
-)
+# Per-iteration, per-species scalar trajectories.
+traj_list <- vector("list", n_points + 1)
 
-# Keep every iteration's surface, per species (the rasters are small). Indexed by
+# Keep every iteration's surface, per species (small rasters). Indexed by
 # iteration: [[sp]][[i + 1]] is the surface after i points have been added.
 mess_surfaces  <- setNames(lapply(ken_mess_spp, \(s) vector("list", n_points + 1)), ken_mess_spp)
 exdet_surfaces <- setNames(lapply(ken_mess_spp, \(s) vector("list", n_points + 1)), ken_mess_spp)
-
-novelty_exhausted       <- FALSE
-novelty_exhaustion_iter <- NA_integer_
+shape_surfaces <- setNames(lapply(ken_mess_spp, \(s) vector("list", n_points + 1)), ken_mess_spp)
 
 for (i in 0:n_points) {
 
-  # MESS (selection + objective) and ExDet (validation) for every species.
-  mess_i  <- setNames(lapply(ref_vals, \(rv) mess(cov_rast_ken_sub, rv)$mess),  ken_mess_spp)
+  # All three metrics for every species on the current shared reference set.
+  mess_i  <- setNames(lapply(ref_vals, \(rv) mess(cov_rast_ken_sub, rv)$mess),   ken_mess_spp)
   exdet_i <- setNames(lapply(ref_vals, \(rv) exdet(cov_rast_ken_sub, rv)$exdet), ken_mess_spp)
+  shape_i <- setNames(lapply(ref_vals, \(rv) shape_eval(rv)),                    ken_mess_spp)
 
   mess_vals  <- lapply(mess_i,  \(r) values(r)[, 1])
   exdet_vals <- lapply(exdet_i, \(r) values(r)[, 1])
-  traj$total_mess[i + 1]  <- sum(sapply(mess_vals,  \(v) sum(v, na.rm = TRUE)))
-  traj$exdet_type1[i + 1] <- sum(sapply(exdet_vals, \(v) sum(abs(v[v < 0]), na.rm = TRUE)))
-  traj$exdet_type2[i + 1] <- sum(sapply(exdet_vals, \(v) sum(v[v > 1] - 1,  na.rm = TRUE)))
+  shape_vals <- lapply(shape_i, \(r) values(r)[, 1])
+
+  traj_list[[i + 1]] <- data.frame(
+    iteration   = i,
+    species     = ken_mess_spp,
+    mess_mean   = sapply(mess_vals,  \(v) mean(v, na.rm = TRUE)),
+    exdet_type1 = sapply(exdet_vals, \(v) sum(-v[v < 0],    na.rm = TRUE)),
+    exdet_type2 = sapply(exdet_vals, \(v) sum(v[v > 1] - 1, na.rm = TRUE)),
+    shape_mean  = sapply(shape_vals, \(v) mean(v, na.rm = TRUE)),
+    row.names   = NULL
+  )
 
   for (sp in ken_mess_spp) {
     mess_surfaces[[sp]][[i + 1]]  <- mess_i[[sp]]
     exdet_surfaces[[sp]][[i + 1]] <- exdet_i[[sp]]
+    shape_surfaces[[sp]][[i + 1]] <- shape_i[[sp]]
   }
 
   if (i == n_points) break
 
-  # Selection surface: MESS x CV, most-dissimilar species drives each pixel;
-  # already-chosen pixels are masked so every pick is distinct.
-  sel_cols <- setNames(lapply(ken_mess_spp, \(sp) values(mess_i[[sp]] * cv[[sp]])[, 1]),
-                       ken_mess_spp)
-  cell_min <- do.call(pmin, c(sel_cols, na.rm = TRUE))
-  cell_min[chosen_cells] <- NA
-  if (all(is.na(cell_min))) { message("All cells chosen at iter ", i); break }
-
-  sel_cell <- which.min(cell_min)                                   # global pick
-  sp_name  <- ken_mess_spp[which.min(sapply(sel_cols, \(v) v[sel_cell]))]
-
-  # Phase bookkeeping: novelty until no negative MESS remains anywhere.
-  if (!novelty_exhausted && min(sapply(mess_vals, \(v) min(v, na.rm = TRUE))) >= 0) {
-    novelty_exhausted <- TRUE
-    novelty_exhaustion_iter <- i
+  # Phase rule: Type-1 anywhere, then Type-2 anywhere, then CV x Shape at the
+  # unused cluster medoids. Each candidate surface is CV x novelty, reduced
+  # across species by pmax, with already-chosen cells masked out.
+  s1 <- lapply(ken_mess_spp, \(sp) cv_cols[[sp]] * type1_mag(exdet_vals[[sp]]))
+  cell1 <- pmax_na(s1); cell1[chosen_cells] <- NA
+  if (any(!is.na(cell1))) {
+    phase <- "type1"; s_sel <- s1; cell <- cell1
+  } else {
+    s2 <- lapply(ken_mess_spp, \(sp) cv_cols[[sp]] * type2_mag(exdet_vals[[sp]]))
+    cell2 <- pmax_na(s2); cell2[chosen_cells] <- NA
+    if (any(!is.na(cell2))) {
+      phase <- "type2"; s_sel <- s2; cell <- cell2
+    } else {
+      s3 <- lapply(ken_mess_spp, \(sp) cv_cols[[sp]] * shape_vals[[sp]])
+      cell3 <- pmax_na(s3)
+      # Phase 3 candidates: cluster medoids only, minus anything already taken.
+      cand  <- setdiff(medoid_cells, chosen_cells)
+      keep  <- rep(NA_real_, length(cell3)); keep[cand] <- cell3[cand]
+      cell3 <- keep
+      if (all(is.na(cell3))) { message("No medoid candidates left at iter ", i); break }
+      phase <- "medoid"; s_sel <- s3; cell <- cell3
+    }
   }
 
-  xy <- xyFromCell(mess_i[[sp_name]], sel_cell)
+  sel_cell  <- which.max(cell)                                       # global pick
+  sel_value <- cell[sel_cell]
+  sp_name   <- ken_mess_spp[which.max(sapply(s_sel, \(v) v[sel_cell]))]
+  sel_clust <- km$cluster[match(sel_cell, land_cells)]
+
+  xy <- xyFromCell(cov_rast_ken_sub, sel_cell)
   selected_points <- rbind(selected_points, data.frame(
     longitude = xy[1, "x"], latitude = xy[1, "y"], source_species = sp_name,
-    iteration = i, phase = if (novelty_exhausted) "coverage" else "novelty"
+    iteration = i, phase = phase, sel_value = sel_value, cluster = sel_clust
   ))
   chosen_cells <- c(chosen_cells, sel_cell)
 
@@ -411,181 +960,335 @@ for (i in 0:n_points) {
   for (sp in ken_mess_spp) ref_vals[[sp]] <- rbind(ref_vals[[sp]], new_vals)
 }
 
+traj <- do.call(rbind, traj_list)
+phase_levels <- c("type1", "type2", "medoid")
+selected_points$phase <- factor(selected_points$phase, levels = phase_levels)
+
+n_by_phase <- table(selected_points$phase)
 cat(sprintf("Selected %d distinct points.\n", nrow(selected_points)))
-cat(sprintf("Novelty exhausted at iteration %s.\n",
-            ifelse(is.na(novelty_exhaustion_iter), "never", novelty_exhaustion_iter)))
-cat(sprintf("Total MESS: %.0f (start) -> %.0f (end).\n",
-            traj$total_mess[1], traj$total_mess[nrow(traj)]))
+cat("Points per phase:\n"); print(n_by_phase)
 ```
 
 # Results
 
-## Novelty is reduced as points are added
+## How many points per phase
 
-The objective — total MESS summed over every pixel and species — rises steeply
-as the strongly-novel pixels are absorbed and the covariate envelope widens to
-cover them (dashed line: novelty exhausted, no negative MESS left anywhere).
-Gains continue past that point: each distinct new pixel keeps shifting the
-reference distribution and pulling more area toward higher similarity, so the
-full 200-point budget does useful work. The climb is not strictly monotonic —
-the criterion picks the *most-dissimilar* pixel, not the one that maximises the
-sum — but the trend is clearly upward.
+Phase 1 (univariate novelty) absorbs the extreme, out-of-range environments
+first; it exhausts once every pixel is univariately in range. Phase 2
+(combinational novelty) ends when no pixel still qualifies as Type 2 — in this
+run after two picks, because those picks inflate the Mahalanobis normaliser Type
+2 divides by (see the note below the trajectories). Phase 3 then takes the
+remainder of the budget, each iteration selecting the highest-scoring remaining
+medoid; because we recompute Shape after every addition, that ranking changes
+each time rather than standing fixed in advance.
 
 ```{r}
-#| label: fig-mess-trajectory
-#| fig-width: 9
-#| fig-height: 5
-p <- ggplot(traj, aes(iteration, total_mess)) +
-  geom_line(colour = col_pos, linewidth = 0.8) +
-  labs(x = "Iteration", y = "Total MESS (summed over cells and species)",
-       title = "Total surface MESS as distinct points are added") +
-  theme_minimal()
-if (!is.na(novelty_exhaustion_iter)) {
-  p <- p + geom_vline(xintercept = novelty_exhaustion_iter, linetype = "dashed",
-                      colour = col_neg) +
-    annotate("text", x = novelty_exhaustion_iter,
-             y = min(traj$total_mess, na.rm = TRUE), label = "novelty exhausted",
-             hjust = -0.05, vjust = 0, colour = col_neg, size = 3)
-}
-p
+#| label: points-by-phase
+tibble::enframe(n_by_phase, name = "phase", value = "points") |>
+  mutate(phase = phase_labels[as.character(phase)],
+         points = as.integer(points)) |>
+  knitr::kable()
 ```
 
-## The 200 selected points
+## The selected points
 
-The deliverable: 200 shared survey locations. Points chosen during the
-**novelty** phase (red) target environmentally extrapolated areas; **coverage**
-points (blue) spread through the remaining space once novelty is used up.
+The deliverable: shared survey locations, with colour marking the phase that
+chose each one. Phase 1 goes wherever the most extreme covariate values happen to
+be, and those run the length of the country — the Turkana basin, the coastal
+strip and inland sites alike — rather than clustering at one margin. Phase 3
+points are cluster medoids, so they sit in the *body* of the unsampled
+environments rather than at their edges. The full set — selection order, source
+species, phase, cluster and the `CV × novelty` value at selection — goes to
+`k_m_r_selected_points.csv` in `kenya_mess/`, and the table at the end of the
+report prints it in full.
 
 ```{r}
 #| label: fig-selected-points
 #| fig-width: 7
 #| fig-height: 8
 plot(ken, main = sprintf("%d selected survey points", nrow(selected_points)))
-phase_cols <- c(novelty = col_neg, coverage = col_pos)
 points(vect(selected_points, geom = c("longitude", "latitude"), crs = crs(cov_rast_ken_sub)),
-       pch = 19, cex = 0.9, col = phase_cols[selected_points$phase])
-legend("bottomleft", legend = names(phase_cols), pch = 19, col = phase_cols,
-       bty = "n", title = "phase", inset = 0.02)
+       pch = 19, cex = 1, col = phase_cols[as.character(selected_points$phase)])
+legend("bottomleft", legend = phase_labels[phase_levels], pch = 19,
+       col = phase_cols[phase_levels], bty = "n", title = "selected in", inset = 0.02)
 ```
 
 ```{r}
-#| label: points-by-phase
-selected_points |> count(phase, name = "points") |> knitr::kable()
+#| label: export-points
+
+# Shape at each selected point at the moment it was selected: how novel the site
+# a researcher is being sent to actually is. Quoted in the trajectory section and
+# tabulated at the end of the report.
+shape_at_pt <- sapply(seq_len(nrow(selected_points)), \(j) {
+  cell <- cellFromXY(cov_rast_ken_sub,
+                     as.matrix(selected_points[j, c("longitude", "latitude")]))
+  max(sapply(ken_mess_spp, \(sp)
+             values(shape_surfaces[[sp]][[selected_points$iteration[j] + 1]])[cell, 1]))
+})
+selected_points$shape_at_selection <- shape_at_pt
+
+# Per-phase spread, quoted in the text later.
+sh_get <- function(ph, f) {
+  v <- selected_points$shape_at_selection[selected_points$phase == ph]
+  if (!length(v)) NA_integer_ else round(f(v))
+}
+
+selected_points <- selected_points |>
+  mutate(priority = row_number(), .before = 1)
+write_csv(selected_points, "k_m_r_selected_points.csv")
 ```
 
-## Evolution of the novelty surface
+# Evolution of the novelty metrics
 
-How the MESS surface fills in for the representative species
-(*`r rep_sp`*; the others are near-identical). Iteration 0, iteration 200, and 7
-evenly-spaced steps between, with the points selected so far overlaid (dark =
-first selected, yellow = last).
+## Trajectories
+
+Three of the four panels show the design working: mean MESS rises (fewer pixels
+are univariately out of range), ExDet Type 1 collapses to zero, and mean Shape
+declines. ExDet Type 2 moves the other way first — it is close to zero at
+iteration 0, grows by more than an order of magnitude through phase 1, and only
+then collapses. That is the masking rule at work, not the design creating
+novelty; see the note below. Note also that the sharp fall in Shape coincides
+with the two Type-2 picks rather than with any part of phase 1. One line per
+species; dashed lines mark the phase boundaries (end of Type 1, end of Type 2).
+
+```{r}
+#| label: fig-trajectories
+#| fig-width: 10
+#| fig-height: 7
+metric_levels <- c("MESS (mean over cells)", "ExDet Type 1 (total, univariate)",
+                   "ExDet Type 2 (total, combinational)",
+                   "Shape (mean over cells)")
+traj_long <- traj |>
+  transmute(iteration, species,
+            `MESS (mean over cells)`             = mess_mean,
+            `ExDet Type 1 (total, univariate)`   = exdet_type1,
+            `ExDet Type 2 (total, combinational)`= exdet_type2,
+            `Shape (mean over cells)`            = shape_mean) |>
+  pivot_longer(-c(iteration, species), names_to = "metric", values_to = "value") |>
+  mutate(metric  = factor(metric, levels = metric_levels),
+         species = factor(species, levels = ken_mess_spp))
+
+n_type1 <- sum(selected_points$phase == "type1")
+n_type2 <- sum(selected_points$phase == "type2")
+phase_bounds <- c(n_type1, n_type1 + n_type2)
+phase_bounds <- phase_bounds[phase_bounds > 0 & phase_bounds < n_points]
+
+ggplot(traj_long, aes(iteration, value, colour = species)) +
+  geom_vline(xintercept = phase_bounds, linetype = "dashed",
+             colour = "grey55", linewidth = 0.5) +
+  geom_line(linewidth = 0.9) +
+  scale_colour_manual(values = setNames(
+    c("#D6604D", "#4393C3", "#1B7837"), ken_mess_spp)) +
+  facet_wrap(~ metric, scales = "free_y") +
+  labs(x = "Iteration (points added)", y = "Value",
+       title = "Novelty metrics as the three-phase points are added") +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "bottom")
+```
+
+Reading that decline at the individual sites rather than over the map shows what
+phase 3 is for. Phase 1 takes whatever is most extreme at the time, so the Shape
+value at its picks, at the moment we picked them, spans ≈ `r sh_get("type1", min)`
+to ≈ `r format(sh_get("type1", max), big.mark = ",")` — a couple of sites tens of
+times more extrapolated than the typical spread of the records, others barely
+novel at all. Every phase-3 medoid pick falls between ≈ `r sh_get("medoid", min)`
+and ≈ `r sh_get("medoid", max)`. The medians are much closer together than that
+contrast suggests (`r sh_get("type1", median)` for phase 1 against
+`r sh_get("medoid", median)` for phase 3), so the trade is not that later sites
+are uniformly less novel — it is that phase 3 *cannot* send anyone to an extreme
+outlier.
+
+::: {.callout-note collapse="true"}
+## Why ExDet Type 2 climbs steeply before it collapses (an artefact, not created novelty)
+
+A pixel reports its ExDet score as `ifelse(nt1 == 0, nt2, nt1)`, so while a pixel
+is univariately novel its Type 1 score masks its combinational novelty. Almost
+all of Kenya starts out Type 1, which is why the Type-2 area looks negligible at
+iteration 0; as phase 1 strips Type 1 away, those pixels reveal Type 2 values
+they had all along, and the sum climbs by more than an order of magnitude. The
+design creates none of that novelty — ExDet simply was not reporting it.
+
+On top of that, `nt2 = mahalanobis / mah_max` divides by the *most-extreme
+reference point*, so adding an extreme point inflates `mah_max` and rescales the
+whole surface. That is what ends phase 2: two Type-2 picks move the normaliser
+far enough that no pixel exceeds the threshold, and Type 2 drops to exactly zero
+for the rest of the run. So the shortness of phase 2 is a property of the metric,
+not evidence that the design has resolved the combinational novelty.
+:::
+
+## Surface evolution, species by species
+
+Iteration 0, iteration `r n_points`, and 7 evenly-spaced steps between; each panel
+overlays the points chosen so far (dark = first selected, yellow = last). One
+3 × 3 grid per species, for each of the three metrics.
+
+### MESS
+
+Univariate novelty (red) gives way to similarity (blue) as phase 1 absorbs the
+extreme environments.
 
 ```{r}
 #| label: fig-mess-evolution
 #| fig-width: 10
 #| fig-height: 11
-mess_shown <- mess_surfaces[[rep_sp]][grid_iters + 1]   # 9 surfaces to display
-plot_mess_evolution(
-  surfaces   = mess_shown,
-  iters      = grid_iters,
-  pts        = selected_points,
-  mess_range = clamp_range(mess_shown),
-  title      = bquote(italic(.(rep_sp)) * " — MESS over the selected points")
-)
-```
-
-## Exported points
-
-The full point set with priority (selection order), source species, and phase,
-written to `k_m_r_selected_points.csv`.
-
-```{r}
-#| label: export-points
-selected_points <- selected_points |>
-  mutate(priority = row_number(), .before = 1)
-write_csv(selected_points, "k_m_r_selected_points.csv")
-head(selected_points, 10) |> knitr::kable(digits = 3)
-```
-
-# Validation with ExDet
-
-MESS drives the selection, so it is not an independent check. **ExDet**
-(Extrapolation Detection) is a second, richer novelty metric computed on the
-same growing reference set (already recorded in the loop above). It splits
-novelty into two kinds, encoded in a single value per pixel:
-
-- **`exdet < 0` — Type 1 (univariate):** outside the observed range of at least
-  one covariate. This is the same regime MESS flags as negative.
-- **`0 ≤ exdet ≤ 1` — similar:** in range univariately and inside the
-  combinational (Mahalanobis) envelope.
-- **`exdet > 1` — Type 2 (combinational):** every covariate is individually in
-  range, but their *combination* is novel.
-
-## Novelty trajectories
-
-**Type 1** novelty collapses to zero within the first ~16 points (grey dotted
-line): each extreme point widens some covariate's observed range, quickly
-bringing every pixel univariately in-range — exactly what the MESS objective is
-driving.
-
-**Type 2** novelty only wobbles *while Type 1 is still collapsing* (all the
-movement is left of the grey line), then settles into a slow decline. It never
-reaches zero: combinational novelty is much harder to eliminate than univariate
-novelty, so some pixels remain novel *combinations* even after 200 points.
-
-::: {.callout-note collapse="true"}
-## Why Type 2 rises before the grey line (an ExDet artefact, not created novelty)
-
-A pixel reports its ExDet score as `ifelse(nt1 == 0, nt2, nt1)`, so while it is
-univariately novel its combinational novelty is **masked**; as Type 1 collapses,
-those pixels reveal their Type 2 values and swell the sum. On top of that,
-`nt2 = mahalanobis / mah_max` is normalised by the *most-extreme reference
-point*, so adding an extreme point transiently inflates `mah_max` and rescales
-the whole surface. Both effects are active only while the reference set is
-univariately unsaturated — i.e. left of the grey line — after which Type 2
-declines cleanly.
-:::
-
-```{r}
-#| label: fig-exdet-trajectory
-#| fig-width: 9
-#| fig-height: 5
-exdet_long <- traj |>
-  select(iteration, exdet_type1, exdet_type2) |>
-  pivot_longer(-iteration, names_to = "novelty", values_to = "total") |>
-  mutate(novelty = recode(novelty, exdet_type1 = "Type 1 (univariate)",
-                          exdet_type2 = "Type 2 (combinational)"))
-type1_zero_iter <- traj$iteration[which(traj$exdet_type1 == 0)[1]]
-
-p <- ggplot(exdet_long, aes(iteration, total, colour = novelty)) +
-  geom_line(linewidth = 0.9) +
-  scale_colour_manual(values = c("Type 1 (univariate)" = "#D6604D",
-                                 "Type 2 (combinational)" = "#762A83")) +
-  labs(x = "Iteration", y = "Total novelty (summed over cells and species)",
-       colour = NULL, title = "ExDet novelty as points are added") +
-  theme_minimal() + theme(legend.position = "top")
-if (!is.na(type1_zero_iter)) {
-  p <- p + geom_vline(xintercept = type1_zero_iter, linetype = "dotted",
-                      colour = "grey50", linewidth = 0.6)
+mess_range_all <- clamp_range(unlist(
+  lapply(ken_mess_spp, \(sp) mess_surfaces[[sp]][grid_iters + 1]), recursive = FALSE))
+for (sp in ken_mess_spp) {
+  plot_mess_evolution(
+    surfaces   = mess_surfaces[[sp]][grid_iters + 1],
+    iters      = grid_iters,
+    pts        = selected_points,
+    mess_range = mess_range_all,
+    title      = bquote(italic(.(sp)) * " — MESS over the selected points")
+  )
 }
-p
 ```
 
-## Surface evolution
+### ExDet
 
-The ExDet surface for the representative species. Type 1 (red) extrapolation
-covers most of Kenya at iteration 0 and is essentially gone within the first
-grid step; a residual Type 2 (purple) combinational-novelty patch in the
-highlands persists and slowly shrinks.
+Type 1 (red) covers nearly the whole country at iteration 0. It shrinks steadily
+through phase 1 but is still extensive at the first grid step and only clears
+around iteration 12. Type 2 (purple) runs in the opposite direction: there is
+essentially none at iteration 0, a large north-western block appears as the
+Type-1 mask lifts from those pixels, and it then disappears completely between
+the iteration-19 and iteration-25 panels, when the two Type-2 picks land inside
+it. From there on ExDet classes every pixel "similar" for all three species.
 
 ```{r}
 #| label: fig-exdet-evolution
 #| fig-width: 10
 #| fig-height: 11
-plot_exdet_evolution(
-  surfaces = exdet_surfaces[[rep_sp]][grid_iters + 1],   # 9 surfaces to display
-  iters    = grid_iters,
-  pts      = selected_points,
-  title    = bquote(italic(.(rep_sp)) * " — ExDet over the selected points")
-)
+for (sp in ken_mess_spp) {
+  plot_exdet_evolution(
+    surfaces = exdet_surfaces[[sp]][grid_iters + 1],
+    iters    = grid_iters,
+    pts      = selected_points,
+    title    = bquote(italic(.(sp)) * " — ExDet over the selected points")
+  )
+}
+```
+
+### Shape
+
+The bright north-western block at iteration 0 is the most extrapolated region for
+all three species, and it survives the whole of phase 1 — it is still there in
+the iteration-19 panel, after we have placed twenty points. It vanishes between
+iterations 19 and 25, when the two Type-2 points land inside it: because Shape
+measures distance to the *nearest* record, two records in the middle of a novel
+region collapse the whole region at once. After that the surface darkens slowly
+as the medoid points fill the remaining gaps.
+
+All nine panels share one colour scale, set by that iteration-0 extreme, so it
+compresses late-iteration structure into the dark end — read the *Shape* panel of
+the trajectory figure above for what is still changing after iteration 25.
+
+```{r}
+#| label: fig-shape-evolution
+#| fig-width: 10
+#| fig-height: 11
+shape_range <- c(0, as.numeric(quantile(unlist(lapply(
+  ken_mess_spp, \(sp) lapply(shape_surfaces[[sp]][grid_iters + 1], \(r) values(r)[, 1])
+)), 0.99, na.rm = TRUE)))
+for (sp in ken_mess_spp) {
+  plot_shape_evolution(
+    surfaces    = shape_surfaces[[sp]][grid_iters + 1],
+    iters       = grid_iters,
+    pts         = selected_points,
+    shape_range = shape_range,
+    title       = bquote(italic(.(sp)) * " — Shape over the selected points")
+  )
+}
+```
+
+
+# What the design covers
+
+## Environment types with any sampling
+
+The same black-and-white view of the `r n_clust` environmental clusters as
+before, but now counting both kinds of point: white clusters hold at least
+one existing record *or* at least one newly selected site, black clusters hold
+neither and remain entirely unsampled. The map overlays the selected points, so
+the black-to-white conversions the design achieves show directly.
+
+```{r}
+#| label: fig-cluster-coverage
+#| fig-width: 7
+#| fig-height: 8
+
+sel_clusters  <- stats::na.omit(selected_points$cluster)
+covered_after <- sort(unique(c(sampled_clust, sel_clusters)))
+new_clusters  <- setdiff(covered_after, sampled_clust)
+
+# Same binary construction as the earlier partition figure: fixed breaks so 0 is
+# always black and 1 always white, NA carried through off-land.
+covered_rast <- rast(clust_rast)
+values(covered_rast) <- ifelse(is.na(clust_vals), NA_real_,
+                               as.numeric(clust_vals %in% covered_after))
+
+par(mar = c(3, 1, 3, 1))
+plot(covered_rast, breaks = c(-0.5, 0.5, 1.5), col = c("black", "white"),
+     legend = FALSE, axes = FALSE,
+     main = sprintf("%d of %d clusters hold a record or a selected point",
+                    length(covered_after), n_clust))
+lines(ken, col = "grey60")
+points(vect(selected_points, geom = c("longitude", "latitude"),
+            crs = crs(cov_rast_ken_sub)),
+       pch = 21, cex = 0.9, bg = phase_cols[["medoid"]], col = "grey30")
+legend("bottom", inset = c(0, -0.04), xpd = NA, horiz = TRUE, bty = "n",
+       cex = 0.9, legend = c("has a point", "still unsampled", "selected site"),
+       pch = c(22, 22, 21), pt.cex = c(1.7, 1.7, 1),
+       pt.bg = c("white", "black", phase_cols[["medoid"]]),
+       col = c("grey40", "grey40", "grey30"))
+
+n_repeat  <- sum(duplicated(sel_clusters))
+n_already <- sum(selected_points$cluster[selected_points$phase == "medoid"]
+                 %in% sampled_clust)
+```
+
+Before the design, `r length(sampled_clust)` of the `r n_clust` clusters held a
+record. The `r nrow(selected_points)` selected points land in
+`r length(unique(sel_clusters))` distinct clusters, of which
+`r length(new_clusters)` were previously unsampled, bringing coverage to
+`r length(covered_after)` of `r n_clust`.
+
+Two costs of not conditioning the selection on cluster coverage show up here.
+`r n_repeat` points fall in a cluster another selected point already occupies,
+and `r n_already` of the phase-3 medoid picks sit in a cluster that already held
+an existing record. Phase 3 allows both, because it ranks *every* unused medoid
+by `CV × Shape` and never asks whether anyone has visited that environment.
+Excluding already-covered clusters from the phase-3 candidate pool would convert
+those picks into new coverage, at the cost of ignoring uncertainty in
+environments that are nominally sampled but thin on records.
+
+## Which species drove each pick
+
+Each iteration takes the cross-species maximum, so exactly one species sets the
+score at the winning pixel: that is the species whose extrapolation and
+uncertainty justified the site. The full selection order follows.
+
+```{r}
+#| label: tbl-drivers
+drv <- table(factor(selected_points$source_species, levels = ken_mess_spp))
+never_drv <- names(drv)[drv == 0]
+
+cat("Picks driven by each species:\n"); print(drv)
+
+selected_points |>
+  transmute(priority, iteration, phase,
+            `driven by` = source_species,
+            longitude, latitude,
+            `CV x novelty` = sel_value,
+            `Shape at site` = shape_at_selection) |>
+  knitr::kable(digits = 3, row.names = FALSE)
+```
+
+```{r}
+#| label: drivers-note
+#| output: asis
+if (length(never_drv)) {
+  cat(sprintf(
+    "Note that *%s* never drives a pick: at every selected pixel another species is at least as extrapolated and uncertain. The shared design still adds each point to its reference set, so it benefits from the coverage without ever setting the criterion.\n",
+    paste(never_drv, collapse = "*, *")))
+}
 ```

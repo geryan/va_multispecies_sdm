@@ -2068,3 +2068,615 @@ for (sp in ken_mess_spp) {
   )
 }
 ```
+
+# Cluster-coverage selection (k-means gap filling)
+
+The novelty-driven runs above ask *where is the landscape most unlike what has
+been sampled?* — a sequential question whose answer moves after every pick. A
+complementary, purely **geometric** question is *which combinations of conditions
+does the existing Vector Atlas sample already contain, and which does it miss?*
+Answering it takes three steps:
+
+1. **Partition.** Standardise the covariates of every land cell (so each
+   contributes equally to distance) and split them into `n_clust` environmental
+   clusters with k-means. Each cluster is one "type" of environment; its
+   representative is the land cell nearest the cluster centroid.
+2. **Score the existing sample.** Assign every existing Vector Atlas record to a
+   cluster. Any cluster holding at least one record is **covered** — the design
+   need not visit it again. The rest are **gaps**.
+3. **Fill the gaps, furthest first.** Take the gap cluster whose centroid is
+   furthest (standardised Euclidean) from the nearest *covered* centroid, add its
+   representative cell to the design, mark that cluster covered, and repeat.
+   Re-marking coverage after every pick — a greedy farthest-first traversal — is
+   what stops the budget being spent on a knot of mutually adjacent gaps in one
+   distant corner of environmental space.
+
+Steps 2 and 3 are the correction to the earlier version of this section, which
+clustered the landscape into exactly `k = 50` (one cluster per point of budget)
+and took *every* cluster's representative. The existing records played no part,
+so most of the budget went on environments the Vector Atlas already samples — and
+at that `k` the question cannot even be asked: only 24 of the 50 clusters are
+gaps (see below), so a 50-point budget must re-sample covered environment. The
+partition has to be **finer** than the budget for "sample the gaps" to have an
+answer.
+
+Two variants follow, mirroring the novelty runs. **Version 1** hands the whole
+budget to the gap-filling routine — reference-aware but uncertainty-blind, a pure
+coverage design. **Version 2** keeps the ExDet Type-1/Type-2 phases of the
+three-phase algorithm (which chase genuine extrapolation weighted by model
+uncertainty) and hands the *residual* budget to gap filling, counting the
+phase-1/2 points as covering the clusters they land in.
+
+```{r}
+#| label: cluster-helpers
+
+# Land cells (complete covariates) — the pool that gets partitioned.
+land_cells <- which(stats::complete.cases(values(cov_rast_ken_sub)))
+
+# Standardise once over the whole landscape so Euclidean distances weight every
+# covariate equally.
+km_center <- colMeans(values(cov_rast_ken_sub), na.rm = TRUE)
+km_scale  <- apply(values(cov_rast_ken_sub), 2, sd, na.rm = TRUE)
+Z_land    <- scale(values(cov_rast_ken_sub), center = km_center, scale = km_scale)
+
+# Cells holding an existing Vector Atlas record, pooled over the three species: a
+# visited site is sampling effort whichever species were caught there, and the
+# design is shared, so coverage is judged against the pooled set.
+existing_cells <- unique(cellFromXY(cov_rast_ken_sub, crds(ken_points)))
+existing_cells <- existing_cells[!is.na(existing_cells)]
+existing_cells <- existing_cells[
+  stats::complete.cases(Z_land[existing_cells, , drop = FALSE])
+]
+
+# Partition the landscape into `k` environmental clusters. Returns the cluster of
+# every raster cell (NA off-land), the centroids and their distance matrix, the
+# cluster sizes, and each cluster's representative — the land cell nearest its
+# centroid, which is the point actually visited if that cluster is selected.
+cluster_landscape <- function(k, seed = 1) {
+  set.seed(seed)
+  km <- stats::kmeans(Z_land[land_cells, , drop = FALSE], centers = k,
+                      iter.max = 50, nstart = 10)
+
+  clust_of <- rep(NA_integer_, nrow(Z_land))
+  clust_of[land_cells] <- km$cluster
+
+  rep_cell <- vapply(seq_len(k), function(cl) {
+    in_cl <- land_cells[km$cluster == cl]
+    ctr   <- matrix(km$centers[cl, ], length(in_cl), ncol(Z_land), byrow = TRUE)
+    in_cl[which.min(rowSums((Z_land[in_cl, , drop = FALSE] - ctr)^2))]
+  }, integer(1))
+
+  list(k = k, clust_of = clust_of, centers = km$centers, size = km$size,
+       rep_cell = rep_cell, cdist = as.matrix(dist(km$centers)))
+}
+
+# Clusters already represented in a set of sampled cells.
+covered_clusters <- function(part, cells) {
+  cl <- part$clust_of[cells]
+  sort(unique(cl[!is.na(cl)]))
+}
+
+# Greedy furthest-first gap filling. `sampled_cells` is everything already
+# sampled — the existing records, plus whatever an earlier phase has picked — and
+# the clusters holding them start out covered. Each step takes the *uncovered*
+# cluster whose centroid is furthest from the nearest covered centroid, marks it
+# covered, and repeats until the budget is spent or no gap is left. `gap_dist` is
+# that furthest-from-covered distance at the moment of selection, i.e. how large
+# a hole in environmental space the point fills.
+fill_gaps <- function(part, n_select, sampled_cells) {
+  covered <- covered_clusters(part, sampled_cells)
+  cand    <- setdiff(seq_len(part$k), covered)
+  sel <- integer(0)
+  gap_dist <- numeric(0)
+
+  while (length(sel) < n_select && length(cand)) {
+    d <- apply(part$cdist[cand, covered, drop = FALSE], 1, min)
+    j <- which.max(d)
+    sel      <- c(sel, cand[j])
+    gap_dist <- c(gap_dist, d[j])
+    covered  <- c(covered, cand[j])
+    cand     <- cand[-j]
+  }
+  if (length(sel) < n_select) {
+    warning("only ", length(sel), " gap clusters for a budget of ", n_select,
+            " — increase n_clust")
+  }
+  data.frame(cluster = sel, cell = part$rep_cell[sel], gap_dist = gap_dist)
+}
+
+# Simple map of a selected design over a faint covariate backdrop. `col_by` is a
+# column of `pts` used to colour by group (e.g. phase); otherwise points ramp
+# viridis in selection order. Kenya's east edge sits at the panel edge, so a
+# right-hand legend clips — the group legend goes horizontally in a reserved
+# bottom margin instead.
+plot_selected <- function(pts, title, col_by = NULL, legend_title = NULL) {
+  plot(cov_rast_ken_sub[[1]], col = grey.colors(100, 0.45, 0.95),
+       legend = FALSE, axes = FALSE, mar = c(if (is.null(col_by)) 1 else 3, 1, 2, 1),
+       main = title)
+  lines(ken)
+  pv <- vect(pts, geom = c("longitude", "latitude"), crs = crs(cov_rast_ken_sub))
+  if (is.null(col_by)) {
+    points(pv, pch = 19, col = hcl.colors(nrow(pts), "viridis"), cex = 1.1)
+  } else {
+    f    <- factor(pts[[col_by]])
+    cols <- setNames(hcl.colors(nlevels(f), "Dark 3"), levels(f))
+    points(pv, pch = 19, col = cols[as.character(f)], cex = 1.1)
+    legend("bottom", inset = c(0, -0.09), xpd = NA, horiz = TRUE, bty = "n",
+           legend = levels(f), col = cols, pch = 19, title = legend_title)
+  }
+}
+```
+
+## How fine a partition?
+
+`n_clust` decides what counts as a *distinct* environment, and so how many gaps
+exist at all. Too coarse and the existing records cover nearly everything, leaving
+fewer gaps than the budget; too fine and every cluster is a near-duplicate of its
+neighbour, so "cover every gap" degenerates into "sample everywhere". Coverage as
+a function of `n_clust`:
+
+```{r}
+#| label: cluster-k-sensitivity
+
+n_clust <- 150                       # partition used for both versions below
+k_grid  <- c(50, 75, 100, n_clust, 200, 300)
+
+parts_by_k <- setNames(lapply(k_grid, cluster_landscape), k_grid)
+
+cov_by_k <- do.call(rbind, lapply(parts_by_k, function(p) {
+  data.frame(clusters = p$k, covered = length(covered_clusters(p, existing_cells)),
+             median_cells = median(p$size))
+})) |>
+  mutate(gaps = clusters - covered, .after = covered)
+
+cat(length(existing_cells), "of", length(land_cells),
+    "land cells hold an existing record (",
+    round(100 * length(existing_cells) / length(land_cells), 1), "% )\n")
+
+knitr::kable(cov_by_k, row.names = FALSE, digits = 0,
+             col.names = c("clusters", "covered by existing records", "gaps",
+                           "median cells per cluster"))
+```
+
+Coverage saturates fast: the 241 cells holding records are under 1% of the
+landscape, but because sampling has concentrated on the *common* environments
+they cover half of a 150-way partition and a quarter of a 300-way one. We use
+**`n_clust = 150`** — clusters of ~160 cells (~4,000 km²), a third of them
+already covered, leaving 100 gaps to choose 50 points from, so the furthest-first
+criterion has real choices to make rather than simply enumerating every gap.
+
+```{r}
+#| label: cluster-partition
+
+part           <- parts_by_k[[as.character(n_clust)]]
+covered_0      <- covered_clusters(part, existing_cells)
+cat(sprintf("n_clust = %d: %d clusters covered by existing records, %d gaps\n",
+            part$k, length(covered_0), part$k - length(covered_0)))
+```
+
+## Which clusters does the existing sample cover?
+
+Every land cell shaded by whether *its* cluster already holds a Vector Atlas
+record (grey) or is a gap (orange), with the existing records overlaid. The gaps
+are not a random scatter: they concentrate in the arid north and east and along
+the coastal margin — environments the existing sample barely touches — while the
+grey covered clusters trace the well-surveyed south-west.
+
+```{r}
+#| label: cluster-coverage-map
+#| fig-width: 7
+#| fig-height: 7
+
+# 1 = covered cluster, 0 = gap, NA off-land. Fixed breaks (not a continuous ramp)
+# so the two classes always get the two colours.
+cover_r <- rast(cov_rast_ken_sub, nlyrs = 1)
+values(cover_r) <- ifelse(is.na(part$clust_of), NA_integer_,
+                          as.integer(part$clust_of %in% covered_0))
+
+plot(cover_r, breaks = c(-0.5, 0.5, 1.5), col = c("#E08214", "#D9D9D9"),
+     legend = FALSE, axes = FALSE, mar = c(3.5, 1, 2, 1),
+     main = paste0("Cluster coverage by existing records (n_clust = ", part$k, ")"))
+lines(ken)
+points(ken_points, pch = 19, col = "#40004B", cex = 0.3)
+# Horizontal legend in the reserved bottom margin (a right-hand legend clips on
+# Kenya's east edge).
+legend("bottom", inset = c(0, -0.10), xpd = NA, horiz = TRUE, cex = 0.85, bty = "n",
+       legend = c("gap cluster", "covered cluster", "existing record"),
+       fill = c("#E08214", "#D9D9D9", NA), border = c("black", "black", NA),
+       pch = c(NA, NA, 19), col = c(NA, NA, "#40004B"))
+```
+
+## Version 1 — gap filling alone
+
+The whole budget goes to `fill_gaps()`: 50 gap clusters, taken furthest-from-
+covered first, each represented by the land cell nearest its centroid.
+Uncertainty-blind, but not reference-blind — every point is somewhere the Vector
+Atlas has no environmental analogue.
+
+```{r}
+#| label: cluster-only-run
+
+n_cluster_pts <- 50
+
+gaps_cl1 <- fill_gaps(part, n_cluster_pts, existing_cells)
+
+xy_cl1 <- xyFromCell(cov_rast_ken_sub, gaps_cl1$cell)
+recorded_pts_cl1 <- data.frame(
+  longitude = xy_cl1[, "x"], latitude = xy_cl1[, "y"],
+  iter_added = seq_len(nrow(gaps_cl1)) - 1L,
+  cluster = gaps_cl1$cluster, gap_dist = gaps_cl1$gap_dist
+)
+
+readr::write_csv(
+  recorded_pts_cl1 |> mutate(priority = row_number()),
+  "selected_points_kmeans.csv"
+)
+cat("Gap-filling run: selected", nrow(recorded_pts_cl1), "points;",
+    "gap distance fell from", round(max(gaps_cl1$gap_dist), 1), "to",
+    round(min(gaps_cl1$gap_dist), 1), "\n")
+```
+
+```{r}
+#| label: plot-cluster-only
+#| fig-width: 7
+#| fig-height: 7
+
+plot_selected(recorded_pts_cl1,
+              title = "Gap-filling design (50 points, dark = picked first)")
+```
+
+The first two picks sit far outside everything sampled so far (gap distances of
+24 and 23 standardised units); by the tenth the largest remaining hole is under
+3, and the last few points are separated from covered environment by ~1 — the
+design exhausts the genuinely distinct environments early and then fills in.
+
+## Version 2 — three-phase with gap filling as phase 3
+
+Phases 1 and 2 are unchanged from the three-phase runs above: greedily maximise
+`CV × Type-1 novelty`, then `CV × Type-2 novelty`, one shared point per
+iteration, until no `exdet < 0` or `exdet > 1` cell remains. **Phase 3 then hands
+the residual budget to `fill_gaps()`**, with the phase-1/2 points added to the
+sampled set first — so a cluster those phases already landed in is treated as
+covered and is not visited twice.
+
+```{r}
+#| label: three-phase-cluster-run
+
+n_iter_cl <- 50
+
+ref_vals_cl     <- ref_vals_0
+chosen_cells_cl <- integer(0)
+recorded_pts_cl2 <- data.frame(
+  longitude = numeric(0), latitude = numeric(0), source_species = character(0),
+  iter_added = integer(0), phase = character(0), sel_value = numeric(0)
+)
+
+# Phases 1-2: greedy ExDet novelty x CV, one point per iteration.
+for (i in 0:(n_iter_cl - 1)) {
+  ex_cols <- setNames(
+    lapply(ref_vals_cl, \(rv) values(exdet(cov_rast_ken_sub, rv)$exdet)[, 1]),
+    ken_mess_spp
+  )
+
+  # Phase 1: maximise CV x Type-1 novelty.
+  s1 <- lapply(ken_mess_spp, \(sp) cv_cols[[sp]] * type1_mag(ex_cols[[sp]]))
+  cell1 <- pmax_na(s1); cell1[chosen_cells_cl] <- NA
+
+  if (any(!is.na(cell1))) {
+    phase <- "type1"; sel_cell <- which.max(cell1); sel_value <- cell1[sel_cell]
+    sp_name <- ken_mess_spp[which.max(sapply(s1, \(v) v[sel_cell]))]
+  } else {
+    # Phase 2: maximise CV x Type-2 novelty.
+    s2 <- lapply(ken_mess_spp, \(sp) cv_cols[[sp]] * type2_mag(ex_cols[[sp]]))
+    cell2 <- pmax_na(s2); cell2[chosen_cells_cl] <- NA
+    if (any(!is.na(cell2))) {
+      phase <- "type2"; sel_cell <- which.max(cell2); sel_value <- cell2[sel_cell]
+      sp_name <- ken_mess_spp[which.max(sapply(s2, \(v) v[sel_cell]))]
+    } else {
+      break   # ExDet envelope covered -> hand the rest to phase 3 (gap filling).
+    }
+  }
+
+  xy <- xyFromCell(cov_rast_ken_sub, sel_cell)
+  recorded_pts_cl2 <- rbind(recorded_pts_cl2, data.frame(
+    longitude = xy[1, "x"], latitude = xy[1, "y"], source_species = sp_name,
+    iter_added = i, phase = phase, sel_value = sel_value
+  ))
+  chosen_cells_cl <- c(chosen_cells_cl, sel_cell)
+
+  new_vals <- terra::extract(
+    cov_rast_ken_sub,
+    vect(data.frame(x = xy[1, "x"], y = xy[1, "y"]), geom = c("x", "y"),
+         crs = crs(cov_rast_ken_sub)),
+    ID = FALSE
+  )
+  for (sp in ken_mess_spp) ref_vals_cl[[sp]] <- rbind(ref_vals_cl[[sp]], new_vals)
+}
+
+# Phase 3: fill the residual budget from the clusters still uncovered once both
+# the existing records *and* the phase 1-2 points are accounted for.
+n_remaining <- n_iter_cl - nrow(recorded_pts_cl2)
+if (n_remaining > 0) {
+  gaps_cl2 <- fill_gaps(part, n_remaining, c(existing_cells, chosen_cells_cl))
+  xy3 <- xyFromCell(cov_rast_ken_sub, gaps_cl2$cell)
+  recorded_pts_cl2 <- rbind(recorded_pts_cl2, data.frame(
+    longitude = xy3[, "x"], latitude = xy3[, "y"], source_species = NA_character_,
+    iter_added = nrow(recorded_pts_cl2) + seq_len(nrow(xy3)) - 1L,
+    phase = "cluster", sel_value = gaps_cl2$gap_dist
+  ))
+}
+
+recorded_pts_cl2$phase <- factor(recorded_pts_cl2$phase,
+                                 levels = c("type1", "type2", "cluster"))
+
+readr::write_csv(
+  recorded_pts_cl2 |> mutate(priority = row_number()),
+  "selected_points_3phase_kmeans.csv"
+)
+cat("Points per phase:\n"); print(table(recorded_pts_cl2$phase))
+cat("\nClusters newly covered by the phase 1-2 points:",
+    length(setdiff(covered_clusters(part, chosen_cells_cl), covered_0)), "\n")
+cat("Phase-3 clusters also chosen by version 1:",
+    length(intersect(gaps_cl2$cluster, gaps_cl1$cluster)), "of", nrow(gaps_cl2), "\n")
+```
+
+```{r}
+#| label: plot-three-phase-cluster
+#| fig-width: 7
+#| fig-height: 7
+
+plot_selected(recorded_pts_cl2,
+              title = "Three-phase design with gap-filling phase 3 (50 points)",
+              col_by = "phase", legend_title = "phase")
+```
+
+Phases 1-2 spend 18 points (16 Type-1, 2 Type-2) and land in 13 clusters, 11 of
+them previously uncovered — the ExDet phases are, in effect, already doing gap
+filling, and they take the two most extreme gaps first (the ones version 1 opens
+with). Phase 3 therefore starts where version 1's *third* pick did, and 29 of its
+32 clusters are ones version 1 also chose: the two designs agree closely on
+*which* environments are missing, and differ mainly in the order and in the
+uncertainty weighting of the first 18 points.
+
+## Surface evolution under the two designs
+
+Both designs are fixed before any surface is recomputed, so they are simply
+**replayed**: the points are added to every species' reference set in selection
+order, and ExDet, MESS and Shape are recomputed at each step. Every iteration is
+evaluated for the trajectory sums below; only the nine displayed iterations'
+surfaces are retained, which keeps memory to a fraction of the sequential runs.
+
+```{r}
+#| label: cluster-evolution-compute
+
+# Replay a fixed design: recompute ExDet, MESS and Shape as its points are added,
+# one shared point per iteration, from ref_vals_0. Returns the retained surfaces
+# for `iters_grid` (ExDet and Shape as 9-element lists, MESS indexed by iter + 1
+# to match `plot_mess_evolution`) plus a per-iteration trajectory of total Type-1
+# and Type-2 ExDet novelty, total |negative| MESS and mean Shape, summed (Shape:
+# averaged) over the three species.
+evolve_design <- function(pts, iters_grid) {
+  n_iter  <- max(iters_grid)
+  pts_cov <- terra::extract(
+    cov_rast_ken_sub,
+    vect(pts, geom = c("longitude", "latitude"), crs = crs(cov_rast_ken_sub)),
+    ID = FALSE
+  )
+
+  ex_grid <- setNames(
+    lapply(ken_mess_spp, \(sp) vector("list", length(iters_grid))), ken_mess_spp)
+  sh_grid <- ex_grid
+  ms_grid <- setNames(
+    lapply(ken_mess_spp, \(sp) vector("list", n_iter + 1)), ken_mess_spp)
+  traj <- data.frame(iteration = 0:n_iter, type1 = 0, type2 = 0,
+                     mess_neg = 0, shape_mean = 0)
+
+  for (i in 0:n_iter) {
+    g <- match(i, iters_grid)          # grid slot, or NA if not displayed
+    for (sp in ken_mess_spp) {
+      ref <- if (i == 0) {
+        ref_vals_0[[sp]]
+      } else {
+        rbind(ref_vals_0[[sp]], pts_cov[seq_len(i), , drop = FALSE])
+      }
+      ex <- exdet(cov_rast_ken_sub, ref)$exdet
+      ms <- mess(cov_rast_ken_sub, ref)$mess
+      sh <- shape_eval(ref)
+
+      ev <- values(ex)[, 1]; mv <- values(ms)[, 1]; sv <- values(sh)[, 1]
+      traj$type1[i + 1]      <- traj$type1[i + 1]    + sum(-ev[ev < 0], na.rm = TRUE)
+      traj$type2[i + 1]      <- traj$type2[i + 1]    + sum(ev[ev > 1] - 1, na.rm = TRUE)
+      traj$mess_neg[i + 1]   <- traj$mess_neg[i + 1] + sum(-mv[mv < 0], na.rm = TRUE)
+      traj$shape_mean[i + 1] <- traj$shape_mean[i + 1] +
+        mean(sv, na.rm = TRUE) / length(ken_mess_spp)
+
+      if (!is.na(g)) {
+        ex_grid[[sp]][[g]] <- ex
+        sh_grid[[sp]][[g]] <- sh
+        ms_grid[[sp]][[i + 1]] <- list(mess = ms)
+      }
+    }
+  }
+  list(exdet = ex_grid, shape = sh_grid, mess = ms_grid, traj = traj)
+}
+
+# 9 iterations spanning the budget, for the evolution grids.
+iters_cl <- round(seq(0, n_cluster_pts, length.out = 9))
+
+ev_cl1 <- evolve_design(recorded_pts_cl1, iters_cl)
+ev_cl2 <- evolve_design(recorded_pts_cl2, iters_cl)
+
+# Shared colour scales across *both* designs so the two sets of grids can be read
+# against each other.
+mess_grid_rasters <- function(ev) unlist(
+  lapply(ken_mess_spp, \(sp) lapply(iters_cl, \(i) ev$mess[[sp]][[i + 1]]$mess)),
+  recursive = FALSE
+)
+mess_range_cl <- clamp_range(c(mess_grid_rasters(ev_cl1), mess_grid_rasters(ev_cl2)))
+
+shape_vals_cl <- unlist(lapply(
+  list(ev_cl1, ev_cl2),
+  \(ev) lapply(ken_mess_spp, \(sp) lapply(ev$shape[[sp]], \(r) values(r)[, 1]))
+))
+shape_range_cl <- c(0, as.numeric(quantile(shape_vals_cl, 0.99, na.rm = TRUE)))
+
+message("Both designs replayed over ", n_cluster_pts, " iterations")
+```
+
+### MESS evolution (gap filling alone)
+
+```{r}
+#| label: plot-mess-over-cluster1
+#| fig-width: 10
+#| fig-height: 11
+
+for (sp in ken_mess_spp) {
+  plot_mess_evolution(
+    surfaces   = ev_cl1$mess[[sp]],
+    pts        = recorded_pts_cl1,
+    mess_range = mess_range_cl,
+    iters      = iters_cl,
+    initial    = "iter 0",
+    title      = bquote(italic(.(sp)) * " — MESS over gap-filling points"),
+    pt_cex     = 1,
+    pt_pal     = \(n) hcl.colors(n, "viridis")
+  )
+}
+```
+
+### ExDet evolution (gap filling alone)
+
+```{r}
+#| label: plot-exdet-over-cluster1
+#| fig-width: 10
+#| fig-height: 11
+
+for (sp in ken_mess_spp) {
+  plot_exdet_evolution(
+    surfaces = ev_cl1$exdet[[sp]],
+    iters    = iters_cl,
+    pts      = recorded_pts_cl1,
+    title    = bquote(italic(.(sp)) * " — ExDet over gap-filling points"),
+    pt_cex   = 1
+  )
+}
+```
+
+### Shape evolution (gap filling alone)
+
+```{r}
+#| label: plot-shape-over-cluster1
+#| fig-width: 10
+#| fig-height: 11
+
+for (sp in ken_mess_spp) {
+  plot_shape_evolution(
+    surfaces    = ev_cl1$shape[[sp]],
+    iters       = iters_cl,
+    pts         = recorded_pts_cl1,
+    shape_range = shape_range_cl,
+    title       = bquote(italic(.(sp)) * " — Shape over gap-filling points"),
+    pt_cex      = 1
+  )
+}
+```
+
+### MESS evolution (three-phase + gap filling)
+
+```{r}
+#| label: plot-mess-over-cluster2
+#| fig-width: 10
+#| fig-height: 11
+
+for (sp in ken_mess_spp) {
+  plot_mess_evolution(
+    surfaces   = ev_cl2$mess[[sp]],
+    pts        = recorded_pts_cl2,
+    mess_range = mess_range_cl,
+    iters      = iters_cl,
+    initial    = "iter 0",
+    title      = bquote(italic(.(sp)) * " — MESS over three-phase + gap-filling points"),
+    pt_cex     = 1,
+    pt_pal     = \(n) hcl.colors(n, "viridis")
+  )
+}
+```
+
+### ExDet evolution (three-phase + gap filling)
+
+```{r}
+#| label: plot-exdet-over-cluster2
+#| fig-width: 10
+#| fig-height: 11
+
+for (sp in ken_mess_spp) {
+  plot_exdet_evolution(
+    surfaces = ev_cl2$exdet[[sp]],
+    iters    = iters_cl,
+    pts      = recorded_pts_cl2,
+    title    = bquote(italic(.(sp)) * " — ExDet over three-phase + gap-filling points"),
+    pt_cex   = 1
+  )
+}
+```
+
+### Shape evolution (three-phase + gap filling)
+
+```{r}
+#| label: plot-shape-over-cluster2
+#| fig-width: 10
+#| fig-height: 11
+
+for (sp in ken_mess_spp) {
+  plot_shape_evolution(
+    surfaces    = ev_cl2$shape[[sp]],
+    iters       = iters_cl,
+    pts         = recorded_pts_cl2,
+    shape_range = shape_range_cl,
+    title       = bquote(italic(.(sp)) * " — Shape over three-phase + gap-filling points"),
+    pt_cex      = 1
+  )
+}
+```
+
+### The two designs side by side
+
+The grids show *where* novelty goes; these curves show *how fast*. Each metric is
+summed over the three species at every iteration: total Type-1 and Type-2 ExDet
+novelty, total `|negative|` MESS (how much of the landscape sits outside the
+sampled univariate envelope, and by how far), and mean Shape (average Mahalanobis
+extrapolation over all cells).
+
+```{r}
+#| label: plot-cluster-trajectories
+#| fig-width: 10
+#| fig-height: 7
+
+metric_levels <- c(
+  "ExDet Type 1 (univariate)", "ExDet Type 2 (combinational)",
+  "MESS (total |negative|)",   "Shape (mean over cells)"
+)
+
+traj_cl <- bind_rows(
+  ev_cl1$traj |> mutate(design = "gap filling only"),
+  ev_cl2$traj |> mutate(design = "three-phase + gap filling")
+) |>
+  pivot_longer(c(type1, type2, mess_neg, shape_mean),
+               names_to = "metric", values_to = "total") |>
+  mutate(metric = factor(recode(metric,
+    type1      = metric_levels[1],
+    type2      = metric_levels[2],
+    mess_neg   = metric_levels[3],
+    shape_mean = metric_levels[4]
+  ), levels = metric_levels))
+
+ggplot(traj_cl, aes(iteration, total, colour = design)) +
+  geom_line(linewidth = 0.9) +
+  facet_wrap(~metric, scales = "free_y") +
+  scale_colour_manual(values = c("gap filling only" = "#E08214",
+                                 "three-phase + gap filling" = "#1A9850")) +
+  labs(x = "Iteration", y = "Total over cells and species", colour = NULL,
+       title = "Novelty under the two cluster-coverage designs") +
+  theme_minimal() +
+  theme(legend.position = "top")
+```
