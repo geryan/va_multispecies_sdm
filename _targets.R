@@ -1384,6 +1384,8 @@ list(
    )
  ),
 
+
+
  tar_target(
    resids_and_rhats,
    validation_and_checking(
@@ -1414,6 +1416,84 @@ list(
      plotdir = "outputs/figures/validation/sre_20260629/"
    )
  ),
+
+
+ ###################
+ # reparameterisation section
+
+ tar_target(
+   model_fit_sre_rep,
+   fit_model_multispecies_pp_count_source_effect_reparam(
+     image_name = "model_fit_test_source_re_rep.RData",
+     model_data_spatial = model_data_spatial,
+     target_covariate_names = target_covariate_names,
+     target_species = target_species,
+     bioregion_names = bioregion_names,
+     n_burnin = 1000,
+     n_samples = 1000,
+     n_chains = 50,
+     n_cores = 6
+   )
+ ),
+
+ tar_target(
+   resids_and_rhats_sre_rep,
+   validation_and_checking(
+     model_fit_sre_rep,
+     nsims = 100,
+     plotdir = "outputs/figures/validation/sre_rep_20260725/"
+   )
+ ),
+
+ tar_target(
+   preds_sm_rep,
+   predict_lambda_reparam(
+     image_name = model_fit_sre_rep,
+     prediction_layer = covariate_rast_10, # use 10k for faster preds
+     target_species,
+     output_file_prefix = "outputs/rasters/reparam_multispecies_pp_rep",
+     offset = offsets_avg_10,
+     sm = TRUE, # if predict survey method
+     nsims = 100 # lower for faster preds
+   )
+ ),
+
+ tar_terra_rast(
+   pred_dist_not_masked_rep,
+   rast(preds_sm_rep$p)
+   #rast("spartan_model_comparison/m6/m6_p.tif")
+ ),
+
+ tar_terra_rast(
+   pred_p_rep,
+   mask_landcover_and_expert_offset(
+     p = pred_dist_not_masked_rep,
+     expert = expert_offset_maps_10,
+     bare = landcover_bare_10
+   )
+ ),
+
+ tar_terra_rast(
+   pred_lambda_rep,
+   mask_landcover_and_expert_offset(
+     p = rast(preds_sm_rep$lambda_no_offset)* offsets_avg_10,
+     expert = expert_offset_maps_10,
+     bare = landcover_bare_10
+   )
+ ),
+
+ tar_target(
+   plot_pred_p_rep,
+   make_distribution_plots(
+     pred_p_rep,
+     model_data_spatial,
+     plot_dir = "outputs/figures/distribution_plots/distn_20260725_rep",
+     cola = "yellow"
+   )
+ ),
+
+
+ ######
 
  tar_target(
    preds_sm,
