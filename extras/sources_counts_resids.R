@@ -257,3 +257,19 @@ matches <- match_pdfs_to_sources(
   pdf_dir = "~/Downloads/PDF/",
   sources = ars_sources
 )
+
+
+### unique counts
+unique_count_sources <- model_data_spatial |>
+  select(data_type, source_id) |>
+  filter(data_type == "count") |>
+  distinct() |>
+  select(source_id)
+
+
+
+raw_data
+
+
+
+
