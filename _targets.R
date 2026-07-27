@@ -1300,6 +1300,66 @@ list(
  ),
 
 
+ # something up here: works fine in console but stuffs up saving in targets
+ # pipeline
+ tar_terra_nested(
+   name = africa_mess_br,
+   command = bssdm::mess(
+     # x = c(
+     #   covariate_rast_5[[target_covariate_names]],
+     #   bioregion_layers[[bioregion_names]]
+     # ),
+     x = covariate_rast_5_all[[c(target_covariate_names, bioregion_names)]],
+     ref = model_data_spatial |>
+       select(
+         all_of(c(target_covariate_names, bioregion_names))
+       )
+   )
+ ),
+
+
+ tar_terra_nested(
+   name = africa_exdet,
+   command = bssdm::exdet(
+     x = covariate_rast_5[[target_covariate_names]],
+     ref = model_data_spatial |>
+       select(
+         all_of(target_covariate_names)
+       )
+   )
+ ),
+
+ tar_terra_nested(
+   name = africa_exdet_nosea,
+   command = bssdm::exdet(
+     x = covariate_rast_5[[target_covariate_names[which(target_covariate_names != "prox_to_sea")]]],
+     ref = model_data_spatial |>
+       select(
+         all_of(target_covariate_names[which(target_covariate_names != "prox_to_sea")])
+       )
+   )
+ ),
+
+
+ # something up here: works fine in console but stuffs up saving in targets
+ # pipeline
+ tar_terra_nested(
+   name = africa_exdet_br,
+   command = bssdm::exdet(
+     # x = c(
+     #   covariate_rast_5[[target_covariate_names]],
+     #   bioregion_layers[[bioregion_names]]
+     # ),
+     x = covariate_rast_5_all[[c(target_covariate_names, bioregion_names)]],
+     ref = model_data_spatial |>
+       select(
+         all_of(c(target_covariate_names, bioregion_names))
+       )
+   )
+ ),
+
+
+
 
 
 
