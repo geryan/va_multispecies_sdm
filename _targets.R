@@ -1299,6 +1299,62 @@ list(
    )
  ),
 
+ tar_terra_nested(
+   name = africa_mess_arabiensis,
+   command = bssdm::mess(
+     x = covariate_rast_5[[target_covariate_names]],
+     ref = model_data_spatial |>
+       filter(species == "arabiensis") |>
+       filter(!inferred) |>
+       select(
+         all_of(target_covariate_names)
+       )
+   )
+ ),
+
+
+ tar_terra_nested(
+   name = africa_mess_nosea_arabiensis,
+   command = bssdm::mess(
+     x = covariate_rast_5[[target_covariate_names[which(target_covariate_names != "prox_to_sea")]]],
+     ref = model_data_spatial |>
+       filter(species == "arabiensis") |>
+       filter(!inferred) |>
+       select(
+         all_of(target_covariate_names[which(target_covariate_names != "prox_to_sea")])
+       )
+   )
+ ),
+
+
+ tar_terra_nested(
+   name = africa_exdet_arabiensis,
+   command = bssdm::exdet(
+     x = covariate_rast_5[[target_covariate_names]],
+     ref = model_data_spatial |>
+       filter(species == "arabiensis") |>
+       filter(!inferred) |>
+       select(
+         all_of(target_covariate_names)
+       )
+   )
+ ),
+
+
+ tar_terra_nested(
+   name = africa_exdet_nosea_arabiensis,
+   command = bssdm::exdet(
+     x = covariate_rast_5[[target_covariate_names[which(target_covariate_names != "prox_to_sea")]]],
+     ref = model_data_spatial |>
+       filter(species == "arabiensis") |>
+       filter(!inferred) |>
+       select(
+         all_of(target_covariate_names[which(target_covariate_names != "prox_to_sea")])
+       )
+   )
+ ),
+
+
 
  # something up here: works fine in console but stuffs up saving in targets
  # pipeline
@@ -1484,7 +1540,7 @@ list(
  tar_target(
    model_fit_sre_rep,
    fit_model_multispecies_pp_count_source_effect_reparam(
-     image_name = "model_fit_test_source_re_rep.RData",
+     image_name = "outputs/images/model_fit_test_source_re_rep.RData",
      model_data_spatial = model_data_spatial,
      target_covariate_names = target_covariate_names,
      target_species = target_species,
@@ -1501,7 +1557,7 @@ list(
    validation_and_checking(
      model_fit_sre_rep,
      nsims = 100,
-     plotdir = "outputs/figures/validation/sre_rep_20260725/"
+     plotdir = "outputs/figures/validation/sre_rep_20260729/"
    )
  ),
 
@@ -1547,7 +1603,7 @@ list(
    make_distribution_plots(
      pred_p_rep,
      model_data_spatial,
-     plot_dir = "outputs/figures/distribution_plots/distn_20260725_rep",
+     plot_dir = "outputs/figures/distribution_plots/distn_20260730_rep",
      cola = "yellow"
    )
  ),
