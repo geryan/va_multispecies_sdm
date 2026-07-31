@@ -63,11 +63,11 @@ fit_model_multispecies_pp_count_source_effect_reparam <- function(
     n_cores = NULL
 ){
 
-  model_data_spatial <- model_data_spatial |>
-    filter(
-      (data_type != "count") |
-        (data_type == "count" & count < 1000)
-    )
+  # model_data_spatial <- model_data_spatial |>
+  #   filter(
+  #     (data_type != "count") |
+  #       (data_type == "count" & count < 1000)
+  #   )
 
   # index of distinct locations
   distinct_idx <- model_data_spatial |>
@@ -311,13 +311,10 @@ fit_model_multispecies_pp_count_source_effect_reparam <- function(
   # distribution(count_data_response) <- negative_binomial(size_vec, prob_vec)
 
 
+  p_theta <- 0.05
+  v_theta <- 1 + 1
+  theta <- -log(p_theta) / (v_theta - 1)
 
-  pc_theta <- function(v, p) {
-    stopifnot(v > 1, p > 0, p < 1)
-    -log(p) / (v - 1)
-  }
-
-  theta <- pc_theta(v = 50, p = 0.05)   # = 0.061
 
   # gamma_nb = VIF - 1 = mu/size. PC prior, mode at the Poisson limit gamma_nb = 0.
   gamma_nb <- exponential(theta, dim = n_species)
