@@ -1548,7 +1548,7 @@ list(
      n_burnin = 1000,
      n_samples = 1000,
      n_chains = 50,
-     n_cores = 6
+     n_cores = 32
    )
  ),
 

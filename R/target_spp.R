@@ -5,10 +5,10 @@ target_spp <- function(){
   spp <- c(
     "arabiensis", # in sinka 2010
     "coluzzii",
-    # "coustani",
+    "coustani",
     "funestus", # in sinka 2010
     "gambiae",  # in sinka 2010
-    # "maculipalpis",
+    "maculipalpis",
     "melas", # in sinka 2010
     "merus", # in sinka 2010
     "moucheti", # in sinka 2010
