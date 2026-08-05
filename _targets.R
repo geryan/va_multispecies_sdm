@@ -1574,6 +1574,8 @@ list(
    )
  ),
 
+
+ # distribution plots
  tar_terra_rast(
    pred_dist_not_masked_rep,
    rast(preds_sm_rep$p)
@@ -1589,6 +1591,16 @@ list(
    )
  ),
 
+ tar_target(
+   plot_pred_p_rep,
+   make_distribution_plots(
+     pred_p_rep,
+     model_data_spatial,
+     plot_dir = "outputs/figures/distribution_plots/distn_20260730_rep"
+   )
+ ),
+
+ # average abundance plots
  tar_terra_rast(
    pred_lambda_rep,
    mask_landcover_and_expert_offset(
@@ -1599,12 +1611,37 @@ list(
  ),
 
  tar_target(
-   plot_pred_p_rep,
+   plot_pred_lambda_rep,
    make_distribution_plots(
-     pred_p_rep,
+     pred_lambda_rep,
      model_data_spatial,
-     plot_dir = "outputs/figures/distribution_plots/distn_20260730_rep",
-     cola = "yellow"
+     plot_dir = "outputs/figures/distribution_plots/distn_20260730_rep_lambda",
+     colscheme = "orchid",
+     distpoints = FALSE,
+     guide = "none"
+   )
+ ),
+
+
+ # uncertainty plots
+ tar_terra_rast(
+   pred_cv_rep,
+   mask_landcover_and_expert_offset(
+     p = rast(preds_sm_rep$p_cv),
+     expert = expert_offset_maps_10,
+     bare = landcover_bare_10
+   )
+ ),
+
+ tar_target(
+   plot_pred_cv_rep,
+   make_distribution_plots(
+     pred_cv_rep,
+     model_data_spatial,
+     plot_dir = "outputs/figures/distribution_plots/distn_20260730_rep_cv",
+     colscheme = "brick",
+     distpoints = FALSE,
+     guide = "none"
    )
  ),
 
