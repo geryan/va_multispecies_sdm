@@ -17,7 +17,8 @@ make_distribution_plots <- function(
     cola = "yellow",
     colscheme = "va",
     distpoints = TRUE,
-    guide = c("prob", "none")
+    guide = c("prob", "none"),
+    prefix = "distribution"
 ) {
 
   dist_plots_va <- distplotlist(
@@ -29,7 +30,7 @@ make_distribution_plots <- function(
   saveplotlist(
     dist_plots_va,
     dir = plot_dir,
-    prefix = "distribution"
+    prefix = prefix
   )
 
   if(distpoints){
