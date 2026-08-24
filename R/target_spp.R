@@ -3,25 +3,24 @@ target_spp <- function(){
   # latest 20
 
   spp <- c(
-    arabiensis,
-    gambiae,
-    coluzzii,
-    funestus,
-    pharoensis,
-    coustani,
-    ziemanni,
-    melas,
-    rufipes,
-    nili,
-    squamosus,
-    quadriannulatus,
-    stephensi,
-    rivulorum,
-    pretoriensis,
-    leesoni,
-    maculipalpis,
-    moucheti,
-    merus
+    "arabiensis",
+    "gambiae",
+    "coluzzii",
+    "funestus",
+    "pharoensis",
+    "coustani",
+    "ziemanni",
+    "melas",
+    "rufipes",
+    "nili",
+    "squamosus",
+    "quadriannulatus",
+    "rivulorum",
+    "pretoriensis",
+    "leesoni",
+    "maculipalpis",
+    "moucheti",
+    "merus"
   )
 
   spp[order(spp)]
