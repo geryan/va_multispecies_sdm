@@ -964,6 +964,43 @@ list(
      print(n = 999)
  ),
 
+ tar_target(
+   species_unique_location_presence_records,
+   full_data_records |>
+     mutate(
+       presence = ifelse(
+         (!is.na(occurrence_n) & occurrence_n == 0) |
+           (!is.na(binary_absence) & binary_absence == "yes"),
+         0,
+         1
+       )
+     ) |>
+     select(species, latitude, longitude, presence) |>
+     distinct() |>
+     group_by(species, presence) |>
+     summarise(n = n()) |>
+     mutate(
+       presence = ifelse(
+         presence == 1,
+         "present",
+         "absent"
+       )
+     ) |>
+     pivot_wider(
+       values_from = n,
+       names_from = "presence"
+     ) |>
+     left_join(
+       x = species_unique_location_records,
+       by = "species"
+     ) |>
+     rename(
+       n_unique_locations = n
+     ) |>
+     arrange(desc(present)) |>
+     print(n = 999)
+ ),
+
  # need to refine this list
  tar_target(
    target_species,
