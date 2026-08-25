@@ -21,3 +21,5 @@ _targets/meta/meta
 kenya_mess_files
 kenya_mess.html
 .posit/assistant
+*.html
+*.docx
