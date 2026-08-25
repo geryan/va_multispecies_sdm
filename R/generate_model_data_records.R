@@ -156,11 +156,11 @@ generate_model_data_records <- function(
         data_type == "count" ~ 0,
         .default = NA
       ),
-      count = ifelse(
-        count > 1000,
-        1000,
-        count
-      ),
+      # count = ifelse(
+      #   count > 1000,
+      #   1000,
+      #   count
+      # ),
       n = ifelse(
         !is.na(count),
         count,
