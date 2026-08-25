@@ -21,6 +21,8 @@ make_distribution_plots <- function(
     prefix = "distribution"
 ) {
 
+  guide = match.arg(guide)
+
   dist_plots_va <- distplotlist(
     pred_dist,
     colscheme = colscheme,

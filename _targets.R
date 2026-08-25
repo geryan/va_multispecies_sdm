@@ -1631,9 +1631,9 @@ list(
  tar_target(
    plot_pred_p_rep,
    make_distribution_plots(
-     pred_p_rep,
+     pred_dist = pred_p_rep,
      model_data_spatial,
-     plot_dir = "outputs/figures/distribution_plots/distn_20260730_rep"
+     plot_dir = "outputs/figures/distribution_plots/distn_20260825_rep"
    )
  ),
 
@@ -1652,7 +1652,7 @@ list(
    make_distribution_plots(
      pred_lambda_rep,
      model_data_spatial,
-     plot_dir = "outputs/figures/distribution_plots/distn_20260730_rep",
+     plot_dir = "outputs/figures/distribution_plots/distn_20260825_rep",
      colscheme = "orchid",
      distpoints = FALSE,
      guide = "none",
@@ -1676,7 +1676,7 @@ list(
    make_distribution_plots(
      pred_cv_rep,
      model_data_spatial,
-     plot_dir = "outputs/figures/distribution_plots/distn_20260730_rep",
+     plot_dir = "outputs/figures/distribution_plots/distn_20260825_rep",
      colscheme = "brick",
      distpoints = FALSE,
      guide = "none",
