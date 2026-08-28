@@ -171,6 +171,50 @@ list(
     format = "file"
   ),
 
+  ## split version
+  # the 38 -> 10 class grouping, as a target so that editing
+  # esa_landcover_group_defs() invalidates only what depends on it
+  tar_target(
+    esa_landcover_groups,
+    esa_landcover_group_defs()
+  ),
+
+  tar_target(
+    esa_landcover_classes,
+    names(esa_landcover_groups)
+  ),
+
+  # branched over year: one file per year, one layer per class.
+  # reads the legend out of each year's own NetCDF and errors if it does not
+  # match the grouping, so a product-version legend change cannot pass silently
+  tar_target(
+    esa_landcover_proportion_year,
+    proportion_esa_landcover(
+      archive = esa_landcover_zip,
+      new_mask = project_mask_5_outline,
+      year = esa_landcover_years,
+      groups = esa_landcover_groups,
+      outputdir = "outputs/raster/esa_landcover_proportion"
+    ),
+    pattern = map(esa_landcover_zip, esa_landcover_years),
+    format = "file"
+  ),
+
+  # the deliverable, branched over class: one file per class, one layer per
+  # year. `esa_landcover_proportion_year` is not in the pattern, so each
+  # branch receives all 31 paths and pulls its own class out of each
+  tar_target(
+    esa_landcover_proportion,
+    stack_esa_landcover_proportion(
+      paths = esa_landcover_proportion_year,
+      years = esa_landcover_years,
+      class = esa_landcover_classes,
+      outputdir = "outputs/raster/esa_landcover_proportion"
+    ),
+    pattern = map(esa_landcover_classes),
+    format = "file"
+  ),
+
 
   # read in other layers and match to offset size shape and extent
 
