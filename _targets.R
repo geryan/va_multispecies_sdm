@@ -646,6 +646,19 @@ list(
   #   make_temperature_offset(project_mask_5)
   # ),
 
+
+  # irrigation
+  # The map shows the amount of area equipped for irrigation around the year 2005 in percentage of the total area on a raster with a resolution of 5 minutes.
+  # Stefan Siebert, Verena Henrich, Karen Frenken and Jacob Burke (2013). Global Map of Irrigation Areas version 5. Rheinische Friedrich-Wilhelms-University, Bonn, Germany / Food and Agriculture Organization of the United Nations, Rome, Italy
+  # https://www.fao.org/aquastat/en/geospatial-information/global-maps-irrigated-areas/latest-version
+  tar_terra_rast(
+    irrigation_raw,
+    rast(x = "data/raster/gmia_v5_aei_pct.asc") |>
+      crop(project_mask_10) |>
+      resample(covariate_rast_10[[1]]) |>
+      mask(covariate_rast_10[[1]])
+  ),
+
   #
   # bias
   # travel time from research facilities
