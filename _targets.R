@@ -80,6 +80,97 @@ list(
       set_layer_names("project_mask")
   ),
 
+  ######################
+
+  # ESA CCI / C3S annual land cover from the Copernicus CDS
+  # `satellite-land-cover`: 300 m, 1992-2022, 22-class UN FAO LCCS legend.
+  # https://cds.climate.copernicus.eu/datasets/satellite-land-cover
+  #
+  # Branched by year. Each branch pulls one year and rescales it onto the
+  # new_mask grid, so neither the global grid nor the 31-year stack is ever
+  # held whole -- every terra step streams to disk, see
+  # R/prepare_esa_landcover.R. An interrupted run resumes at the year it
+  # stopped on, and years already downloaded are never re-fetched.
+  #
+  # NEEDS A CDS TOKEN. Once per machine:
+  #   ecmwfr::wf_set_key(key = "<token from cds.climate.copernicus.eu/profile>")
+  # plus accepting the ESA CCI and VITO licences on the dataset page above,
+  # or every request comes back 403.
+  #
+  # MOVING THESE TARGETS TO ANOTHER PROJECT
+  # The four R/esa_* and R/*_esa_landcover files are self-contained apart from
+  # terra and ecmwfr, but these target definitions are NOT. They depend on two
+  # things that live in this file, not in R/, and so will not travel:
+  #   read_rast()  -- defined at the top of _targets.R
+  #   new_mask     -- this project's analysis grid, itself a path target
+  # In a new project either port read_rast() across as well, or drop it and
+  # pass the reference grid straight in, e.g.
+  #   prepare_esa_landcover(archive = ..., new_mask = terra::rast(<ref path>))
+  # Nothing in the functions assumes the grid is 1 km or African: any
+  # SpatRaster works as the target grid, and mode-resampling handles the rest.
+  #
+  # AS BUILT (2026-08-27, 1992-2022):
+  #   esa_landcover_all  31 layers, 8705 x 8405, INT1U, categorical, 40 MB
+  #   per-year tifs      225 MB total   |  source zips  13 GB (446 MB/year)
+  #   legend             38 LCCS classes, read from the file, 0 = no_data
+  # The zips are only needed to rebuild esa_landcover_year; they can be
+  # deleted once the per-year tifs exist, at the cost of a re-download if a
+  # branch is ever invalidated.
+
+  tar_target(
+    esa_landcover_years,
+    1992:2022
+  ),
+
+  # c(N, W, S, E) for the CDS server-side subset, taken from the analysis grid
+  # so the 129600 x 64800 global product never has to come down the wire
+  tar_target(
+    esa_landcover_box,
+    c(38.04167, -18.50000, -35.50000,  52.54166)
+    #esa_landcover_area(project_mask_5_outline)
+  ),
+
+  tar_target(
+    esa_landcover_zip,
+    download_esa_landcover(
+      year = esa_landcover_years,
+      dest_dir = "data/raster/esa_landcover",
+      area = esa_landcover_box
+    ),
+    pattern = map(esa_landcover_years),
+    format = "file"
+  ),
+
+  # legend read from the NetCDF's own flag_values/flag_meanings
+  tar_target(
+    esa_landcover_lookup,
+    esa_landcover_legend(esa_landcover_zip[1])
+  ),
+
+  tar_target(
+    esa_landcover_year,
+    prepare_esa_landcover(
+      archive = esa_landcover_zip,
+      new_mask = project_mask_5_outline,
+      year = esa_landcover_years,
+      outputdir = "outputs/raster/esa_landcover"
+    ),
+    pattern = map(esa_landcover_zip, esa_landcover_years),
+    format = "file"
+  ),
+
+  # the deliverable: one multi-layer raster, one layer per year, on new_mask
+  tar_target(
+    esa_landcover_all,
+    stack_esa_landcover(
+      paths = esa_landcover_year,
+      years = esa_landcover_years,
+      lookup = esa_landcover_lookup,
+      filename = "outputs/raster/esa_landcover_all.tif"
+    ),
+    format = "file"
+  ),
+
 
   # read in other layers and match to offset size shape and extent
 
