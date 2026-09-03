@@ -1295,6 +1295,15 @@ list(
    )
  ),
 
+ tar_target(
+   model_data_spatial_landcover,
+   match_landcover_data(
+     model_data_spatial = model_data_spatial,
+     landcover_paths = esa_landcover_proportion,
+     landcover_classes = esa_landcover_classes
+   )
+ ),
+
  # table 2 in manuscript
  tar_target(
    data_summary_table,
