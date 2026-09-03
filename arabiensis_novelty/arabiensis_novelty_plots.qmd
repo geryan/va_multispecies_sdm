@@ -1,0 +1,142 @@
+---
+title: "*Anopheles arabiensis* environmental novelty"
+subtitle: "MESS and ExDet, whole of Africa and masked to the core expert range"
+date: today
+format:
+  pdf:
+    toc: true
+    number-sections: true
+    fig-align: center
+execute:
+  warning: false
+  message: false
+  echo: false
+fig-width: 8
+fig-height: 8
+---
+
+```{r}
+#| label: setup
+
+library(targets.utils) # pak::pak("geryan/targets.utils")
+library(bssdm)         # remotes::install_github("cebra-analytics/bssdm")
+library(tmap)
+
+# quarto renders with the working directory set to this file's directory
+archive_dir <- "."
+
+read_novelty <- function(object_name, suffix) {
+  read_terra_nested(
+    file.path(archive_dir, paste0(object_name, suffix, ".tar.gz"))
+  )
+}
+```
+
+
+{{< pagebreak >}}
+
+Two measures of environmental novelty: the Multivariate Environmental
+Similarity Surface, MESS
+([Elith et al. 2010](https://doi.org/10.1111/j.2041-210X.2010.00036.x)), and
+Extrapolation Detection, ExDet
+([Mesgaran et al. 2014](https://doi.org/10.1111/ddi.12209)).
+
+| Measure | Value | Colour | Interpretation |
+|:--------|:------|:-------|:-----------------------------------------------------|
+| MESS    | > 0   | blue   | Within the univariate range of all variables |
+| MESS    | ~ 0   | white  | Within range, but near the edge of one or more variables |
+| MESS    | < 0   | red    | Extrapolating |
+| ExDet   | 0 to 1 | yellow | Similar: within the multivariate / combinatorial range of the variables |
+| ExDet   | < 0   | red    | Type 1 novelty: true extrapolation, the same thing as MESS < 0 |
+| ExDet   | > 1   | blue   | Type 2 novelty: combinatorial extrapolation. Variables are each within their univariate range, but in unseen combinations |
+
+
+# Whole of Africa
+
+## Excluding proximity to sea
+
+### MESS
+```{r}
+#| label: mess-nosea-unmasked
+x <- read_novelty("africa_mess_nosea_arabiensis", "")
+plot(x, which = "mess")
+plot(x, which = "mod")
+plot(x, which = "mos")
+```
+
+
+### ExDet
+
+```{r}
+#| label: exdet-nosea-unmasked
+x <- read_novelty("africa_exdet_nosea_arabiensis", "")
+plot(x, which = "exdet")
+```
+
+
+## All covariates
+
+### MESS
+
+```{r}
+#| label: mess-unmasked
+x <- read_novelty("africa_mess_arabiensis", "")
+plot(x, which = "mess")
+plot(x, which = "mod")
+plot(x, which = "mos")
+```
+
+### ExDet
+
+```{r}
+#| label: exdet-unmasked
+x <- read_novelty("africa_exdet_arabiensis", "")
+plot(x, which = "exdet")
+```
+
+
+# Masked to the core arabiensis expert range
+
+## Excluding prox_to_sea
+
+### MESS
+
+```{r}
+#| label: mess-nosea-masked
+x <- read_novelty("africa_mess_nosea_arabiensis", "_masked")
+plot(x, which = "mess")
+plot(x, which = "mod")
+plot(x, which = "mos")
+```
+
+
+### ExDet
+
+```{r}
+#| label: exdet-nosea-masked
+x <- read_novelty("africa_exdet_nosea_arabiensis", "_masked")
+plot(x, which = "exdet")
+```
+
+## All covariates
+
+### MESS 
+
+```{r}
+#| label: mess-masked
+x <- read_novelty("africa_mess_arabiensis", "_masked")
+plot(x, which = "mess")
+plot(x, which = "mod")
+plot(x, which = "mos")
+```
+
+### ExDet
+
+```{r}
+#| label: exdet-masked
+x <- read_novelty("africa_exdet_arabiensis", "_masked")
+plot(x, which = "exdet")
+```
+
+
+

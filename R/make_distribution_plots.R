@@ -14,59 +14,45 @@ make_distribution_plots <- function(
     model_data_spatial,
     plot_dir = "outputs/figures/distribution_plots/",
     colp = "cadetblue2",
-    cola = "lightyellow3"
+    cola = "yellow",
+    colscheme = "va",
+    distpoints = TRUE,
+    guide = c("prob", "none"),
+    prefix = "distribution"
 ) {
 
+  guide = match.arg(guide)
 
   dist_plots_va <- distplotlist(
     pred_dist,
-    colscheme = "va"
+    colscheme = colscheme,
+    guide = guide
   )
 
   saveplotlist(
     dist_plots_va,
     dir = plot_dir,
-    prefix = "distribution"
+    prefix = prefix
   )
 
-  dist_plots_rb <- distplotlist(
-    pred_dist,
-    colscheme = "rb"
-  )
+  if(distpoints){
 
-  saveplotlist(
-    dist_plots_rb,
-    dir = plot_dir,
-    prefix = "distribution_rb"
-  )
+    dist_plots_va_points <- add_pa_points_list(
+      dist_plots_va,
+      model_data_spatial,
+      colp = colp,
+      cola = cola
+    )
 
+    saveplotlist(
+      dist_plots_va_points,
+      dir = plot_dir,
+      prefix = "distpoints"
+    )
 
-  dist_plots_va_points <- add_pa_points_list(
-    dist_plots_va,
-    model_data_spatial,
-    colp = colp,
-    cola = cola
-  )
-
-  saveplotlist(
-    dist_plots_va_points,
-    dir = plot_dir,
-    prefix = "distpoints"
-  )
+  }
 
 
-  dist_plots_rb_points <- add_pa_points_list(
-    dist_plots_rb,
-    model_data_spatial,
-    colp = "yellow",
-    cola = "grey80"
-  )
-
-  saveplotlist(
-    dist_plots_rb_points,
-    dir = plot_dir,
-    prefix = "distpoints_rb"
-  )
-
+  NULL
 
 }

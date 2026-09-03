@@ -26,7 +26,8 @@ tar_option_set(
     "bayesplot",
     "patchwork",
     # "see"
-    "MCMCvis"
+    "MCMCvis",
+    "bssdm" # remotes::install_github("cebra-analytics/bssdm")
   ),
   workspace_on_error = TRUE
 )
@@ -49,6 +50,8 @@ list(
     user_is_gerry_spartan,
     Sys.info()[["user"]] == "ryange"
   ),
+
+
 
   # read in offset layers
 
@@ -75,6 +78,141 @@ list(
     project_mask_5_outline,
     make_mask_from_offsets(offsets_raw) |>
       set_layer_names("project_mask")
+  ),
+
+  ######################
+
+  # ESA CCI / C3S annual land cover from the Copernicus CDS
+  # `satellite-land-cover`: 300 m, 1992-2022, 22-class UN FAO LCCS legend.
+  # https://cds.climate.copernicus.eu/datasets/satellite-land-cover
+  #
+  # Branched by year. Each branch pulls one year and rescales it onto the
+  # new_mask grid, so neither the global grid nor the 31-year stack is ever
+  # held whole -- every terra step streams to disk, see
+  # R/prepare_esa_landcover.R. An interrupted run resumes at the year it
+  # stopped on, and years already downloaded are never re-fetched.
+  #
+  # NEEDS A CDS TOKEN. Once per machine:
+  #   ecmwfr::wf_set_key(key = "<token from cds.climate.copernicus.eu/profile>")
+  # plus accepting the ESA CCI and VITO licences on the dataset page above,
+  # or every request comes back 403.
+  #
+  # MOVING THESE TARGETS TO ANOTHER PROJECT
+  # The four R/esa_* and R/*_esa_landcover files are self-contained apart from
+  # terra and ecmwfr, but these target definitions are NOT. They depend on two
+  # things that live in this file, not in R/, and so will not travel:
+  #   read_rast()  -- defined at the top of _targets.R
+  #   new_mask     -- this project's analysis grid, itself a path target
+  # In a new project either port read_rast() across as well, or drop it and
+  # pass the reference grid straight in, e.g.
+  #   prepare_esa_landcover(archive = ..., new_mask = terra::rast(<ref path>))
+  # Nothing in the functions assumes the grid is 1 km or African: any
+  # SpatRaster works as the target grid, and mode-resampling handles the rest.
+  #
+  # AS BUILT (2026-08-27, 1992-2022):
+  #   esa_landcover_all  31 layers, 8705 x 8405, INT1U, categorical, 40 MB
+  #   per-year tifs      225 MB total   |  source zips  13 GB (446 MB/year)
+  #   legend             38 LCCS classes, read from the file, 0 = no_data
+  # The zips are only needed to rebuild esa_landcover_year; they can be
+  # deleted once the per-year tifs exist, at the cost of a re-download if a
+  # branch is ever invalidated.
+
+  tar_target(
+    esa_landcover_years,
+    1992:2022
+  ),
+
+  # c(N, W, S, E) for the CDS server-side subset, taken from the analysis grid
+  # so the 129600 x 64800 global product never has to come down the wire
+  tar_target(
+    esa_landcover_box,
+    c(38.04167, -18.50000, -35.50000,  52.54166)
+    #esa_landcover_area(project_mask_5_outline)
+  ),
+
+  tar_target(
+    esa_landcover_zip,
+    download_esa_landcover(
+      year = esa_landcover_years,
+      dest_dir = "data/raster/esa_landcover",
+      area = esa_landcover_box
+    ),
+    pattern = map(esa_landcover_years),
+    format = "file"
+  ),
+
+  # legend read from the NetCDF's own flag_values/flag_meanings
+  tar_target(
+    esa_landcover_lookup,
+    esa_landcover_legend(esa_landcover_zip[1])
+  ),
+
+  tar_target(
+    esa_landcover_year,
+    prepare_esa_landcover(
+      archive = esa_landcover_zip,
+      new_mask = project_mask_5_outline,
+      year = esa_landcover_years,
+      outputdir = "outputs/raster/esa_landcover"
+    ),
+    pattern = map(esa_landcover_zip, esa_landcover_years),
+    format = "file"
+  ),
+
+  # the deliverable: one multi-layer raster, one layer per year, on new_mask
+  tar_target(
+    esa_landcover_all,
+    stack_esa_landcover(
+      paths = esa_landcover_year,
+      years = esa_landcover_years,
+      lookup = esa_landcover_lookup,
+      filename = "outputs/raster/esa_landcover_all.tif"
+    ),
+    format = "file"
+  ),
+
+  ## split version
+  # the 38 -> 10 class grouping, as a target so that editing
+  # esa_landcover_group_defs() invalidates only what depends on it
+  tar_target(
+    esa_landcover_groups,
+    esa_landcover_group_defs()
+  ),
+
+  tar_target(
+    esa_landcover_classes,
+    names(esa_landcover_groups)
+  ),
+
+  # branched over year: one file per year, one layer per class.
+  # reads the legend out of each year's own NetCDF and errors if it does not
+  # match the grouping, so a product-version legend change cannot pass silently
+  tar_target(
+    esa_landcover_proportion_year,
+    proportion_esa_landcover(
+      archive = esa_landcover_zip,
+      new_mask = project_mask_5_outline,
+      year = esa_landcover_years,
+      groups = esa_landcover_groups,
+      outputdir = "outputs/raster/esa_landcover_proportion"
+    ),
+    pattern = map(esa_landcover_zip, esa_landcover_years),
+    format = "file"
+  ),
+
+  # the deliverable, branched over class: one file per class, one layer per
+  # year. `esa_landcover_proportion_year` is not in the pattern, so each
+  # branch receives all 31 paths and pulls its own class out of each
+  tar_target(
+    esa_landcover_proportion,
+    stack_esa_landcover_proportion(
+      paths = esa_landcover_proportion_year,
+      years = esa_landcover_years,
+      class = esa_landcover_classes,
+      outputdir = "outputs/raster/esa_landcover_proportion"
+    ),
+    pattern = map(esa_landcover_classes),
+    format = "file"
   ),
 
 
@@ -552,6 +690,19 @@ list(
   #   make_temperature_offset(project_mask_5)
   # ),
 
+
+  # irrigation
+  # The map shows the amount of area equipped for irrigation around the year 2005 in percentage of the total area on a raster with a resolution of 5 minutes.
+  # Stefan Siebert, Verena Henrich, Karen Frenken and Jacob Burke (2013). Global Map of Irrigation Areas version 5. Rheinische Friedrich-Wilhelms-University, Bonn, Germany / Food and Agriculture Organization of the United Nations, Rome, Italy
+  # https://www.fao.org/aquastat/en/geospatial-information/global-maps-irrigated-areas/latest-version
+  tar_terra_rast(
+    irrigation_raw,
+    rast(x = "data/raster/gmia_v5_aei_pct.asc") |>
+      crop(project_mask_10) |>
+      resample(covariate_rast_10[[1]]) |>
+      mask(covariate_rast_10[[1]])
+  ),
+
   #
   # bias
   # travel time from research facilities
@@ -749,6 +900,25 @@ list(
       aggregate()
   ),
 
+  tar_terra_vect(
+    ken,
+    gadm(
+      country = "KEN",
+      level = 0,
+      path = "data/raster/geodata/"
+    )
+  ),
+
+  tar_terra_vect(
+    uga,
+    gadm(
+      country = "UGA",
+      level = 0,
+      path = "data/raster/geodata/"
+    )
+  ),
+
+
   # expert maps from
   # Sinka, M.E., Bangs, M.J., Manguin, S. et al.
   # The dominant Anopheles vectors of human malaria in Africa, Europe and
@@ -942,6 +1112,43 @@ list(
      print(n = 999)
  ),
 
+ tar_target(
+   species_unique_location_presence_records,
+   full_data_records |>
+     mutate(
+       presence = ifelse(
+         (!is.na(occurrence_n) & occurrence_n == 0) |
+           (!is.na(binary_absence) & binary_absence == "yes"),
+         0,
+         1
+       )
+     ) |>
+     select(species, latitude, longitude, presence) |>
+     distinct() |>
+     group_by(species, presence) |>
+     summarise(n = n()) |>
+     mutate(
+       presence = ifelse(
+         presence == 1,
+         "present",
+         "absent"
+       )
+     ) |>
+     pivot_wider(
+       values_from = n,
+       names_from = "presence"
+     ) |>
+     left_join(
+       x = species_unique_location_records,
+       by = "species"
+     ) |>
+     rename(
+       n_unique_locations = n
+     ) |>
+     arrange(desc(present)) |>
+     print(n = 999)
+ ),
+
  # need to refine this list
  tar_target(
    target_species,
@@ -1085,6 +1292,15 @@ list(
    match_offset_data(
      model_data_spatial_no_offset,
      offsets_5
+   )
+ ),
+
+ tar_target(
+   model_data_spatial_landcover,
+   match_landcover_data(
+     model_data_spatial = model_data_spatial,
+     landcover_paths = esa_landcover_proportion,
+     landcover_classes = esa_landcover_classes
    )
  ),
 
@@ -1252,6 +1468,151 @@ list(
  #   )
  # ),
 
+ ## MESS Analysis
+
+ tar_terra_nested(
+   name = africa_mess,
+   command = bssdm::mess(
+     x = covariate_rast_5[[target_covariate_names]],
+     ref = model_data_spatial |>
+       select(
+         all_of(target_covariate_names)
+       )
+   )
+ ),
+
+
+ tar_terra_nested(
+   name = africa_mess_nosea,
+   command = bssdm::mess(
+     x = covariate_rast_5[[target_covariate_names[which(target_covariate_names != "prox_to_sea")]]],
+     ref = model_data_spatial |>
+       select(
+         all_of(target_covariate_names[which(target_covariate_names != "prox_to_sea")])
+       )
+   )
+ ),
+
+ tar_terra_nested(
+   name = africa_mess_arabiensis,
+   command = bssdm::mess(
+     x = covariate_rast_5[[target_covariate_names]],
+     ref = model_data_spatial |>
+       filter(species == "arabiensis") |>
+       filter(!inferred) |>
+       select(
+         all_of(target_covariate_names)
+       )
+   )
+ ),
+
+
+ tar_terra_nested(
+   name = africa_mess_nosea_arabiensis,
+   command = bssdm::mess(
+     x = covariate_rast_5[[target_covariate_names[which(target_covariate_names != "prox_to_sea")]]],
+     ref = model_data_spatial |>
+       filter(species == "arabiensis") |>
+       filter(!inferred) |>
+       select(
+         all_of(target_covariate_names[which(target_covariate_names != "prox_to_sea")])
+       )
+   )
+ ),
+
+
+ tar_terra_nested(
+   name = africa_exdet_arabiensis,
+   command = bssdm::exdet(
+     x = covariate_rast_5[[target_covariate_names]],
+     ref = model_data_spatial |>
+       filter(species == "arabiensis") |>
+       filter(!inferred) |>
+       select(
+         all_of(target_covariate_names)
+       )
+   )
+ ),
+
+
+ tar_terra_nested(
+   name = africa_exdet_nosea_arabiensis,
+   command = bssdm::exdet(
+     x = covariate_rast_5[[target_covariate_names[which(target_covariate_names != "prox_to_sea")]]],
+     ref = model_data_spatial |>
+       filter(species == "arabiensis") |>
+       filter(!inferred) |>
+       select(
+         all_of(target_covariate_names[which(target_covariate_names != "prox_to_sea")])
+       )
+   )
+ ),
+
+
+
+ # something up here: works fine in console but stuffs up saving in targets
+ # pipeline
+ tar_terra_nested(
+   name = africa_mess_br,
+   command = bssdm::mess(
+     # x = c(
+     #   covariate_rast_5[[target_covariate_names]],
+     #   bioregion_layers[[bioregion_names]]
+     # ),
+     x = covariate_rast_5_all[[c(target_covariate_names, bioregion_names)]],
+     ref = model_data_spatial |>
+       select(
+         all_of(c(target_covariate_names, bioregion_names))
+       )
+   )
+ ),
+
+
+ tar_terra_nested(
+   name = africa_exdet,
+   command = bssdm::exdet(
+     x = covariate_rast_5[[target_covariate_names]],
+     ref = model_data_spatial |>
+       select(
+         all_of(target_covariate_names)
+       )
+   )
+ ),
+
+ tar_terra_nested(
+   name = africa_exdet_nosea,
+   command = bssdm::exdet(
+     x = covariate_rast_5[[target_covariate_names[which(target_covariate_names != "prox_to_sea")]]],
+     ref = model_data_spatial |>
+       select(
+         all_of(target_covariate_names[which(target_covariate_names != "prox_to_sea")])
+       )
+   )
+ ),
+
+
+ # something up here: works fine in console but stuffs up saving in targets
+ # pipeline
+ tar_terra_nested(
+   name = africa_exdet_br,
+   command = bssdm::exdet(
+     # x = c(
+     #   covariate_rast_5[[target_covariate_names]],
+     #   bioregion_layers[[bioregion_names]]
+     # ),
+     x = covariate_rast_5_all[[c(target_covariate_names, bioregion_names)]],
+     ref = model_data_spatial |>
+       select(
+         all_of(c(target_covariate_names, bioregion_names))
+       )
+   )
+ ),
+
+
+
+
+
+
  # ######
  # # PCA Covariate layers
  # ######
@@ -1333,6 +1694,8 @@ list(
    )
  ),
 
+
+
  tar_target(
    resids_and_rhats,
    validation_and_checking(
@@ -1363,6 +1726,123 @@ list(
      plotdir = "outputs/figures/validation/sre_20260629/"
    )
  ),
+
+
+ ###################
+ # reparameterisation section
+
+ tar_target(
+   model_fit_sre_rep,
+   fit_model_multispecies_pp_count_source_effect_reparam(
+     image_name = "outputs/images/model_fit_test_source_re_rep.RData",
+     model_data_spatial = model_data_spatial,
+     target_covariate_names = target_covariate_names,
+     target_species = target_species,
+     bioregion_names = bioregion_names,
+     n_burnin = 1000,
+     n_samples = 1000,
+     n_chains = 50,
+     n_cores = 32
+   )
+ ),
+
+ tar_target(
+   resids_and_rhats_sre_rep,
+   validation_and_checking(
+     model_fit_sre_rep,
+     nsims = 100,
+     plotdir = "outputs/figures/validation/sre_rep_20260729/"
+   )
+ ),
+
+ tar_target(
+   preds_sm_rep,
+   predict_lambda_reparam(
+     image_name = model_fit_sre_rep,
+     prediction_layer = covariate_rast_10, # use 10k for faster preds
+     target_species,
+     output_file_prefix = "outputs/rasters/reparam_multispecies_pp_rep",
+     offset = offsets_avg_10,
+     sm = TRUE, # if predict survey method
+     nsims = 100 # lower for faster preds
+   )
+ ),
+
+
+ # distribution plots
+ tar_terra_rast(
+   pred_dist_not_masked_rep,
+   rast(preds_sm_rep$p)
+   #rast("spartan_model_comparison/m6/m6_p.tif")
+ ),
+
+ tar_terra_rast(
+   pred_p_rep,
+   mask_landcover_and_expert_offset(
+     p = pred_dist_not_masked_rep,
+     expert = expert_offset_maps_10,
+     bare = landcover_bare_10
+   )
+ ),
+
+ tar_target(
+   plot_pred_p_rep,
+   make_distribution_plots(
+     pred_dist = pred_p_rep,
+     model_data_spatial,
+     plot_dir = "outputs/figures/distribution_plots/distn_20260825_rep"
+   )
+ ),
+
+ # average abundance plots
+ tar_terra_rast(
+   pred_lambda_rep,
+   mask_landcover_and_expert_offset(
+     p = rast(preds_sm_rep$lambda_no_offset)* offsets_avg_10,
+     expert = expert_offset_maps_10,
+     bare = landcover_bare_10
+   )
+ ),
+
+ tar_target(
+   plot_pred_lambda_rep,
+   make_distribution_plots(
+     pred_lambda_rep,
+     model_data_spatial,
+     plot_dir = "outputs/figures/distribution_plots/distn_20260825_rep",
+     colscheme = "orchid",
+     distpoints = FALSE,
+     guide = "none",
+     prefix = "lambda"
+   )
+ ),
+
+
+ # uncertainty plots
+ tar_terra_rast(
+   pred_cv_rep,
+   mask_landcover_and_expert_offset(
+     p = rast(preds_sm_rep$p_cv),
+     expert = expert_offset_maps_10,
+     bare = landcover_bare_10
+   )
+ ),
+
+ tar_target(
+   plot_pred_cv_rep,
+   make_distribution_plots(
+     pred_cv_rep,
+     model_data_spatial,
+     plot_dir = "outputs/figures/distribution_plots/distn_20260825_rep",
+     colscheme = "brick",
+     distpoints = FALSE,
+     guide = "none",
+     prefix = "cv"
+   )
+ ),
+
+
+ ######
 
  tar_target(
    preds_sm,
@@ -1406,8 +1886,8 @@ list(
 
  tar_terra_rast(
    pred_pcv_not_masked,
-   # rast(preds_sm$p_cv)
-   rast("spartan_model_comparison/m6/m6_p_cv.tif")
+   rast(preds_sm$p_cv)
+   #rast("spartan_model_comparison/m6/m6_p_cv.tif")
  ),
 
  tar_terra_rast(

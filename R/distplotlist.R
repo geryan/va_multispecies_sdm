@@ -19,6 +19,10 @@ distplotlist <- function(
       "mono",
       "orchid",
       "brick"
+    ),
+    guide = c(
+      "prob",
+      "none"
     )
   ) {
 
@@ -31,7 +35,7 @@ distplotlist <- function(
     pred_dist,
     colscheme
     ){
-      distplot(pred_dist, x, colscheme, guide = "prob")
+      distplot(pred_dist, x, colscheme, guide = guide)
     },
     pred_dist,
     colscheme,

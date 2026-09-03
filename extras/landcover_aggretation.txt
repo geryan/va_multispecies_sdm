@@ -1,0 +1,62 @@
+
+
+# crop_other
+cropland_rainfed
+cropland_rainfed_herbaceous_cover
+cropland_rainfed_tree_or_shrub_cover
+mosaic_cropland
+
+
+# irrigated
+cropland_irrigated
+
+# tree
+mosaic_natural_vegetation
+tree_broadleaved_evergreen_closed_to_open
+tree_broadleaved_deciduous_closed_to_open
+tree_broadleaved_deciduous_closed
+tree_broadleaved_deciduous_open
+tree_needleleaved_evergreen_closed_to_open
+tree_needleleaved_evergreen_closed
+tree_needleleaved_evergreen_open
+tree_needleleaved_deciduous_closed_to_open
+tree_needleleaved_deciduous_closed
+tree_needleleaved_deciduous_open
+tree_mixed
+mosaic_tree_and_shrub
+
+# grassland
+shrubland
+shrubland_evergreen
+shrubland_deciduous
+grassland
+mosaic_herbaceous
+
+# sparse
+sparse_vegetation
+sparse_tree
+sparse_shrub
+sparse_herbaceous
+
+# wetland
+tree_cover_flooded_fresh_or_brakish_water
+shrub_or_herbaceous_cover_flooded
+
+# mangrove
+tree_cover_flooded_saline_water
+
+#urban
+urban
+
+# bare
+bare_areas
+bare_areas_consolidated
+bare_areas_unconsolidated
+
+# water
+water
+
+ ignore
+no_data
+snow_and_ice
+lichens_and_mosses

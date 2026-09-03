@@ -11,7 +11,7 @@
 add_expert_offset <- function(
     predraw,
     expert_offset_maps
-  ) {
+) {
 
 
   r <- sapp(
@@ -23,8 +23,10 @@ add_expert_offset <- function(
         terra::subset(x, sp) * terra::subset(expert_offset_maps, "gambiae")
       } else if (sp %in% c("funestus", "funestus_complex")){
         terra::subset(x, sp) * terra::subset(expert_offset_maps, "funestus")
-      } else {
+      } else if (sp %in% names(expert_offset_maps)) {
         terra::subset(x, sp) * terra::subset(expert_offset_maps, sp)
+      } else {
+        terra::subset(x, sp)
       }
     },
     expert_offset_maps
