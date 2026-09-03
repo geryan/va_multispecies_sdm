@@ -257,29 +257,25 @@ list(
   ),
 
 
-  # bare landcover
-  tar_terra_rast(
-    landcover_bare_raw,
-    gt_lndcvr(
-      vars = c(
-        "bare"
-      ),
-      ifelse(
-        user_is_gerry_spartan,
-        "/data/gpfs/projects/punim1422/va_multispecies_sdm/data/raster/geodata/",
-        "data/raster/geodata/"
-      )
-    )
-  ),
-
+  # bare landcover, from the same ESA CCI proportions as the model covariates
+  # and at the same year, so the bare ground masked out of the prediction maps
+  # is the bare ground the model saw. `bare` is not itself a model covariate --
+  # it is one of the two classes dropped to break the sum-to-1 closure, see
+  # `model_landcover_classes` -- but it is still in `esa_landcover_proportion`.
+  #
+  # Used as a continuous down-weighting, `r * (1 - bare)`, in
+  # mask_landcover_and_expert_offset() and in `landscape_mask_10`, so it wants
+  # a fraction rather than a class, which is what this is. No threshold to
+  # retune against the WorldCover version it replaces.
   tar_terra_rast(
     landcover_bare,
-    landcover_bare_raw |>
-      aggregate(fact = 5) |>
-      crop(y = project_mask_5) |>
-      resample(y = project_mask_5) |>
-      fill_na_with_nearest_mean(maxRadiusCell = 50) |>
-      mask(mask = project_mask_5)
+    esa_landcover_model_layers(
+      landcover_paths = esa_landcover_proportion,
+      classes = "bare",
+      year = landcover_prediction_year,
+      project_mask = project_mask_5
+    )
+    # already on the project grid, so no aggregate / resample / fill_na step
   ),
 
   tar_terra_rast(
@@ -291,6 +287,31 @@ list(
         na.rm = TRUE
       )
   ),
+
+  ## bare landcover from worldcover -- REPLACED by the ESA version above
+  # tar_terra_rast(
+  #   landcover_bare_raw,
+  #   gt_lndcvr(
+  #     vars = c(
+  #       "bare"
+  #     ),
+  #     ifelse(
+  #       user_is_gerry_spartan,
+  #       "/data/gpfs/projects/punim1422/va_multispecies_sdm/data/raster/geodata/",
+  #       "data/raster/geodata/"
+  #     )
+  #   )
+  # ),
+  #
+  # tar_terra_rast(
+  #   landcover_bare,
+  #   landcover_bare_raw |>
+  #     aggregate(fact = 5) |>
+  #     crop(y = project_mask_5) |>
+  #     resample(y = project_mask_5) |>
+  #     fill_na_with_nearest_mean(maxRadiusCell = 50) |>
+  #     mask(mask = project_mask_5)
+  # ),
 
   # distance from sea
   tar_terra_rast(
@@ -436,20 +457,78 @@ list(
     )
   ),
 
-  ## landcover vars from worldcover
+  ## landcover vars: ESA CCI class proportions, time-varying
+  #
+  # These replace the static WorldCover classes, which are commented out below.
+  # The same data wears two faces:
+  #   - each RECORD gets its own year's proportions, appended to
+  #     `model_data_spatial` by match_landcover_data();
+  #   - the model PREDICTS to, and background points are drawn against, a single
+  #     year, `landcover_prediction_year`, held in `landcover_esa_5` and so in
+  #     `covariate_rast_5` / `covariate_rast_10`.
+  #
+  # `bare` and `sparse` are deliberately NOT model covariates. The full set of
+  # ESA classes sums to exactly 1, which is perfectly collinear with the model's
+  # per-species intercept `alpha` -- a singular design. Dropping two classes
+  # breaks that closure while leaving them in the denominator, so the classes
+  # that remain are still the fraction of the cell they cover. This mirrors the
+  # "excluding the obviously unsuitable habitat" choice made for the WorldCover
+  # classes it replaces.
+  tar_target(
+    model_landcover_classes,
+    c(
+      "crop_other",
+      "irrigated",
+      "tree",
+      "shrubland",
+      "grassland",
+      "wetland",
+      "mangrove",
+      "urban",
+      "water"
+    )
+  ),
+
+  # the year the static prediction surface is taken from, and the year given to
+  # records with no date of their own -- including every background point, which
+  # keeps the quadrature on the same land cover the model predicts to
+  tar_target(
+    landcover_prediction_year,
+    2022
+  ),
+
   tar_terra_rast(
-    landcover_covs,
-    landcover_raw |>
-      aggregate(fact = 5) |>
-      crop(y = project_mask_5) |>
-      resample(y = project_mask_5) |>
-      fill_na_with_nearest_mean(maxRadiusCell = 50) |>
-      mask(mask = project_mask_5) #|> scale()
+    landcover_esa_5,
+    esa_landcover_model_layers(
+      landcover_paths = esa_landcover_proportion,
+      classes = model_landcover_classes,
+      year = landcover_prediction_year,
+      project_mask = project_mask_5
+    )
+    # already written on the project grid, so unlike the WorldCover layers there
+    # is no aggregate / resample / fill_na step -- only the mask, which trims the
+    # water cells project_mask_5 drops.
     # don't scale landcover types, so they remain 0-1, and a
     # positive-constrained coefficient enforces that more habitat corresponds
     # with more mosquitoes
-
   ),
+
+  ## landcover vars from worldcover -- REPLACED by landcover_esa_5 above.
+  # `landcover_raw` itself is still needed: water_mask_5, and so project_mask_5,
+  # are built from it.
+  # tar_terra_rast(
+  #   landcover_covs,
+  #   landcover_raw |>
+  #     aggregate(fact = 5) |>
+  #     crop(y = project_mask_5) |>
+  #     resample(y = project_mask_5) |>
+  #     fill_na_with_nearest_mean(maxRadiusCell = 50) |>
+  #     mask(mask = project_mask_5) #|> scale()
+  #   # don't scale landcover types, so they remain 0-1, and a
+  #   # positive-constrained coefficient enforces that more habitat corresponds
+  #   # with more mosquitoes
+  #
+  # ),
 
   # this reads in the bioregions as a single file
   # but it's useless for passing on the categories
@@ -691,17 +770,17 @@ list(
   # ),
 
 
-  # irrigation
-  # The map shows the amount of area equipped for irrigation around the year 2005 in percentage of the total area on a raster with a resolution of 5 minutes.
-  # Stefan Siebert, Verena Henrich, Karen Frenken and Jacob Burke (2013). Global Map of Irrigation Areas version 5. Rheinische Friedrich-Wilhelms-University, Bonn, Germany / Food and Agriculture Organization of the United Nations, Rome, Italy
-  # https://www.fao.org/aquastat/en/geospatial-information/global-maps-irrigated-areas/latest-version
-  tar_terra_rast(
-    irrigation_raw,
-    rast(x = "data/raster/gmia_v5_aei_pct.asc") |>
-      crop(project_mask_10) |>
-      resample(covariate_rast_10[[1]]) |>
-      mask(covariate_rast_10[[1]])
-  ),
+  # # irrigation
+  # # The map shows the amount of area equipped for irrigation around the year 2005 in percentage of the total area on a raster with a resolution of 5 minutes.
+  # # Stefan Siebert, Verena Henrich, Karen Frenken and Jacob Burke (2013). Global Map of Irrigation Areas version 5. Rheinische Friedrich-Wilhelms-University, Bonn, Germany / Food and Agriculture Organization of the United Nations, Rome, Italy
+  # # https://www.fao.org/aquastat/en/geospatial-information/global-maps-irrigated-areas/latest-version
+  # tar_terra_rast(
+  #   irrigation_raw,
+  #   rast(x = "data/raster/gmia_v5_aei_pct.asc") |>
+  #     crop(project_mask_10) |>
+  #     resample(covariate_rast_10[[1]]) |>
+  #     mask(covariate_rast_10[[1]])
+  # ),
 
   #
   # bias
@@ -747,7 +826,7 @@ list(
     check_no_mismatched_nas(
       proj_mask = project_mask_5,
       offsets_5[[1]],
-      landcover_covs,
+      landcover_esa_5,
       prox_to_sea,
       bias_tt_5
     )
@@ -757,16 +836,13 @@ list(
     target_covariate_names,
     c(
 
-      # only use the worldcover landcover classes, in fractional cover (0-1)
-      # form, excluding the obviously unsuitable habitat (bare, snow, etc)
-      "trees",
-      "grassland",
-      "shrubs",
-      "cropland",
-      "built",
-      "water",
-      "wetland",
-      "mangroves",
+      # ESA CCI land cover classes, in fractional cover (0-1) form, excluding
+      # the obviously unsuitable habitat (bare, sparse) -- which is also what
+      # keeps the design out of collinearity with the intercept. Defined once,
+      # in `model_landcover_classes`, because the same list picks the layers of
+      # `landcover_esa_5` and the columns match_landcover_data() puts on
+      # `model_data_spatial`; the three have to agree
+      model_landcover_classes,
 
       # also footprint for anthropophilic/anthropophagic spp
       "footprint",
@@ -791,7 +867,7 @@ list(
   tar_terra_rast(
     covariate_rast_5_all,
     c(
-      landcover_covs,
+      landcover_esa_5,
       prox_to_sea,
 
       soiltype_layers,
@@ -1287,21 +1363,33 @@ list(
  #
  ##############
 
+ # offsets are matched on year-month, land cover on year.
+ #
+ # The land cover columns are named for the classes themselves (`prefix = ""`),
+ # which is only safe now the WorldCover covariates are gone -- `grassland`,
+ # `water` and `wetland` were names in both sets.
+ #
+ # `replace = TRUE` because get_spatial_values() has already put land cover on
+ # these records under these same names, extracted from the static
+ # `landcover_esa_5` in `covariate_rast_5_all`. Those single-year values are
+ # replaced here by each record's own year. Rows with no date -- which is every
+ # background point -- take `na_year`, the same year `landcover_esa_5` is built
+ # from, so their values do not change.
  tar_target(
    model_data_spatial,
    match_offset_data(
      model_data_spatial_no_offset,
      offsets_5
-   )
- ),
-
- tar_target(
-   model_data_spatial_landcover,
-   match_landcover_data(
-     model_data_spatial = model_data_spatial,
-     landcover_paths = esa_landcover_proportion,
-     landcover_classes = esa_landcover_classes
-   )
+   ) |>
+     match_landcover_data(
+       landcover_paths = esa_landcover_proportion,
+       landcover_classes = esa_landcover_classes,
+       keep_classes = model_landcover_classes,
+       na_year = landcover_prediction_year,
+       prefix = "",
+       year_name = "landcover_year",
+       replace = TRUE
+     )
  ),
 
  # table 2 in manuscript
@@ -1664,6 +1752,44 @@ list(
  ###########
  ##
 
+
+ # ---------------------------------------------------------------------------
+ # WHAT THE WORLDCOVER -> ESA LAND COVER SWAP INVALIDATES
+ #
+ # `target_covariate_names` and `model_data_spatial` both changed, so every fit
+ # below is stale and every prediction taken from a saved fit image is stale
+ # with it -- 61 targets in all. The design matrix is now 11 covariates rather
+ # than 10, i.e. 198 columns per species (J = A + AB, B = 17 bioregions) rather
+ # than 180, so nothing can be reused from an existing image.
+ #
+ # Refit and rebuild, in this order:
+ #   model_fit_sre_rep  -> resids_and_rhats_sre_rep -> preds_sm_rep
+ #                      -> pred_dist_not_masked_rep -> pred_p_rep / pred_lambda_rep
+ #                         / pred_cv_rep -> plot_pred_*_rep
+ # That chain needs no code change: `covariate_rast_10` now carries the
+ # `landcover_prediction_year` land cover, so predictions are made at that year.
+ #
+ # The older chains are NOT updated and will not work as they stand:
+ #   model_fit, model_fit_sre, refit_model_fit_sre  -- refit, or leave stale
+ #   resids_and_rhats, resids_and_rhats_sre         -- follow their fits
+ #   preds_sm and everything under it (pred_dist_not_masked, pred_p, pred_pcv,
+ #     pred_lambda_mean_not_masked, pred_gr1, pred_dominant, distribution_plots_sm,
+ #     rel_abund_rgb_sm, rel_abund_plots_sm, abundance_cubes)
+ # `preds_sm` calls predict_lambda(), which still pushes the whole design-matrix
+ # multiply through greta::calculate() and so aborts the subprocess at 180
+ # columns already; at 198 it will fail harder, not less. Use the _rep chain, or
+ # port the fix from predict_lambda_reparam().
+ #
+ # Also rebuilt, harmlessly: the bg points (bg_points, bg_kmeans_list_spatial,
+ # bg_kmeans_df) are drawn against covariate_rast_5 and so are resampled; the
+ # MESS / ExDet novelty targets (africa_mess*, africa_exdet*) read
+ # target_covariate_names and rebuild against the new covariate set.
+ #
+ # `landcover_bare` / `landcover_bare_10` also moved to ESA (the 2022 `bare`
+ # proportion). They are the bare-ground mask on the prediction maps and on
+ # `landscape_mask_10`, not model covariates, so they change the maps without
+ # touching the design matrix.
+ # ---------------------------------------------------------------------------
 
  tar_target(
    model_fit,
