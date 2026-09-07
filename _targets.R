@@ -1958,10 +1958,50 @@ list(
  ###################
  # reparameterisation section
 
+ # Output paths for this section are built from the five targets below, so a
+ # rerun is a one-line edit rather than six. They are targets rather than plain
+ # globals to match landcover_prediction_year / footprint_prediction_year, and
+ # they are kept as separate targets rather than one list so that bumping the
+ # date does not invalidate the fit -- model_fit_sre_rep depends on
+ # rep_fit_image alone, so rep_tag reaches the validation and plot targets and
+ # stops there.
+ tar_target(
+   rep_tag,
+   "20260907"
+ ),
+
+ # the heavy artefacts are overwritten each run, so these stems carry no date
+ tar_target(
+   rep_fit_image,
+   "outputs/images/model_fit_test_source_re_rep.RData"
+ ),
+
+ tar_target(
+   rep_pred_prefix,
+   "outputs/rasters/reparam_multispecies_pp_rep"
+ ),
+
+ # the plot directories accumulate, so these are dated
+ tar_target(
+   rep_validation_dir,
+   sprintf(
+     "outputs/figures/validation/sre_rep_%s/",
+     rep_tag
+   )
+ ),
+
+ tar_target(
+   rep_plot_dir,
+   sprintf(
+     "outputs/figures/distribution_plots/distn_%s_rep",
+     rep_tag
+   )
+ ),
+
  tar_target(
    model_fit_sre_rep,
    fit_model_multispecies_pp_count_source_effect_reparam(
-     image_name = "outputs/images/model_fit_test_source_re_rep.RData",
+     image_name = rep_fit_image,
      model_data_spatial = model_data_spatial,
      target_covariate_names = target_covariate_names,
      target_species = target_species,
@@ -1978,7 +2018,7 @@ list(
    validation_and_checking(
      model_fit_sre_rep,
      nsims = 100,
-     plotdir = "outputs/figures/validation/sre_rep_20260729/"
+     plotdir = rep_validation_dir
    )
  ),
 
@@ -1988,7 +2028,7 @@ list(
      image_name = model_fit_sre_rep,
      prediction_layer = covariate_rast_10, # use 10k for faster preds
      target_species,
-     output_file_prefix = "outputs/rasters/reparam_multispecies_pp_rep",
+     output_file_prefix = rep_pred_prefix,
      offset = offsets_avg_10,
      sm = TRUE, # if predict survey method
      nsims = 100 # lower for faster preds
@@ -2017,7 +2057,7 @@ list(
    make_distribution_plots(
      pred_dist = pred_p_rep,
      model_data_spatial,
-     plot_dir = "outputs/figures/distribution_plots/distn_20260825_rep"
+     plot_dir = rep_plot_dir
    )
  ),
 
@@ -2036,7 +2076,7 @@ list(
    make_distribution_plots(
      pred_lambda_rep,
      model_data_spatial,
-     plot_dir = "outputs/figures/distribution_plots/distn_20260825_rep",
+     plot_dir = rep_plot_dir,
      colscheme = "orchid",
      distpoints = FALSE,
      guide = "none",
@@ -2060,7 +2100,7 @@ list(
    make_distribution_plots(
      pred_cv_rep,
      model_data_spatial,
-     plot_dir = "outputs/figures/distribution_plots/distn_20260825_rep",
+     plot_dir = rep_plot_dir,
      colscheme = "brick",
      distpoints = FALSE,
      guide = "none",
