@@ -127,7 +127,8 @@ validation_and_checking <- function(
       "%s/posterior",
       plotdir
     )
-  )
+  ) |>
+    try()
 
 
   ####
