@@ -27,8 +27,8 @@ tar_option_set(
     "patchwork",
     # "see"
     "MCMCvis",
-    "sf",      # spatial cross-validation: blockCV works on sf, not SpatVector
-    "blockCV",
+    #"sf",      # spatial cross-validation: blockCV works on sf, not SpatVector
+    #"blockCV",
     "bssdm" # remotes::install_github("cebra-analytics/bssdm")
   ),
   workspace_on_error = TRUE
@@ -1993,7 +1993,7 @@ list(
  # stops there.
  tar_target(
    rep_tag,
-   "20260907"
+   "20260923"
  ),
 
  # the heavy artefacts are overwritten each run, so these stems carry no date
@@ -2133,6 +2133,16 @@ list(
      prefix = "cv"
    )
  ),
+
+ tar_target(
+   mod_dat_pts,
+   model_data_spatial |>
+     filter(inferred == FALSE) |>
+     select(species, latitude, longitude, data_type)
+ ),
+ #write_csv(mod_dat_pts, "outputs/va_point_locations.csv")
+
+
 
 
  ###################
