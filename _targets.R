@@ -27,6 +27,8 @@ tar_option_set(
     "patchwork",
     # "see"
     "MCMCvis",
+    "sf",      # spatial cross-validation: blockCV works on sf, not SpatVector
+    "blockCV",
     "bssdm" # remotes::install_github("cebra-analytics/bssdm")
   ),
   workspace_on_error = TRUE
@@ -257,29 +259,25 @@ list(
   ),
 
 
-  # bare landcover
-  tar_terra_rast(
-    landcover_bare_raw,
-    gt_lndcvr(
-      vars = c(
-        "bare"
-      ),
-      ifelse(
-        user_is_gerry_spartan,
-        "/data/gpfs/projects/punim1422/va_multispecies_sdm/data/raster/geodata/",
-        "data/raster/geodata/"
-      )
-    )
-  ),
-
+  # bare landcover, from the same ESA CCI proportions as the model covariates
+  # and at the same year, so the bare ground masked out of the prediction maps
+  # is the bare ground the model saw. `bare` is not itself a model covariate --
+  # it is one of the two classes dropped to break the sum-to-1 closure, see
+  # `model_landcover_classes` -- but it is still in `esa_landcover_proportion`.
+  #
+  # Used as a continuous down-weighting, `r * (1 - bare)`, in
+  # mask_landcover_and_expert_offset() and in `landscape_mask_10`, so it wants
+  # a fraction rather than a class, which is what this is. No threshold to
+  # retune against the WorldCover version it replaces.
   tar_terra_rast(
     landcover_bare,
-    landcover_bare_raw |>
-      aggregate(fact = 5) |>
-      crop(y = project_mask_5) |>
-      resample(y = project_mask_5) |>
-      fill_na_with_nearest_mean(maxRadiusCell = 50) |>
-      mask(mask = project_mask_5)
+    esa_landcover_model_layers(
+      landcover_paths = esa_landcover_proportion,
+      classes = "bare",
+      year = landcover_prediction_year,
+      project_mask = project_mask_5
+    )
+    # already on the project grid, so no aggregate / resample / fill_na step
   ),
 
   tar_terra_rast(
@@ -291,6 +289,31 @@ list(
         na.rm = TRUE
       )
   ),
+
+  ## bare landcover from worldcover -- REPLACED by the ESA version above
+  # tar_terra_rast(
+  #   landcover_bare_raw,
+  #   gt_lndcvr(
+  #     vars = c(
+  #       "bare"
+  #     ),
+  #     ifelse(
+  #       user_is_gerry_spartan,
+  #       "/data/gpfs/projects/punim1422/va_multispecies_sdm/data/raster/geodata/",
+  #       "data/raster/geodata/"
+  #     )
+  #   )
+  # ),
+  #
+  # tar_terra_rast(
+  #   landcover_bare,
+  #   landcover_bare_raw |>
+  #     aggregate(fact = 5) |>
+  #     crop(y = project_mask_5) |>
+  #     resample(y = project_mask_5) |>
+  #     fill_na_with_nearest_mean(maxRadiusCell = 50) |>
+  #     mask(mask = project_mask_5)
+  # ),
 
   # distance from sea
   tar_terra_rast(
@@ -436,20 +459,78 @@ list(
     )
   ),
 
-  ## landcover vars from worldcover
+  ## landcover vars: ESA CCI class proportions, time-varying
+  #
+  # These replace the static WorldCover classes, which are commented out below.
+  # The same data wears two faces:
+  #   - each RECORD gets its own year's proportions, appended to
+  #     `model_data_spatial` by match_landcover_data();
+  #   - the model PREDICTS to, and background points are drawn against, a single
+  #     year, `landcover_prediction_year`, held in `landcover_esa_5` and so in
+  #     `covariate_rast_5` / `covariate_rast_10`.
+  #
+  # `bare` and `sparse` are deliberately NOT model covariates. The full set of
+  # ESA classes sums to exactly 1, which is perfectly collinear with the model's
+  # per-species intercept `alpha` -- a singular design. Dropping two classes
+  # breaks that closure while leaving them in the denominator, so the classes
+  # that remain are still the fraction of the cell they cover. This mirrors the
+  # "excluding the obviously unsuitable habitat" choice made for the WorldCover
+  # classes it replaces.
+  tar_target(
+    model_landcover_classes,
+    c(
+      "crop_other",
+      "irrigated",
+      "tree",
+      "shrubland",
+      "grassland",
+      "wetland",
+      "mangrove",
+      "urban",
+      "water"
+    )
+  ),
+
+  # the year the static prediction surface is taken from, and the year given to
+  # records with no date of their own -- including every background point, which
+  # keeps the quadrature on the same land cover the model predicts to
+  tar_target(
+    landcover_prediction_year,
+    2022
+  ),
+
   tar_terra_rast(
-    landcover_covs,
-    landcover_raw |>
-      aggregate(fact = 5) |>
-      crop(y = project_mask_5) |>
-      resample(y = project_mask_5) |>
-      fill_na_with_nearest_mean(maxRadiusCell = 50) |>
-      mask(mask = project_mask_5) #|> scale()
+    landcover_esa_5,
+    esa_landcover_model_layers(
+      landcover_paths = esa_landcover_proportion,
+      classes = model_landcover_classes,
+      year = landcover_prediction_year,
+      project_mask = project_mask_5
+    )
+    # already written on the project grid, so unlike the WorldCover layers there
+    # is no aggregate / resample / fill_na step -- only the mask, which trims the
+    # water cells project_mask_5 drops.
     # don't scale landcover types, so they remain 0-1, and a
     # positive-constrained coefficient enforces that more habitat corresponds
     # with more mosquitoes
-
   ),
+
+  ## landcover vars from worldcover -- REPLACED by landcover_esa_5 above.
+  # `landcover_raw` itself is still needed: water_mask_5, and so project_mask_5,
+  # are built from it.
+  # tar_terra_rast(
+  #   landcover_covs,
+  #   landcover_raw |>
+  #     aggregate(fact = 5) |>
+  #     crop(y = project_mask_5) |>
+  #     resample(y = project_mask_5) |>
+  #     fill_na_with_nearest_mean(maxRadiusCell = 50) |>
+  #     mask(mask = project_mask_5) #|> scale()
+  #   # don't scale landcover types, so they remain 0-1, and a
+  #   # positive-constrained coefficient enforces that more habitat corresponds
+  #   # with more mosquitoes
+  #
+  # ),
 
   # this reads in the bioregions as a single file
   # but it's useless for passing on the categories
@@ -652,26 +733,120 @@ list(
     NULL
   ),
 
-  # footprint
+  # footprint -- time varying, Mu et al. (2022)
 
-  tar_terra_rast(
-    footprint_raw,
-    footprint(
-      year = 2009,
-      path = "data/raster/geodata"
-    ) |>
-      set_layer_names("footprint")
+  # figshare deposit. The version is pinned deliberately: `mu_hfp_manifest` is
+  # a dependency of every download branch, so if it tracked "current" it would
+  # change the moment the depositor added a year and re-download all 11 GiB.
+  # Raise it on purpose to take up new years.
+  tar_target(
+    mu_hfp_article,
+    16571064L
   ),
 
+  tar_target(
+    mu_hfp_version,
+    8L
+  ),
+
+  # DO NOT hardcode the year range. The paper and the deposit's own description
+  # both say 2000-2018; version 8 actually holds 2000-2024. The years come off
+  # the API.
+  tar_target(
+    mu_hfp_manifest,
+    mu_hfp_figshare_manifest(
+      article = mu_hfp_article,
+      version = mu_hfp_version
+    )
+  ),
+
+  # split out of the manifest so each download branch depends only on its own
+  # year, url and checksum
+  tar_target(
+    mu_hfp_years,
+    mu_hfp_manifest$year
+  ),
+
+  tar_target(
+    mu_hfp_urls,
+    mu_hfp_manifest$download_url
+  ),
+
+  tar_target(
+    mu_hfp_md5s,
+    mu_hfp_manifest$supplied_md5
+  ),
+
+  # Download, verify against supplied_md5, reproject from the native Mollweide
+  # 1 km grid onto project_mask_5, write the small African raster, and delete
+  # the zip and the global GeoTIFF.
+  #
+  # Neither source is kept: the 25 zips are 11 GiB and inflate to 45 GiB of
+  # global raster that is almost entirely ocean and other continents. The
+  # target's value is the ~7 MB output file, so deleting the sources does not
+  # invalidate anything -- download_mu_hfp() returns an existing valid output
+  # immediately, without touching figshare. That also makes an interrupted run
+  # resumable, and lets files fetched outside the pipeline be adopted by it.
+  #
+  # The cost of that choice: changing `project_mask_5` (or the manifest) means
+  # re-downloading. Pass `keep_source = TRUE` if the mask is in flux.
+  tar_target(
+    mu_hfp_year,
+    download_mu_hfp(
+      year = mu_hfp_years,
+      url = mu_hfp_urls,
+      md5 = mu_hfp_md5s,
+      new_mask = project_mask_5,
+      outputdir = "outputs/raster/mu_hfp",
+      workdir = "data/raw/mu_hfp",
+      keep_source = FALSE
+    ),
+    pattern = map(mu_hfp_years, mu_hfp_urls, mu_hfp_md5s),
+    format = "file"
+  ),
+
+  # the deliverable: one file, one layer per year, with a time axis.
+  #
+  # This is also where the series is scaled, and it has to be here, because
+  # this is the first point at which all the years are in hand. scale_rast_to_1()
+  # divides each layer by its OWN maximum, which on a 25-year stack would give
+  # every year a different divisor and turn a constant cell into a spurious
+  # trend. stack_mu_hfp() divides the whole series by one constant instead.
+  tar_target(
+    mu_hfp_all,
+    stack_mu_hfp(
+      paths = mu_hfp_year,
+      varname = "footprint",
+      scale_to_1 = TRUE,
+      outputdir = "outputs/raster/mu_hfp",
+      filename = "mu_hfp_all.tif"
+    ),
+    format = "file"
+  ),
+
+  # the year the static prediction surface is taken from, and the year given to
+  # records with no date of their own -- every background point. The land cover
+  # counterpart is `landcover_prediction_year`, which is 2022 because that is
+  # where ESA CCI ends; the Human Footprint runs to 2024, so the prediction
+  # surface is not a single instant in time.
+  tar_target(
+    footprint_prediction_year,
+    2024
+  ),
+
+  # keeps the name `footprint_5`, so covariate_rast_5_all, subset_covariate_rast
+  # and target_covariate_names need no change
   tar_terra_rast(
     footprint_5,
-    footprint_raw |>
-      aggregate(fact = 5) |>
-      crop(y = project_mask_5) |>
-      resample(y = project_mask_5) |>
-      mask(mask = project_mask_5) |>
-      #scale()
-      scale_rast_to_1()
+    mu_hfp_model_layer(
+      hfp_path = mu_hfp_all,
+      year = footprint_prediction_year,
+      varname = "footprint",
+      project_mask = project_mask_5
+    )
+    # already written on the project grid by download_mu_hfp(), and already
+    # scaled by stack_mu_hfp(), so unlike the geodata layer it replaces there
+    # is no aggregate / crop / resample / scale step here
   ),
 
   # tar_terra_rast(
@@ -691,17 +866,17 @@ list(
   # ),
 
 
-  # irrigation
-  # The map shows the amount of area equipped for irrigation around the year 2005 in percentage of the total area on a raster with a resolution of 5 minutes.
-  # Stefan Siebert, Verena Henrich, Karen Frenken and Jacob Burke (2013). Global Map of Irrigation Areas version 5. Rheinische Friedrich-Wilhelms-University, Bonn, Germany / Food and Agriculture Organization of the United Nations, Rome, Italy
-  # https://www.fao.org/aquastat/en/geospatial-information/global-maps-irrigated-areas/latest-version
-  tar_terra_rast(
-    irrigation_raw,
-    rast(x = "data/raster/gmia_v5_aei_pct.asc") |>
-      crop(project_mask_10) |>
-      resample(covariate_rast_10[[1]]) |>
-      mask(covariate_rast_10[[1]])
-  ),
+  # # irrigation
+  # # The map shows the amount of area equipped for irrigation around the year 2005 in percentage of the total area on a raster with a resolution of 5 minutes.
+  # # Stefan Siebert, Verena Henrich, Karen Frenken and Jacob Burke (2013). Global Map of Irrigation Areas version 5. Rheinische Friedrich-Wilhelms-University, Bonn, Germany / Food and Agriculture Organization of the United Nations, Rome, Italy
+  # # https://www.fao.org/aquastat/en/geospatial-information/global-maps-irrigated-areas/latest-version
+  # tar_terra_rast(
+  #   irrigation_raw,
+  #   rast(x = "data/raster/gmia_v5_aei_pct.asc") |>
+  #     crop(project_mask_10) |>
+  #     resample(covariate_rast_10[[1]]) |>
+  #     mask(covariate_rast_10[[1]])
+  # ),
 
   #
   # bias
@@ -747,7 +922,7 @@ list(
     check_no_mismatched_nas(
       proj_mask = project_mask_5,
       offsets_5[[1]],
-      landcover_covs,
+      landcover_esa_5,
       prox_to_sea,
       bias_tt_5
     )
@@ -757,16 +932,13 @@ list(
     target_covariate_names,
     c(
 
-      # only use the worldcover landcover classes, in fractional cover (0-1)
-      # form, excluding the obviously unsuitable habitat (bare, snow, etc)
-      "trees",
-      "grassland",
-      "shrubs",
-      "cropland",
-      "built",
-      "water",
-      "wetland",
-      "mangroves",
+      # ESA CCI land cover classes, in fractional cover (0-1) form, excluding
+      # the obviously unsuitable habitat (bare, sparse) -- which is also what
+      # keeps the design out of collinearity with the intercept. Defined once,
+      # in `model_landcover_classes`, because the same list picks the layers of
+      # `landcover_esa_5` and the columns match_landcover_data() puts on
+      # `model_data_spatial`; the three have to agree
+      model_landcover_classes,
 
       # also footprint for anthropophilic/anthropophagic spp
       "footprint",
@@ -791,7 +963,7 @@ list(
   tar_terra_rast(
     covariate_rast_5_all,
     c(
-      landcover_covs,
+      landcover_esa_5,
       prox_to_sea,
 
       soiltype_layers,
@@ -992,8 +1164,28 @@ list(
   ),
 
 
-  tar_seed_set(
-    tar_seed_create("bg_points")
+  # One seed for every stochastic step in the pipeline. It sits here because the
+  # background point selection is the first thing that draws from the RNG, and
+  # everything downstream of `bg_kmeans_df` inherits whatever it produced.
+  #
+  # targets already gives each target a reproducible seed derived from its name,
+  # so this is not what makes the pipeline reproducible on its own. What it adds
+  # is a seed that is EXPLICIT and SHARED. The spatial cross-validation fits each
+  # fold in its own callr subprocess, and a subprocess starts with a fresh RNG
+  # that the per-target seed never reaches -- passing this value in is the only
+  # thing that makes those fits reproducible. Sharing it with the background
+  # points means the quadrature the CV folds are cut from traces back to the same
+  # number.
+  #
+  # It replaces a bare `tar_seed_set(tar_seed_create("bg_points"))`, which ran
+  # when this file was sourced rather than when any target was built, and so
+  # seeded nothing that mattered.
+  #
+  # Changing this value redraws the background points, and so changes
+  # `model_data_spatial` and every fit below it.
+  tar_target(
+    seed,
+    20260909L
   ),
 
   tar_target(
@@ -1003,13 +1195,16 @@ list(
 
   tar_target(
     bg_points,
-    terra::spatSample(
-      x = covariate_rast_5[[1]],
-      size = n_bg,
-      na.rm = TRUE,
-      as.points = TRUE
-    ) %>%
-      crds()
+    {
+      set.seed(seed)
+      terra::spatSample(
+        x = covariate_rast_5[[1]],
+        size = n_bg,
+        na.rm = TRUE,
+        as.points = TRUE
+      ) %>%
+        crds()
+    }
   ),
 
   # tar_target(
@@ -1026,7 +1221,8 @@ list(
     bg_points_kmeans_spatial(
       n_bg,
       covariate_rast_5,
-      n_samples_per_bg = 200
+      n_samples_per_bg = 200,
+      seed = seed
     )
   ),
 
@@ -1287,21 +1483,40 @@ list(
  #
  ##############
 
+ # offsets are matched on year-month, land cover on year.
+ #
+ # The land cover columns are named for the classes themselves (`prefix = ""`),
+ # which is only safe now the WorldCover covariates are gone -- `grassland`,
+ # `water` and `wetland` were names in both sets.
+ #
+ # `replace = TRUE` because get_spatial_values() has already put land cover on
+ # these records under these same names, extracted from the static
+ # `landcover_esa_5` in `covariate_rast_5_all`. Those single-year values are
+ # replaced here by each record's own year. Rows with no date -- which is every
+ # background point -- take `na_year`, the same year `landcover_esa_5` is built
+ # from, so their values do not change.
  tar_target(
    model_data_spatial,
    match_offset_data(
      model_data_spatial_no_offset,
      offsets_5
-   )
- ),
-
- tar_target(
-   model_data_spatial_landcover,
-   match_landcover_data(
-     model_data_spatial = model_data_spatial,
-     landcover_paths = esa_landcover_proportion,
-     landcover_classes = esa_landcover_classes
-   )
+   ) |>
+     match_landcover_data(
+       landcover_paths = esa_landcover_proportion,
+       landcover_classes = esa_landcover_classes,
+       keep_classes = model_landcover_classes,
+       na_year = landcover_prediction_year,
+       prefix = "",
+       year_name = "landcover_year",
+       replace = TRUE
+     ) |>
+     match_footprint_data(
+       hfp_path = mu_hfp_all,
+       colname = "footprint",
+       na_year = footprint_prediction_year,
+       year_name = "footprint_year",
+       replace = TRUE
+     )
  ),
 
  # table 2 in manuscript
@@ -1665,6 +1880,44 @@ list(
  ##
 
 
+ # ---------------------------------------------------------------------------
+ # WHAT THE WORLDCOVER -> ESA LAND COVER SWAP INVALIDATES
+ #
+ # `target_covariate_names` and `model_data_spatial` both changed, so every fit
+ # below is stale and every prediction taken from a saved fit image is stale
+ # with it -- 61 targets in all. The design matrix is now 11 covariates rather
+ # than 10, i.e. 198 columns per species (J = A + AB, B = 17 bioregions) rather
+ # than 180, so nothing can be reused from an existing image.
+ #
+ # Refit and rebuild, in this order:
+ #   model_fit_sre_rep  -> resids_and_rhats_sre_rep -> preds_sm_rep
+ #                      -> pred_dist_not_masked_rep -> pred_p_rep / pred_lambda_rep
+ #                         / pred_cv_rep -> plot_pred_*_rep
+ # That chain needs no code change: `covariate_rast_10` now carries the
+ # `landcover_prediction_year` land cover, so predictions are made at that year.
+ #
+ # The older chains are NOT updated and will not work as they stand:
+ #   model_fit, model_fit_sre, refit_model_fit_sre  -- refit, or leave stale
+ #   resids_and_rhats, resids_and_rhats_sre         -- follow their fits
+ #   preds_sm and everything under it (pred_dist_not_masked, pred_p, pred_pcv,
+ #     pred_lambda_mean_not_masked, pred_gr1, pred_dominant, distribution_plots_sm,
+ #     rel_abund_rgb_sm, rel_abund_plots_sm, abundance_cubes)
+ # `preds_sm` calls predict_lambda(), which still pushes the whole design-matrix
+ # multiply through greta::calculate() and so aborts the subprocess at 180
+ # columns already; at 198 it will fail harder, not less. Use the _rep chain, or
+ # port the fix from predict_lambda_reparam().
+ #
+ # Also rebuilt, harmlessly: the bg points (bg_points, bg_kmeans_list_spatial,
+ # bg_kmeans_df) are drawn against covariate_rast_5 and so are resampled; the
+ # MESS / ExDet novelty targets (africa_mess*, africa_exdet*) read
+ # target_covariate_names and rebuild against the new covariate set.
+ #
+ # `landcover_bare` / `landcover_bare_10` also moved to ESA (the 2022 `bare`
+ # proportion). They are the bare-ground mask on the prediction maps and on
+ # `landscape_mask_10`, not model covariates, so they change the maps without
+ # touching the design matrix.
+ # ---------------------------------------------------------------------------
+
  tar_target(
    model_fit,
    fit_model_multispecies_pp_count(
@@ -1731,15 +1984,55 @@ list(
  ###################
  # reparameterisation section
 
+ # Output paths for this section are built from the five targets below, so a
+ # rerun is a one-line edit rather than six. They are targets rather than plain
+ # globals to match landcover_prediction_year / footprint_prediction_year, and
+ # they are kept as separate targets rather than one list so that bumping the
+ # date does not invalidate the fit -- model_fit_sre_rep depends on
+ # rep_fit_image alone, so rep_tag reaches the validation and plot targets and
+ # stops there.
+ tar_target(
+   rep_tag,
+   "20260907"
+ ),
+
+ # the heavy artefacts are overwritten each run, so these stems carry no date
+ tar_target(
+   rep_fit_image,
+   "outputs/images/model_fit_test_source_re_rep.RData"
+ ),
+
+ tar_target(
+   rep_pred_prefix,
+   "outputs/rasters/reparam_multispecies_pp_rep"
+ ),
+
+ # the plot directories accumulate, so these are dated
+ tar_target(
+   rep_validation_dir,
+   sprintf(
+     "outputs/figures/validation/sre_rep_%s/",
+     rep_tag
+   )
+ ),
+
+ tar_target(
+   rep_plot_dir,
+   sprintf(
+     "outputs/figures/distribution_plots/distn_%s_rep",
+     rep_tag
+   )
+ ),
+
  tar_target(
    model_fit_sre_rep,
    fit_model_multispecies_pp_count_source_effect_reparam(
-     image_name = "outputs/images/model_fit_test_source_re_rep.RData",
+     image_name = rep_fit_image,
      model_data_spatial = model_data_spatial,
      target_covariate_names = target_covariate_names,
      target_species = target_species,
      bioregion_names = bioregion_names,
-     n_burnin = 1000,
+     n_burnin = 2000,
      n_samples = 1000,
      n_chains = 50,
      n_cores = 32
@@ -1749,9 +2042,9 @@ list(
  tar_target(
    resids_and_rhats_sre_rep,
    validation_and_checking(
-     model_fit_sre_rep,
+     model_fit_image_multisp_pp_count_sm = model_fit_sre_rep,
      nsims = 100,
-     plotdir = "outputs/figures/validation/sre_rep_20260729/"
+     plotdir = rep_validation_dir
    )
  ),
 
@@ -1761,7 +2054,7 @@ list(
      image_name = model_fit_sre_rep,
      prediction_layer = covariate_rast_10, # use 10k for faster preds
      target_species,
-     output_file_prefix = "outputs/rasters/reparam_multispecies_pp_rep",
+     output_file_prefix = rep_pred_prefix,
      offset = offsets_avg_10,
      sm = TRUE, # if predict survey method
      nsims = 100 # lower for faster preds
@@ -1790,7 +2083,7 @@ list(
    make_distribution_plots(
      pred_dist = pred_p_rep,
      model_data_spatial,
-     plot_dir = "outputs/figures/distribution_plots/distn_20260825_rep"
+     plot_dir = rep_plot_dir
    )
  ),
 
@@ -1809,7 +2102,7 @@ list(
    make_distribution_plots(
      pred_lambda_rep,
      model_data_spatial,
-     plot_dir = "outputs/figures/distribution_plots/distn_20260825_rep",
+     plot_dir = rep_plot_dir,
      colscheme = "orchid",
      distpoints = FALSE,
      guide = "none",
@@ -1833,13 +2126,126 @@ list(
    make_distribution_plots(
      pred_cv_rep,
      model_data_spatial,
-     plot_dir = "outputs/figures/distribution_plots/distn_20260825_rep",
+     plot_dir = rep_plot_dir,
      colscheme = "brick",
      distpoints = FALSE,
      guide = "none",
      prefix = "cv"
    )
  ),
+
+
+ ###################
+ # spatial block cross-validation
+ #
+ # Every check on this model is in-sample. This holds out blocks of SPACE, refits, and
+ # scores the held-out count records, so there is a number for how well the model predicts
+ # where it has not been -- which is the only way to know whether the 187 landcover x
+ # bioregion interaction columns are buying spatial structure or fitting noise.
+ #
+ # Two things about the construction are load-bearing and are argued at length in the
+ # functions themselves:
+ #
+ #   - folds are assigned to the ~250 background VORONOI CELLS, and every data coordinate
+ #     takes the fold of the cell it sits in. The PO/bg likelihood is a Berman-Turner
+ #     quadrature whose weights tile the continent exactly, so the held-out region has to
+ #     be a union of whole cells or the presences and the integral disagree along every
+ #     boundary. See cv_spatial_folds().
+ #
+ #   - because folds are then a function of the COORDINATE alone, a fold's training frame
+ #     can be handed to the unmodified production fit function as a row subset:
+ #     `distinct_idx` picks the same physical row per retained coordinate as it does on the
+ #     full data, so the design matrix and offsets are bit-identical. Verified for both
+ #     sides of all five folds. See cv_designmat(), which is also why prediction must go
+ #     through the per-COORDINATE design and not a record's own covariate row.
+ #
+ # `seed` is the pipeline seed defined above the background points, so the quadrature the
+ # folds are cut from and the folds themselves trace back to one number.
+
+ tar_target(
+   cv_tag,
+   "20260909"
+ ),
+
+ tar_target(
+   cv_k,
+   5L
+ ),
+
+ tar_target(
+   cv_dir,
+   sprintf(
+     "outputs/cv/spatial_block_%s",
+     cv_tag
+   )
+ ),
+
+ # returns c(cv_folds.csv, cv_blocks.gpkg, cv_autocor.csv). The block size is the median
+ # variogram range across the model covariates AFTER dropping the fits that ran away --
+ # on the 2026-09 covariate set `tree`, `water` and `urban` all fail to reach a sill, and
+ # taking blockCV's own median over the contaminated set gives a meaningless number.
+ tar_target(
+   cv_folds_file,
+   cv_spatial_folds(
+     model_data_spatial = model_data_spatial,
+     bg_kmeans_df = bg_kmeans_df,
+     covariate_rast = covariate_rast_10,
+     target_covariate_names = target_covariate_names,
+     k = cv_k,
+     seed = seed,
+     output_dir = cv_dir
+   ),
+   format = "file"
+ ),
+
+ # the branching index, in the esa_landcover_years idiom: the fold fits below map over it
+ tar_target(
+   cv_fold_ids,
+   seq_len(cv_k)
+ ),
+
+ # One branch per fold, each fitted in its own callr subprocess so TensorFlow memory is
+ # released between folds -- five sequential greta fits in one session will not survive
+ # 16 GB, which is the same reason extras/sre_lmax_sweep.sh spawns a fresh Rscript per
+ # configuration. The target returns the compact draws .rds, not the ~1.6 GB fit image:
+ # `format = "file"` hashes whatever it is handed, and hashing gigabytes on every status
+ # check is not worth it. The image path is recorded inside the .rds.
+ #
+ # `cv_folds_file` is deliberately NOT in the pattern, so every branch receives all of its
+ # paths -- the same trick as esa_landcover_proportion at line 203.
+ #
+ # 10 chains rather than the production 50, and 1000 burn-in rather than 2000: a fold is
+ # then ~2 h instead of ~14 h, and five folds fit in a night. That is a deliberate
+ # approximation -- CV measures predictive skill and does not need the tails resolved to
+ # the production standard -- and each fold carries its own convergence gate so a fold that
+ # did not mix cannot quietly contribute a number.
+ tar_target(
+   cv_fold_draws,
+   fit_cv_fold(
+     model_data_spatial = model_data_spatial,
+     cv_folds = cv_folds_file,
+     fold = cv_fold_ids,
+     target_covariate_names = target_covariate_names,
+     target_species = target_species,
+     bioregion_names = bioregion_names,
+     n_burnin = 1000,
+     n_samples = 1000,
+     n_chains = 10,
+     n_cores = 8,
+     seed = seed,
+     output_dir = file.path(cv_dir, "folds")
+   ),
+   pattern = map(cv_fold_ids),
+   format = "file"
+ ),
+
+ # STILL TO COME, as their functions are written:
+ #
+ #   cv_fold_metrics score_cv_counts()      pattern = map(cv_fold_draws, cv_fold_ids)
+ #   cv_fold_checks  cv_predictive_checks() pattern = map(cv_fold_draws, cv_fold_ids)
+ #   cv_summary      summarise_cv_metrics() not branched -- takes every fold's paths
+ #   cv_error_map    plot_cv_error_map()    not branched
+ #   cv_fold_map     plot_cv_folds()
 
 
  ######

@@ -1,11 +1,20 @@
 # sample 'n_bg' points according to a spatial pattern (defined by kmeans
 # clustering of coordinates) over the grid cells of 'covariate_rast'
+#
+# Both the spatSample() draw and the kmeans() start are random, so 'seed' is
+# what makes the returned points reproducible outside a targets run, where the
+# per-target seed does not apply. NULL leaves the RNG alone.
 bg_points_kmeans_spatial <- function(
     n_bg,
     covariate_rast,
     n_samples_per_bg = 50,
+    seed = NULL,
     plot_dir = "outputs/figures"
   ) {
+
+  if (!is.null(seed)) {
+    set.seed(seed)
+  }
 
   n_pixels <- max(terra::global(covariate_rast, fun = "notNA"))
   n_samples <- min(n_bg * n_samples_per_bg, n_pixels)

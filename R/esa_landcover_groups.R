@@ -43,10 +43,14 @@ esa_landcover_group_defs <- function(){
       "mosaic_tree_and_shrub"
     ),
 
-    grassland = c(
+
+    shrubland = c(
       "shrubland",
       "shrubland_evergreen",
-      "shrubland_deciduous",
+      "shrubland_deciduous"
+    ),
+
+    grassland = c(
       "grassland",
       "mosaic_herbaceous"
     ),

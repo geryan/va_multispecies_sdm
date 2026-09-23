@@ -11,8 +11,10 @@
 #    prediction, which builds larval-habitat lambda from `beta` and `alpha`:
 #        sampling_re_raw -> sampling_re   (centred; sampled directly as
 #                                          normal(0, sampling_re_sd, dim = n_sampling_methods))
-#    so the sm (sampling-method) effect is `sampling_re[5]`, not
-#    `sampling_re_raw[5] * sampling_re_sd`.  (alpha_raw/gamma_raw/sqrt_inv_size/zeta_raw
+#    so the sm (sampling-method) effect is `sampling_re[i]`, not
+#    `sampling_re_raw[i] * sampling_re_sd`.  `i` is now looked up by name from the fit's
+#    own `sampling_methods` via the `sampling_method` argument, rather than hardcoded to
+#    5 -- see the note at the lookup.  (alpha_raw/gamma_raw/sqrt_inv_size/zeta_raw
 #    renames don't appear here -- this function references neither gamma, zeta, size, nor
 #    the per-source effect.)
 #
@@ -45,6 +47,7 @@ predict_lambda_reparam <- function(
     output_file_prefix,
     offset,
     sm = FALSE,
+    sampling_method = "human_landing_catch_ind",
     nsims = 50,
     bioregion_mask = NULL
 ){
@@ -91,10 +94,33 @@ predict_lambda_reparam <- function(
   alpha_draws <- array(param_draws$alpha,                  # -> [S, n_species]
                        dim = dim(param_draws$alpha)[1:2])
 
-  # sm: simulate human_landing_catch indoor (sampling method 5), matching predict_lambda().
+  # sm: predict as if surveyed by `sampling_method`, matching predict_lambda().
   # --- REPARAM: centred sampling_re is sampled directly (was sampling_re_raw[5] * sampling_re_sd)
+  #
+  # Looked up BY NAME, not by position. `sampling_methods` is saved in the fit image
+  # but is derived there from whatever data the model was fitted to
+  # (fit_model_multispecies_pp_count_source_effect_reparam.R:118-122), so the index of
+  # a given method depends on which methods that fit actually saw. Position 5 is
+  # human_landing_catch_ind only when all nine are present; a fit on any subset of the
+  # data -- a cross-validation fold, say -- silently shifts it and predicts a different
+  # method with no error and no warning.
   if (sm) {
-    sampling_re_add <- param_draws$sampling_re[, 5, 1]     # length S
+
+    sm_idx <- match(sampling_method, sampling_methods)
+
+    if (is.na(sm_idx)) {
+      stop(
+        sprintf(
+          "predict_lambda_reparam(): sampling method '%s' was not seen by this fit. Available: %s",
+          sampling_method,
+          paste(sampling_methods, collapse = ", ")
+        ),
+        call. = FALSE
+      )
+    }
+
+    sampling_re_add <- param_draws$sampling_re[, sm_idx, 1]     # length S
+
   } else {
     sampling_re_add <- rep(0, nsims)
   }

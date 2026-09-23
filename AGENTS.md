@@ -4,8 +4,8 @@
 
 This is a Bayesian species distribution modeling (SDM) project for multiple *Anopheles* mosquito species (malaria vectors) across Africa. The project integrates presence-only records, presence-absence surveys, and count data into a multispecies point process model to predict vector distributions and relative abundance using environmental covariates and mechanistic offsets.
 
-**Target species** (9 *Anopheles* species):  
-*arabiensis*, *gambiae*, *coluzzii*, *funestus*, *melas*, *merus*, *moucheti*, *nili*
+**Target species** (18 *Anopheles* species, from `target_spp()`):  
+*arabiensis*, *coluzzii*, *coustani*, *funestus*, *gambiae*, *leesoni*, *maculipalpis*, *melas*, *merus*, *moucheti*, *nili*, *pharoensis*, *pretoriensis*, *quadriannulatus*, *rivulorum*, *rufipes*, *squamosus*, *ziemanni*
 
 ## Data
 
@@ -15,13 +15,36 @@ This is a Bayesian species distribution modeling (SDM) project for multiple *Ano
 - **Processed datasets** (`data/processed/`): Cleaned, indexed, and spatially matched data ready for modeling
 
 ### Spatial covariates (5km resolution, 10km for predictions)
-- **Landcover** (WorldCover): trees, grassland, shrubs, cropland, water, wetlands, mangroves, etc.
-- **Bioregions** (One Earth): ~30 smoothed bioregion indicators across Africa
-- **Soil** (ISRIC SoilGrids): clay and silt content
-- **Proximity**: distance to sea, human footprint
+
+Two of these are **time-varying**: each record takes the value for its own year,
+while the prediction surface is a single year held in a raster. The same data
+therefore wears two faces, and the record side is attached in
+`model_data_spatial` rather than by `get_spatial_values()`.
+
+- **Landcover** (ESA CCI / C3S, annual 1992–2022, class *proportions* not
+  majority class): `crop_other`, `irrigated`, `tree`, `shrubland`, `grassland`,
+  `wetland`, `mangrove`, `urban`, `water`. `bare` and `sparse` are deliberately
+  excluded — the full set sums to exactly 1 and so is collinear with the
+  per-species intercept. Matched per record year by `match_landcover_data()`;
+  predicted at `landcover_prediction_year` (2022). Replaced the static
+  WorldCover classes.
+- **Human footprint** (Mu et al. 2022, annual 2000–2024, native Mollweide 1 km):
+  matched per record year by `match_footprint_data()`; predicted at
+  `footprint_prediction_year` (2024). Replaced the static `geodata` 2009 layer.
+  See `data/raw/mu_hfp/README.md` and `extras/mu_hfp_manifest.md`.
+- **Proximity**: distance to sea (`prox_to_sea`)
+- **Bioregions** (One Earth): 24 smoothed bioregion indicators, 17 of which
+  enter the design (`bioregion_names` drops the rest), plus 5 subrealms. These
+  are fractional, not 0/1.
+- **Soil** (ISRIC SoilGrids): clay and silt content — built, but **not currently
+  model covariates**: `soiltype_names` is `NULL`, so `subset_covariate_rast()`
+  drops them.
 - **Sampling bias offset**: travel time from research facilities
-- **Mechanistic offsets**: environmental suitability indices from mosquito mechanistic models (300+ monthly/seasonal layers)
+- **Mechanistic offsets**: environmental suitability indices from mosquito mechanistic models (300+ monthly/seasonal layers), matched on year-month
 - **Expert ranges**: historical species range maps (Sinka et al. 2010) used as prior information
+
+The model design is `target_covariate_names` — the 9 landcover classes plus
+`footprint` and `prox_to_sea` — interacted with the bioregion layers.
 
 ## Workflow
 
@@ -53,7 +76,7 @@ Use the base R pipe `|>` consistently. Write comments only when the reasoning is
 
 ## Key files
 
-- `_targets.R` — reproducible pipeline (1594 lines)
+- `_targets.R` — reproducible pipeline
 - `R/*.R` — helper functions for data processing and spatial operations
 - `data/tabular/va.data_*.csv` — primary occurrence/count data
 - `data/processed/` — cleaned intermediate datasets
