@@ -14,7 +14,7 @@ outputs
 *.png
 *.zip
 *.pdf
-_targets/meta/meta
+/_targets/
 .positai
 *.csv
 *.xlsx
