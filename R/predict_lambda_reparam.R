@@ -99,7 +99,7 @@ predict_lambda_reparam <- function(
   #
   # Looked up BY NAME, not by position. `sampling_methods` is saved in the fit image
   # but is derived there from whatever data the model was fitted to
-  # (fit_model_multispecies_pp_count_source_effect_reparam.R:118-122), so the index of
+  # (fit_model_multispecies_pp_count_source_effect_reparam.R:124-128), so the index of
   # a given method depends on which methods that fit actually saw. Position 5 is
   # human_landing_catch_ind only when all nine are present; a fit on any subset of the
   # data -- a cross-validation fold, say -- silently shifts it and predicts a different

@@ -69,16 +69,22 @@ fit_model_multispecies_pp_count_source_effect_reparam <- function(
   #       (data_type == "count" & count < 1000)
   #   )
 
-  # index of distinct locations
+  # index of distinct location-dates. `model_date` is in the key because it is
+  # what the offset, land cover and footprint were joined on by, so records
+  # sharing the key share every design value
   distinct_idx <- model_data_spatial |>
     mutate(rn = row_number(), .before = species) |>
-    group_by(latitude, longitude) |>
+    group_by(
+      latitude,
+      longitude,
+      model_date
+    ) |>
     mutate(rnsp = row_number(), .before = species) |>
     ungroup() |>
     filter(rnsp == 1) |>
     pull(rn)
 
-  distinct_coords <- model_data_spatial[distinct_idx, c("latitude", "longitude")]
+  distinct_coords <- model_data_spatial[distinct_idx, c("latitude", "longitude", "model_date")]
 
   # offset values from gambiae mechanistic model
   log_offset <- log(model_data_spatial[distinct_idx, "offset"]) |>
@@ -143,7 +149,13 @@ fit_model_multispecies_pp_count_source_effect_reparam <- function(
     select(species, everything())
 
   unique_locatenate <- distinct_coords |>
-    mutate(locatenate = paste(latitude, longitude)) |>
+    mutate(
+      locatenate = paste(
+        latitude,
+        longitude,
+        model_date
+      )
+    ) |>
     pull(locatenate)
 
   model_data <- bind_rows(
@@ -152,7 +164,11 @@ fit_model_multispecies_pp_count_source_effect_reparam <- function(
     bg_data
   ) |>
     mutate(
-      locatenate = paste(latitude, longitude),
+      locatenate = paste(
+        latitude,
+        longitude,
+        model_date
+      ),
       location_id = match(locatenate, unique_locatenate),
       species_id = match(species, target_species),
       # index for source id

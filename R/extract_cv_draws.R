@@ -171,7 +171,7 @@ extract_cv_draws <- function(
   delta <- pull_param("delta")
   zeta_raw <- pull_param("zeta_raw")
 
-  # the deterministic rescalings the fit applies (fit_...reparam.R:205, :236)
+  # the deterministic rescalings the fit applies (fit_...reparam.R:221, :252)
   beta <- sweep(
     beta_raw,
     2,

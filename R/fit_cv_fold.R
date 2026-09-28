@@ -8,14 +8,14 @@
 #
 # WHY THE SEED IS PASSED IN. A callr child starts with a fresh RNG, and targets' per-target
 # seed does not reach it. Two things in the fit are random and unseeded from outside: the
-# background sampling-method imputation (fit_...reparam.R:128) and greta's MCMC
+# background sampling-method imputation (fit_...reparam.R:134) and greta's MCMC
 # initialisation. `set.seed()` is therefore the first statement in the child.
 #
 # WHY THE PRODUCTION FIT FUNCTION IS CALLED UNMODIFIED. Folds are assigned by coordinate,
 # so a fold's training frame is a row subset in which every retained coordinate keeps all
-# of its records. `distinct_idx` then picks the same physical row per coordinate as it does
-# on the full data, and the design matrix and offsets are bit-identical -- verified for
-# both sides of all five folds. See cv_designmat().
+# of its records. `distinct_idx` then picks the same physical row per coordinate and
+# `model_date` as it does on the full data, and the design matrix and offsets are
+# bit-identical. See cv_designmat().
 #
 # Returns the path to the draws .rds, NOT to the fit image. `format = "file"` hashes what
 # it is given, and the image is ~1.6 GB per fold at these settings; the image path is

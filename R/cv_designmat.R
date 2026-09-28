@@ -4,22 +4,18 @@
 #
 # WHY THIS EXISTS
 #
-# The fit does not use per-record covariates. `distinct_idx` takes the FIRST row at each
-# distinct (latitude, longitude) and every record at that coordinate shares that row's
-# covariates and its offset. That is not a technicality. Measured on the current
-# `model_data_spatial`: `offset` varies within a coordinate at 638 of the 3703
-# coordinates, covering 19,359 of 29,476 count records (65.7%), with a within-coordinate
-# max/min ratio of median 3.1 and maximum 4,496,005. `footprint` varies at 341
-# coordinates and `crop_other` / `tree` at 93 each; `prox_to_sea`, `travel_time` and every
-# bioregion dummy are exactly constant within a coordinate.
+# The fit does not build one design row per record. `distinct_idx` takes one row per
+# distinct (latitude, longitude, model_date), and every record with that key reaches it
+# through `location_id`. `model_date` has to be in the key: it is what the offset (matched
+# on year-month), land cover and footprint (matched on year) were joined on by, so every
+# record sharing the key shares every design value. Keyed on coordinate alone, as it once
+# was, the offset differed within a design row on two thirds of the count records.
 #
-# So scoring a held-out record against its OWN covariate row would evaluate a linear
-# predictor the model never fitted, on two thirds of the count data, with offsets wrong by
-# up to six orders of magnitude. Anything that predicts from a fit image must come through
-# here, and must map records to design rows by `location_id`.
+# Anything that predicts from a fit image must come through here and address design rows
+# by `location_id`, so that it uses the same rows the fit did.
 #
-# Transcribed from fit_model_multispecies_pp_count_source_effect_reparam.R:73-106 and
-# :145-147, :194-195. Kept as one function so there is a single place where the fit's
+# Transcribed from fit_model_multispecies_pp_count_source_effect_reparam.R:72-112 and
+# :151-159, :210-211. Kept as one function so there is a single place where the fit's
 # convention lives, and one thing to re-check if that fit ever changes.
 #
 # Returns plain R matrices, not greta data arrays: the prediction path does the
@@ -33,16 +29,26 @@ cv_designmat <- function(
 
   distinct_idx <- dat |>
     mutate(rn = row_number(), .before = species) |>
-    group_by(latitude, longitude) |>
+    group_by(
+      latitude,
+      longitude,
+      model_date
+    ) |>
     mutate(rnsp = row_number(), .before = species) |>
     ungroup() |>
     filter(rnsp == 1) |>
     pull(rn)
 
-  distinct_coords <- dat[distinct_idx, c("latitude", "longitude")]
+  distinct_coords <- dat[distinct_idx, c("latitude", "longitude", "model_date")]
 
   unique_locatenate <- distinct_coords |>
-    mutate(locatenate = paste(latitude, longitude)) |>
+    mutate(
+      locatenate = paste(
+        latitude,
+        longitude,
+        model_date
+      )
+    ) |>
     pull(locatenate)
 
   # offset values from gambiae mechanistic model
@@ -96,7 +102,11 @@ cv_designmat <- function(
   # every row of `dat` addressed to its design row, using the fit's own paste()
   # convention so the two can never drift apart
   location_id <- match(
-    paste(dat$latitude, dat$longitude),
+    paste(
+      dat$latitude,
+      dat$longitude,
+      dat$model_date
+    ),
     unique_locatenate
   )
 

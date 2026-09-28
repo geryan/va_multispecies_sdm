@@ -7,11 +7,11 @@
 # The split is by COORDINATE, never by row. Every record at a coordinate goes the same way,
 # which is what makes it safe to hand the training frame straight to the unmodified
 # production fit function: `distinct_idx` then picks the same physical row per retained
-# coordinate as it would on the full data, so the design matrix and offsets a fold sees are
-# bit-identical to the ones the full fit saw. cv_designmat() carries the evidence for that.
+# coordinate and `model_date` as it would on the full data, so the design matrix and offsets
+# a fold sees are bit-identical to the ones the full fit saw.
 #
 # Row order is preserved on both sides, because `distinct_idx` takes the FIRST row at each
-# coordinate and reordering would change which row that is.
+# coordinate and `model_date`, and reordering would change which row that is.
 split_cv_fold <- function(
     model_data_spatial,
     cv_folds,
@@ -69,7 +69,7 @@ split_cv_fold <- function(
   ############
   # assertions. Leakage would invalidate the whole exercise without erroring, and the
   # species check guards a silent index misalignment: the fit derives n_species from the
-  # data it is given (fit_..._reparam.R:114-115) but species_id is matched against the
+  # data it is given (fit_..._reparam.R:120-121) but species_id is matched against the
   # passed-in target_species, so losing a species shrinks alpha/gamma_nb while the index
   # still reaches 18
   ############
