@@ -2,6 +2,18 @@ library(targets)
 library(geotargets)
 library(targets.utils) ## pak::pak("geryan/targets.utils")
 
+# GDAL stamps every GeoPackage with the time it was written
+# (gpkg_contents.last_change), and tar_terra_vect stores targets as
+# GeoPackages. So an identical SpatVector gets a new hash every time it is
+# rebuilt, and everything downstream reruns -- e.g. expert_maps ->
+# expert_offset_maps (~40 min) for no change. Pinning the timestamp makes those
+# writes byte-identical, so a rebuild that changes nothing stops there. Set as
+# an environment variable, not terra::setGDALconfig(), so it would also reach
+# any worker processes.
+Sys.setenv(
+  OGR_CURRENT_DATE = "2000-01-01T00:00:00Z"
+)
+
 tar_option_set(
   packages = c(
     #"tibble",
@@ -1091,6 +1103,17 @@ list(
   ),
 
 
+
+  # expert maps
+
+  # pharosnsis - add in ref
+
+  tar_terra_vect(
+    pharoensis_expert_map,
+    get_pharoensis_expert_map()
+  ),
+
+
   # expert maps from
   # Sinka, M.E., Bangs, M.J., Manguin, S. et al.
   # The dominant Anopheles vectors of human malaria in Africa, Europe and
@@ -1099,7 +1122,7 @@ list(
   # supp file: 13071_2010_245_MOESM1_ESM.ZIP
 
   tar_terra_vect(
-    expert_maps,
+    sinka_expert_maps,
     get_expert_maps(
       sp = c(
         "arabiensis",
@@ -1120,9 +1143,14 @@ list(
   ),
 
   tar_terra_vect(
-    pharoensis_expert_map,
-    get_pharoensis_expert_map()
+    expert_maps,
+    sinka_expert_maps |>
+      add_expert_map(
+        new_map = pharoensis_expert_map,
+        species = "pharoensis"
+      )
   ),
+
 
   # extent of this is too small?
   tar_terra_rast(
@@ -1993,7 +2021,7 @@ list(
  # stops there.
  tar_target(
    rep_tag,
-   "20260923"
+   "20260928"
  ),
 
  # the heavy artefacts are overwritten each run, so these stems carry no date
@@ -2034,8 +2062,8 @@ list(
      bioregion_names = bioregion_names,
      n_burnin = 2000,
      n_samples = 1000,
-     n_chains = 50,
-     n_cores = 32
+     n_chains = 40,
+     n_cores = 8
    )
  ),
 
