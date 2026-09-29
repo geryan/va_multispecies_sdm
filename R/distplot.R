@@ -197,7 +197,7 @@ distplot <- function(
       scale_id_continuous,
       c(
         list(
-          cols = c("grey97", "darkorchid")
+          cols = c("grey97", "darkorchid4")
         ),
         scale_args
       )

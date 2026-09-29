@@ -2195,6 +2195,74 @@ list(
    format = "file"
  ),
 
+ # the same three figures with the main vectors featured: arabiensis, coluzzii,
+ # funestus and gambiae as large maps across the top half, the other 14 species
+ # as smaller maps below, and the colour bar in the space left at the end.
+ # Written as panel_distribution_featured.png, panel_lambda_featured.png and
+ # panel_cv_featured.png into rep_plot_dir
+ tar_target(
+   plot_pred_panels_featured_rep,
+   c(
+     make_distribution_panels_featured(
+       pred_dist = pred_p_rep,
+       plot_dir = rep_plot_dir,
+       guide = "prob"
+     ),
+     make_distribution_panels_featured(
+       pred_lambda_rep,
+       plot_dir = rep_plot_dir,
+       colscheme = "orchid",
+       guide = "abundance",
+       prefix = "lambda"
+     ),
+     make_distribution_panels_featured(
+       pred_cv_rep,
+       plot_dir = rep_plot_dir,
+       colscheme = "brick",
+       guide = "cv",
+       prefix = "cv"
+     )
+   ),
+   format = "file"
+ ),
+
+ # portrait versions of the featured figures: the four large maps 2 x 2 in the
+ # top half, the other 14 species in rows of four below (4, 4, 4, then 2 and
+ # the colour bar). Written as panel_distribution_featured_portrait.png,
+ # panel_lambda_featured_portrait.png and panel_cv_featured_portrait.png into
+ # rep_plot_dir
+ tar_target(
+   plot_pred_panels_featured_portrait_rep,
+   c(
+     make_distribution_panels_featured(
+       pred_dist = pred_p_rep,
+       plot_dir = rep_plot_dir,
+       guide = "prob",
+       featured_per_row = 2,
+       suffix = "featured_portrait"
+     ),
+     make_distribution_panels_featured(
+       pred_lambda_rep,
+       plot_dir = rep_plot_dir,
+       colscheme = "orchid",
+       guide = "abundance",
+       prefix = "lambda",
+       featured_per_row = 2,
+       suffix = "featured_portrait"
+     ),
+     make_distribution_panels_featured(
+       pred_cv_rep,
+       plot_dir = rep_plot_dir,
+       colscheme = "brick",
+       guide = "cv",
+       prefix = "cv",
+       featured_per_row = 2,
+       suffix = "featured_portrait"
+     )
+   ),
+   format = "file"
+ ),
+
  # abundance again, on a shared log10 scale, from 0.001 to the maximum across
  # all species. Anything below 0.001, masked cells included, takes the palest
  # colour, labelled "<=0.001". The linear scale flattens the rarer species; this
