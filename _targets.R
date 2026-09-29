@@ -2071,7 +2071,7 @@ list(
    resids_and_rhats_sre_rep,
    validation_and_checking(
      model_fit_image_multisp_pp_count_sm = model_fit_sre_rep,
-     nsims = 100,
+     nsims = 50,
      plotdir = rep_validation_dir
    )
  ),
@@ -2133,7 +2133,7 @@ list(
      plot_dir = rep_plot_dir,
      colscheme = "orchid",
      distpoints = FALSE,
-     guide = "none",
+     guide = "abundance",
      prefix = "lambda"
    )
  ),
@@ -2155,12 +2155,78 @@ list(
      pred_cv_rep,
      model_data_spatial,
      plot_dir = rep_plot_dir,
-     colscheme = "brick",
+     colscheme =  "brick",
      distpoints = FALSE,
-     guide = "none",
+     guide = "cv",
      prefix = "cv"
    )
  ),
+
+ # all species on one page: a 6 x 3 grid of each of the figures above, written
+ # as panel_distribution.png, panel_lambda.png and panel_cv.png into
+ # rep_plot_dir. Each figure is on one scale shared by every species, with one
+ # legend
+ tar_target(
+   plot_pred_panels_rep,
+   c(
+     make_distribution_panels(
+       pred_dist = pred_p_rep,
+       model_data_spatial,
+       plot_dir = rep_plot_dir,
+       guide = "prob"
+     ),
+     make_distribution_panels(
+       pred_lambda_rep,
+       model_data_spatial,
+       plot_dir = rep_plot_dir,
+       colscheme = "orchid",
+       guide = "abundance",
+       prefix = "lambda"
+     ),
+     make_distribution_panels(
+       pred_cv_rep,
+       model_data_spatial,
+       plot_dir = rep_plot_dir,
+       colscheme = "brick",
+       guide = "cv",
+       prefix = "cv"
+     )
+   ),
+   format = "file"
+ ),
+
+ # abundance again, on a shared log10 scale, from 0.001 to the maximum across
+ # all species. Anything below 0.001, masked cells included, takes the palest
+ # colour, labelled "<=0.001". The linear scale flattens the rarer species; this
+ # shows where they sit
+ # tar_target(
+ #   plot_pred_lambda_log_rep,
+ #   make_distribution_plots(
+ #     pred_lambda_rep,
+ #     model_data_spatial,
+ #     plot_dir = rep_plot_dir,
+ #     colscheme = "orchid",
+ #     distpoints = FALSE,
+ #     guide = "abundance",
+ #     log_scale = TRUE,
+ #     prefix = "lambda_log"
+ #   )
+ # ),
+ #
+ # # the log-scale version of panel_lambda.png
+ # tar_target(
+ #   plot_pred_panels_log_rep,
+ #   make_distribution_panels(
+ #     pred_lambda_rep,
+ #     model_data_spatial,
+ #     plot_dir = rep_plot_dir,
+ #     colscheme = "orchid",
+ #     guide = "abundance",
+ #     log_scale = TRUE,
+ #     prefix = "lambda_log"
+ #   ),
+ #   format = "file"
+ # ),
 
  tar_target(
    mod_dat_pts,

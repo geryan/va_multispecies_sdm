@@ -17,8 +17,9 @@ make_distribution_plots <- function(
     cola = "yellow",
     colscheme = "va",
     distpoints = TRUE,
-    guide = c("prob", "none"),
-    prefix = "distribution"
+    guide = c("prob", "none", "abundance", "cv"),
+    prefix = "distribution",
+    log_scale = FALSE
 ) {
 
   guide = match.arg(guide)
@@ -26,7 +27,8 @@ make_distribution_plots <- function(
   dist_plots_va <- distplotlist(
     pred_dist,
     colscheme = colscheme,
-    guide = guide
+    guide = guide,
+    log_scale = log_scale
   )
 
   saveplotlist(
