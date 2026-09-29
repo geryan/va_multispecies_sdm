@@ -2263,6 +2263,48 @@ list(
    format = "file"
  ),
 
+ # the most abundant species in each cell, from the masked abundance map, in
+ # two versions. Cells where no species is above `threshold` are their own grey
+ # category: at the default of 0 those are the masked cells, where every species
+ # is exactly 0; at 0.001 they also include cells where the top species is too
+ # rare for "most abundant" to mean much. preserve_metadata = "zip" keeps the
+ # category labels, which a plain GeoTIFF in the store drops
+ tar_terra_rast(
+   pred_dominant_rep,
+   get_dominant_species(
+     pred_lambda_rep,
+     target_species
+   ),
+   preserve_metadata = "zip"
+ ),
+
+ tar_terra_rast(
+   pred_dominant_001_rep,
+   get_dominant_species(
+     pred_lambda_rep,
+     target_species,
+     threshold = 0.001
+   ),
+   preserve_metadata = "zip"
+ ),
+
+ tar_target(
+   plot_pred_dominant_rep,
+   c(
+     make_dominant_species_plot(
+       pred_dominant_rep,
+       plot_dir = rep_plot_dir,
+       filename = "dominant_species.png"
+     ),
+     make_dominant_species_plot(
+       pred_dominant_001_rep,
+       plot_dir = rep_plot_dir,
+       filename = "dominant_species_001.png"
+     )
+   ),
+   format = "file"
+ ),
+
  # abundance again, on a shared log10 scale, from 0.001 to the maximum across
  # all species. Anything below 0.001, masked cells included, takes the palest
  # colour, labelled "<=0.001". The linear scale flattens the rarer species; this
