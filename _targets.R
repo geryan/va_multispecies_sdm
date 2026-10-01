@@ -1102,6 +1102,31 @@ list(
     )
   ),
 
+  # countries for the country atlas and country rasters: the 47 WHO African
+  # Region member states plus Djibouti, Somalia and Sudan (WHO Eastern
+  # Mediterranean Region, malarious and inside the prediction area)
+  tar_target(
+    atlas_countries,
+    atlas_country_list()
+  ),
+
+  tar_target(
+    atlas_country_iso3,
+    atlas_countries$iso3
+  ),
+
+  # low-resolution GADM boundaries (resolution = 2): ample for a 10 km grid and
+  # a fraction of the size
+  tar_terra_vect(
+    atlas_country_boundaries,
+    gadm(
+      country = atlas_country_iso3,
+      level = 0,
+      path = "data/raster/geodata/",
+      resolution = 2
+    )
+  ),
+
 
 
   # expert maps
@@ -1149,6 +1174,16 @@ list(
         new_map = pharoensis_expert_map,
         species = "pharoensis"
       )
+  ),
+
+  # every expert map dissolved into one outer boundary, buffered by 1000 km and
+  # with holes filled: the outermost extent of any expert map plus 1000 km
+  tar_terra_vect(
+    expert_maps_buffer_1000,
+    make_expert_range_mask(
+      expert_maps,
+      buffer_km = 1000
+    )
   ),
 
 
@@ -2364,6 +2399,125 @@ list(
        plot_dir = rep_plot_dir,
        filename = "dominant_species_001.png"
      )
+   ),
+   format = "file"
+ ),
+
+ # the same two dominant-species maps with everything outside
+ # expert_maps_buffer_1000 (all expert maps + 1000 km) masked out
+ tar_terra_rast(
+   pred_dominant_expert_rep,
+   mask(
+     pred_dominant_rep,
+     expert_maps_buffer_1000
+   ),
+   preserve_metadata = "zip"
+ ),
+
+ tar_terra_rast(
+   pred_dominant_001_expert_rep,
+   mask(
+     pred_dominant_001_rep,
+     expert_maps_buffer_1000
+   ),
+   preserve_metadata = "zip"
+ ),
+
+ tar_target(
+   plot_pred_dominant_expert_rep,
+   c(
+     make_dominant_species_plot(
+       pred_dominant_expert_rep,
+       plot_dir = rep_plot_dir,
+       filename = "dominant_species_expert_1000.png"
+     ),
+     make_dominant_species_plot(
+       pred_dominant_001_expert_rep,
+       plot_dir = rep_plot_dir,
+       filename = "dominant_species_001_expert_1000.png"
+     )
+   ),
+   format = "file"
+ ),
+
+ # species atlas: for each species, relative abundance, probability of
+ # occurrence, its CV, and probability with survey records, one map per page,
+ # with a clickable table of contents. Continental scales, as in the other
+ # figures. Page files are kept in species_atlas_pages/ beside the PDF
+ tar_target(
+   species_atlas_pdf_rep,
+   make_species_atlas(
+     abundance = pred_lambda_rep,
+     distribution = pred_p_rep,
+     cv = pred_cv_rep,
+     model_data_spatial = model_data_spatial,
+     file = file.path(
+       rep_plot_dir,
+       "species_atlas.pdf"
+     ),
+     subtitle = sprintf(
+       "Reparameterised multispecies model, run %s",
+       rep_tag
+     )
+   ),
+   format = "file"
+ ),
+
+ # country rasters: abundance, distribution and CV (one band per species) and
+ # travel time from research facilities (minutes, ~1 km), cropped to each
+ # country in outputs/rasters/countries_rep/<ISO3>/. One branch per country
+ tar_target(
+   country_rasters_rep,
+   write_country_rasters(
+     iso3 = atlas_country_iso3,
+     boundaries = atlas_country_boundaries,
+     abundance = pred_lambda_rep,
+     distribution = pred_p_rep,
+     cv = pred_cv_rep,
+     traveltime = bias_tt_raw,
+     outputdir = "outputs/rasters/countries_rep"
+   ),
+   pattern = map(atlas_country_iso3),
+   format = "file"
+ ),
+
+ # each country's atlas pages, drawn from its country rasters above: the four
+ # maps per species on per-country scales, plus travel time. One branch per
+ # country
+ tar_target(
+   country_pages_rep,
+   make_country_pages(
+     country_files = country_rasters_rep,
+     iso3 = atlas_country_iso3,
+     boundaries = atlas_country_boundaries,
+     model_data_spatial = model_data_spatial,
+     outputdir = file.path(
+       rep_plot_dir,
+       "country_pages"
+     )
+   ),
+   pattern = map(country_rasters_rep, atlas_country_iso3),
+   format = "file"
+ ),
+
+ # country atlas: every country's pages in one PDF (~3,650 pages). The printed
+ # contents list countries; each country opens with a clickable index of its
+ # species; the PDF bookmarks hold country > species > map
+ tar_target(
+   country_atlas_pdf_rep,
+   make_atlas_pdf(
+     pages = country_pages_rep,
+     file = file.path(
+       rep_plot_dir,
+       "country_atlas.pdf"
+     ),
+     type = "country",
+     title = "Predicted distribution and abundance of Anopheles species, by country",
+     subtitle = sprintf(
+       "Reparameterised multispecies model, run %s",
+       rep_tag
+     ),
+     countries = atlas_countries
    ),
    format = "file"
  ),
