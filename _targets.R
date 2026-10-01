@@ -2263,6 +2263,69 @@ list(
    format = "file"
  ),
 
+ # binary ranges: each species' probability of occurrence cut at the threshold
+ # that maximises sensitivity + specificity (maxSSS; Liu et al. 2005),
+ # evaluated on unique 10 km cells against the presences and absences this
+ # section's model was fitted to. Matches PresenceAbsence exactly; see
+ # extras/check_maxsss.R
+ tar_target(
+   thresholds_maxsss_rep,
+   maxsss_thresholds(
+     pred_p = pred_p_rep,
+     model_data_spatial = model_data_spatial
+   )
+ ),
+
+ tar_terra_rast(
+   pred_binary_rep,
+   binarise_by_threshold(
+     pred_p = pred_p_rep,
+     thresholds = thresholds_maxsss_rep
+   )
+ ),
+
+ # binary_<species>.png per species, and binary_thresholds_maxsss.csv
+ tar_target(
+   plot_pred_binary_rep,
+   make_binary_range_plots(
+     pred_binary = pred_binary_rep,
+     thresholds = thresholds_maxsss_rep,
+     plot_dir = rep_plot_dir
+   ),
+   format = "file"
+ ),
+
+ # featured panel versions: panel_binary_featured.png and
+ # panel_binary_featured_portrait.png
+ tar_target(
+   plot_pred_panels_binary_rep,
+   c(
+     make_distribution_panels_featured(
+       pred_dist = pred_binary_rep,
+       plots = binaryplotlist(
+         pred_binary_rep,
+         thresholds_maxsss_rep,
+         subtitle = "short"
+       ),
+       plot_dir = rep_plot_dir,
+       prefix = "binary"
+     ),
+     make_distribution_panels_featured(
+       pred_dist = pred_binary_rep,
+       plots = binaryplotlist(
+         pred_binary_rep,
+         thresholds_maxsss_rep,
+         subtitle = "short"
+       ),
+       plot_dir = rep_plot_dir,
+       prefix = "binary",
+       featured_per_row = 2,
+       suffix = "featured_portrait"
+     )
+   ),
+   format = "file"
+ ),
+
  # the most abundant species in each cell, from the masked abundance map, in
  # two versions. Cells where no species is above `threshold` are their own grey
  # category: at the default of 0 those are the masked cells, where every species
