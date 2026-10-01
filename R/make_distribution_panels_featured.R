@@ -23,6 +23,10 @@
 #' @param featured_per_row how many large maps to a row
 #' @param suffix names the file, after `prefix`
 #' @param small_size width and height of each small map, in inches
+#' @param plots optional named list of ready-made ggplots, one per species, to
+#'   lay out instead of drawing `pred_dist` with distplotlist() -- e.g. the
+#'   binary range maps from binaryplotlist(). `colscheme`, `guide` and
+#'   `log_scale` are then ignored
 #' @return path of the file written
 #' @author geryan
 #' @export
@@ -41,7 +45,8 @@ make_distribution_panels_featured <- function(
     featured_per_row = length(featured),
     suffix = "featured",
     small_size = 2,
-    log_scale = FALSE
+    log_scale = FALSE,
+    plots = NULL
 ) {
 
   guide <- match.arg(guide)
@@ -65,12 +70,14 @@ make_distribution_panels_featured <- function(
     )
   }
 
-  plots <- distplotlist(
-    pred_dist,
-    colscheme = colscheme,
-    guide = guide,
-    log_scale = log_scale
-  )
+  if (is.null(plots)) {
+    plots <- distplotlist(
+      pred_dist,
+      colscheme = colscheme,
+      guide = guide,
+      log_scale = log_scale
+    )
+  }
 
   others <- setdiff(names(plots), featured)
 
@@ -157,7 +164,8 @@ make_distribution_panels_featured <- function(
       function(p){
         p +
           theme(
-            plot.title = element_text(size = 12)
+            plot.title = element_text(size = 12),
+            plot.subtitle = element_text(size = 10)
           )
       }
     ),
@@ -166,7 +174,8 @@ make_distribution_panels_featured <- function(
       function(p){
         p +
           theme(
-            plot.title = element_text(size = 8)
+            plot.title = element_text(size = 8),
+            plot.subtitle = element_text(size = 7)
           )
       }
     )
