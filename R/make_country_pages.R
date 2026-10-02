@@ -149,62 +149,11 @@ make_country_pages <- function(
   # travel time, in hours, capped at the country's 99th percentile. The layer
   # was made country by country and does not cover some island states (Cabo
   # Verde, Seychelles), which get a note instead of an empty map
-  tt <- terra::rast(files[["traveltime"]]) / 60
-  names(tt) <- "travel_time_hours"
-
-  has_traveltime <- terra::global(
-    tt,
-    fun = "notNA"
-  )$notNA > 0
-
-  cap <- abundance_limits(tt)[2]
-  breaks <- pretty(c(0, cap))
-  breaks <- breaks[breaks <= cap]
-
-  p_tt <- if (!has_traveltime) {
-    ggplot() +
-      annotate(
-        "text",
-        x = 0,
-        y = 0,
-        label = sprintf(
-          "No travel-time data for %s.",
-          v$COUNTRY
-        ),
-        size = 6
-      ) +
-      theme_void()
-  } else {
-    ggplot() +
-      tidyterra::geom_spatraster(
-        data = tt
-      ) +
-      scale_fill_viridis_c(
-        option = "mako",
-        direction = -1,
-        limits = c(0, cap),
-        oob = scales::squish,
-        breaks = breaks,
-        labels = function(x){
-          lab <- as.character(signif(x, 2))
-          top <- !is.na(x) & x >= cap * (1 - 1e-9)
-          lab[top] <- paste0("\u2265", lab[top])
-          lab
-        },
-        na.value = "transparent",
-        name = "Hours"
-      ) +
-      tidyterra::geom_spatvector(
-        data = v,
-        fill = NA,
-        colour = "grey30",
-        linewidth = 0.3
-      ) +
-      theme_void() +
-      labs(
-        title = "Travel time from research facilities"
-      )
-  }
+  p_tt <- plot_traveltime(
+    terra::rast(files[["traveltime"]]),
+    outline = v,
+    place = v$COUNTRY
+  )
 
   f_tt <- file.path(
     outdir,
@@ -213,7 +162,9 @@ make_country_pages <- function(
 
   ggsave(
     filename = f_tt,
-    plot = p_tt,
+    plot = sharpen_raster_grobs(
+      p_tt
+    ),
     width = width,
     height = height,
     units = "in",

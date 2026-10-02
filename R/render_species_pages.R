@@ -9,7 +9,10 @@
 #' - points: the distribution map with the species' survey records, as
 #'   add_pa_points_list() draws them for the distpoints_*.png figures
 #'
-#' which are the same maps, colours and legends as the existing figures. Files
+#' which are the same maps, colours and legends as the existing figures. Every
+#' cell is drawn (tidyterra would otherwise thin the continental maps), and the
+#' map image is enlarged with sharpen_raster_grobs() so small countries print
+#' as sharp cells rather than a blur. Files
 #' are named `<prefix>__<species>__<layer>.pdf` (without `<prefix>__` if it is
 #' NULL), which is what make_atlas_pdf() reads the atlas structure from.
 #'
@@ -71,7 +74,9 @@ render_species_pages <- function(
 
     ggsave(
       filename = f,
-      plot = p + outline_layer,
+      plot = sharpen_raster_grobs(
+        p + outline_layer
+      ),
       width = width,
       height = height,
       units = "in",
@@ -92,7 +97,8 @@ render_species_pages <- function(
           sp,
           colscheme = "va",
           guide = "prob",
-          limits = c(0, 1)
+          limits = c(0, 1),
+          maxcell = Inf
         )
 
         p_points <- add_pa_points_list(
@@ -109,7 +115,8 @@ render_species_pages <- function(
               sp,
               colscheme = "orchid",
               guide = "abundance",
-              limits = limits$abundance
+              limits = limits$abundance,
+              maxcell = Inf
             ),
             sp,
             "abundance"
@@ -125,7 +132,8 @@ render_species_pages <- function(
               sp,
               colscheme = "brick",
               guide = "cv",
-              limits = limits$cv
+              limits = limits$cv,
+              maxcell = Inf
             ),
             sp,
             "cv"

@@ -25,16 +25,12 @@ make_species_atlas <- function(
     species = names(distribution)
 ){
 
-  pages <- render_species_pages(
+  pages <- render_species_atlas_pages(
     abundance = abundance,
     distribution = distribution,
     cv = cv,
     model_data_spatial = model_data_spatial,
     outdir = sub("\\.pdf$", "_pages", file),
-    limits = list(
-      abundance = abundance_limits(abundance),
-      cv = c(0, 1)
-    ),
     species = species
   )
 
@@ -44,6 +40,42 @@ make_species_atlas <- function(
     type = "species",
     title = title,
     subtitle = subtitle
+  )
+
+}
+
+#' The species atlas pages, on continental scales
+#'
+#' render_species_pages() with the continental colour scales: abundance shared
+#' across species (abundance_limits()), CV 0-1. Split out of
+#' make_species_atlas() so the same pages can also open the country atlas
+#' (make_atlas_pdf(continental_pages = )) without being drawn twice.
+#'
+#' @inheritParams make_species_atlas
+#' @param outdir directory to write the pages to
+#' @return paths of the pages written, species by species
+#' @author geryan
+#' @export
+render_species_atlas_pages <- function(
+    abundance,
+    distribution,
+    cv,
+    model_data_spatial,
+    outdir,
+    species = names(distribution)
+){
+
+  render_species_pages(
+    abundance = abundance,
+    distribution = distribution,
+    cv = cv,
+    model_data_spatial = model_data_spatial,
+    outdir = outdir,
+    limits = list(
+      abundance = abundance_limits(abundance),
+      cv = c(0, 1)
+    ),
+    species = species
   )
 
 }
