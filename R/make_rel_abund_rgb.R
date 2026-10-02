@@ -32,7 +32,6 @@ make_rel_abund_rgb <- function(
   most <- global(totals, "max", na.rm = TRUE)$max
   totals_norm <- totals / most
   names(totals_norm) <- "transparency"
-  plot(totals_norm)
 
   relabund <- c(props, trans = 1 - totals_norm) * 255
 

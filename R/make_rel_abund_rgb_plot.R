@@ -7,6 +7,12 @@ make_rel_abund_rgb_plot <- function(
     res = 300
 ) {
 
+  dir.create(
+    dirname(filename),
+    recursive = TRUE,
+    showWarnings = FALSE
+  )
+
   colz <- rel_abund_rgb |>
     terra::RGB(value = 1:3) |>
     colorize(
@@ -36,6 +42,6 @@ make_rel_abund_rgb_plot <- function(
 
   dev.off()
 
-  NULL
+  filename
 
 }
