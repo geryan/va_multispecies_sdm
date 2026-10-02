@@ -1582,7 +1582,7 @@ list(
      )
  ),
 
- # table 2 in manuscript
+ # table in manuscript
  tar_target(
    data_summary_table,
    make_data_summary_table(model_data_spatial),
@@ -1736,6 +1736,61 @@ list(
      expert_maps,
      project_mask_5
    )
+ ),
+
+ # two maps side by side: every observed record (colour = detected or not,
+ # shape = species; no inferred zeros or background points), and travel time
+ # from research facilities in hours. The observed records are the same in
+ # model_data_spatial and model_data_spatial_cx, which differ only in inferred
+ # zeros
+ tar_target(
+   plot_records_traveltime,
+   make_records_traveltime_plot(
+     model_data_spatial = model_data_spatial_cx,
+     project_mask = project_mask_5,
+     traveltime = bias_tt_raw,
+     file = "outputs/figures/records_traveltime.png"
+   ),
+   format = "file"
+ ),
+
+ # the 11 model covariates on one shared 0-1 scale, with the bioregions the
+ # model interacts them with as an enlarged map top-left. Landscape (5 columns,
+ # legends right), and portrait for an A4 manuscript page: saved at its printed
+ # size, 16 cm wide by ~21 cm, leaving room for a caption, with 7 pt text, 4
+ # columns, the colour bar in the grid's spare cell and the bioregion key
+ # across the bottom
+ tar_target(
+   plot_covariate_panels,
+   c(
+     make_covariate_panels(
+       covariates = covariate_rast_10,
+       covariate_names = target_covariate_names,
+       bioregions = oneearth_vect,
+       bioregion_names = bioregion_names,
+       plot_dir = "outputs/figures",
+       ncol = 5,
+       suffix = "landscape",
+       legend_position = "right"
+     ),
+     make_covariate_panels(
+       covariates = covariate_rast_10,
+       covariate_names = target_covariate_names,
+       bioregions = oneearth_vect,
+       bioregion_names = bioregion_names,
+       plot_dir = "outputs/figures",
+       ncol = 4,
+       suffix = "portrait",
+       legend_position = "bottom",
+       cell_size = 16 / 2.54 / 4,
+       base_size = 7,
+       key_ncol = 3,
+       bar_in_gap = TRUE,
+       label_width = 34,
+       legend_space = 2
+     )
+   ),
+   format = "file"
  ),
 
  # tar_target(
@@ -2579,6 +2634,11 @@ list(
  #
  # Every target and output path carries _cx, so this runs alongside the
  # original section and the two can be compared.
+ #
+ # This is the primary set of model results. Beyond the copy of the original
+ # section, it also has the RGB composition map of the main vectors and the
+ # species and country atlases, the country atlas opening with the continental
+ # maps.
 
  # which target species each complex / group label in the data could be;
  # a target, so editing the mapping invalidates only what depends on it
@@ -2595,6 +2655,29 @@ list(
      complex_members = complex_members
    )
  ),
+ tar_target(
+   data_summary_table_cx,
+   make_data_summary_table(model_data_spatial_cx),
+ ),
+
+ tar_target(
+   data_summary_table_cx_csv,
+   {
+     file <- "outputs/tables/data_summary_table_cx.csv"
+     dir.create(
+       dirname(file),
+       recursive = TRUE,
+       showWarnings = FALSE
+     )
+     write_csv(
+       data_summary_table_cx,
+       file
+     )
+     file
+   },
+   format = "file"
+ ),
+
 
  # Output paths for this section are built from the five targets below, so a
  # rerun is a one-line edit rather than six. They are targets rather than plain

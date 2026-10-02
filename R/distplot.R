@@ -19,7 +19,8 @@ distplot <- function(
     ),
     limits = NULL,
     log_scale = FALSE,
-    log_floor = 1e-3
+    log_floor = 1e-3,
+    maxcell = 5e5
 ){
 
   colscheme <- match.arg(colscheme)
@@ -68,7 +69,8 @@ distplot <- function(
 
   p <- ggplot() +
     geom_spatraster(
-      data = r
+      data = r,
+      maxcell = maxcell
     ) +
     theme_void() +
     labs(
