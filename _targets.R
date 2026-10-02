@@ -2952,6 +2952,246 @@ list(
    format = "file"
  ),
 
+ # relative composition of the three main vectors as one RGB map: red
+ # arabiensis, green gambiae + coluzzii (P(either)), blue funestus, from the
+ # masked probabilities; cells where none is above 0.05 are grey. Stored as
+ # float, not INT1U: INT1U reads 255 back as NA, and a cell where one species
+ # is the whole mix is exactly 255
+ tar_terra_rast(
+   rel_abund_rgb_rep_cx,
+   make_rel_abund_rgb(
+     x = pred_p_rep_cx,
+     threshold = 0.05
+   )
+ ),
+
+ tar_target(
+   plot_rel_abund_rgb_rep_cx,
+   make_rel_abund_rgb_plot(
+     rel_abund_rgb_rep_cx,
+     project_mask = project_mask_5,
+     filename = file.path(
+       rep_plot_dir_cx,
+       "rgb_relative_abundance.png"
+     )
+   ),
+   format = "file"
+ ),
+
+ # 1,000 posterior draws of the coefficients, thinned evenly within chains,
+ # pulled out of the ~6.8 GB fit image once (~1.5 min) so the plots below never
+ # load it. extract_cv_draws() works on any image from the reparameterised fit;
+ # it rebuilds beta from the traced beta_raw exactly, without greta
+ tar_target(
+   coef_draws_rep_cx,
+   extract_cv_draws(
+     image_name = model_fit_sre_rep_cx,
+     output_file = "outputs/draws/coef_draws_rep_cx.rds",
+     n_keep = 1000
+   ),
+   format = "file"
+ ),
+
+ # response plots, one per species, from the main effects (the average
+ # bioregion), against the average surveyed location: land cover as the
+ # relative abundance when a class is 10 percentage points higher than there,
+ # the rest of the mix shrinking in proportion; footprint and proximity to sea
+ # as curves. Greyscale. response_<species>.png in
+ # <rep_plot_dir_cx>/response_curves
+ tar_target(
+   plot_response_curves_rep_cx,
+   make_response_curve_plots(
+     coef_draws_file = coef_draws_rep_cx,
+     model_data_spatial = model_data_spatial_cx,
+     landcover_classes = model_landcover_classes,
+     plot_dir = file.path(
+       rep_plot_dir_cx,
+       "response_curves"
+     )
+   ),
+   format = "file"
+ ),
+
+ # bioregion x covariate terms, per species: each covariate's slope in each
+ # bioregion and its departure from the area-averaged slope, as heatmaps,
+ # dotted where the departure's 90% interval excludes 0.
+ # bioregion_slopes_<species>.png in <rep_plot_dir_cx>/bioregion_slopes
+ tar_target(
+   plot_bioregion_slopes_rep_cx,
+   make_bioregion_slope_heatmaps(
+     coef_draws_file = coef_draws_rep_cx,
+     covariates = covariate_rast_10,
+     plot_dir = file.path(
+       rep_plot_dir_cx,
+       "bioregion_slopes"
+     )
+   ),
+   format = "file"
+ ),
+
+ # the combined effect of all the covariate x bioregion terms on each species'
+ # relative abundance, as a multiplier, from the interaction coefficients'
+ # posterior mean. Individually the terms are weakly identified; together
+ # they are not
+ tar_terra_rast(
+   bioregion_effect_rep_cx,
+   bioregion_effect_rast(
+     coef_draws_file = coef_draws_rep_cx,
+     covariates = covariate_rast_10
+   )
+ ),
+
+ # those multipliers mapped for every species, as
+ # <rep_plot_dir_cx>/bioregion_effect_maps.png
+ tar_target(
+   plot_bioregion_effect_rep_cx,
+   make_bioregion_effect_maps(
+     bioregion_effect = bioregion_effect_rep_cx,
+     plot_dir = rep_plot_dir_cx
+   ),
+   format = "file"
+ ),
+
+ # species atlas pages: for each species, relative abundance, probability of
+ # occurrence, its CV, and probability with survey records, on continental
+ # scales. A target of their own, rather than inside make_species_atlas(), so
+ # the country atlas can open with them too
+ tar_target(
+   species_atlas_pages_rep_cx,
+   render_species_atlas_pages(
+     abundance = pred_lambda_rep_cx,
+     distribution = pred_p_rep_cx,
+     cv = pred_cv_rep_cx,
+     model_data_spatial = model_data_spatial_cx,
+     outdir = file.path(
+       rep_plot_dir_cx,
+       "species_atlas_pages"
+     )
+   ),
+   format = "file"
+ ),
+
+ # species atlas: the pages above, one map per page, with a clickable table of
+ # contents
+ tar_target(
+   species_atlas_pdf_rep_cx,
+   make_atlas_pdf(
+     pages = species_atlas_pages_rep_cx,
+     file = file.path(
+       rep_plot_dir_cx,
+       "species_atlas.pdf"
+     ),
+     type = "species",
+     title = "Predicted distribution and abundance of Anopheles species in Africa",
+     subtitle = sprintf(
+       "Reparameterised multispecies model, contradicted inferred zeros removed, run %s",
+       rep_tag_cx
+     )
+   ),
+   format = "file"
+ ),
+
+ # continental travel time from research facilities, closing the continental
+ # section of the country atlas
+ tar_target(
+   traveltime_page_rep_cx,
+   make_traveltime_page(
+     traveltime = bias_tt_raw,
+     extent = project_mask_5,
+     file = file.path(
+       rep_plot_dir_cx,
+       "traveltime_africa.pdf"
+     )
+   ),
+   format = "file"
+ ),
+
+ # country rasters: abundance, distribution and CV (one band per species) and
+ # travel time from research facilities (minutes, ~1 km), cropped to each
+ # country in outputs/rasters/countries_rep_cx/<ISO3>/. One branch per country
+ tar_target(
+   country_rasters_rep_cx,
+   write_country_rasters(
+     iso3 = atlas_country_iso3,
+     boundaries = atlas_country_boundaries,
+     abundance = pred_lambda_rep_cx,
+     distribution = pred_p_rep_cx,
+     cv = pred_cv_rep_cx,
+     traveltime = bias_tt_raw,
+     outputdir = "outputs/rasters/countries_rep_cx"
+   ),
+   pattern = map(atlas_country_iso3),
+   format = "file"
+ ),
+
+ # each country's atlas pages, drawn from its country rasters above: the four
+ # maps per species on per-country scales, plus travel time. One branch per
+ # country
+ tar_target(
+   country_pages_rep_cx,
+   make_country_pages(
+     country_files = country_rasters_rep_cx,
+     iso3 = atlas_country_iso3,
+     boundaries = atlas_country_boundaries,
+     model_data_spatial = model_data_spatial_cx,
+     outputdir = file.path(
+       rep_plot_dir_cx,
+       "country_pages"
+     )
+   ),
+   pattern = map(country_rasters_rep_cx, atlas_country_iso3),
+   format = "file"
+ ),
+
+ # country atlas (~3,720 pages): after the contents, a continental section --
+ # the species atlas pages on continental scales, then travel time -- and then
+ # every country's pages. The printed contents list Africa and the countries;
+ # each section opens with a clickable index of its species; the PDF bookmarks
+ # hold section > species > map
+ tar_target(
+   country_atlas_pdf_rep_cx,
+   make_atlas_pdf(
+     pages = country_pages_rep_cx,
+     file = file.path(
+       rep_plot_dir_cx,
+       "country_atlas.pdf"
+     ),
+     type = "country",
+     title = "Predicted distribution and abundance of Anopheles species, by country",
+     subtitle = sprintf(
+       "Reparameterised multispecies model, contradicted inferred zeros removed, run %s",
+       rep_tag_cx
+     ),
+     countries = atlas_countries,
+     continental_pages = species_atlas_pages_rep_cx,
+     continental_traveltime = traveltime_page_rep_cx
+   ),
+   format = "file"
+ ),
+
+ # an atlas of its own for each country -- that country's pages, with a
+ # contents page listing its species -- as
+ # <rep_plot_dir_cx>/country_atlases/<ISO3>_<Country>.pdf. One branch per
+ # country
+ tar_target(
+   country_atlas_pdfs_rep_cx,
+   make_single_country_atlas(
+     pages = country_pages_rep_cx,
+     iso3 = atlas_country_iso3,
+     countries = atlas_countries,
+     outputdir = file.path(
+       rep_plot_dir_cx,
+       "country_atlases"
+     ),
+     subtitle = sprintf(
+       "Reparameterised multispecies model, contradicted inferred zeros removed, run %s",
+       rep_tag_cx
+     )
+   ),
+   pattern = map(country_pages_rep_cx, atlas_country_iso3),
+   format = "file"
+ ),
+
  # abundance again, on a shared log10 scale, from 0.001 to the maximum across
  # all species. Anything below 0.001, masked cells included, takes the palest
  # colour, labelled "<=0.001". The linear scale flattens the rarer species; this
