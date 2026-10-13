@@ -2,6 +2,18 @@ library(targets)
 library(geotargets)
 library(targets.utils) ## pak::pak("geryan/targets.utils")
 
+# GDAL stamps every GeoPackage with the time it was written
+# (gpkg_contents.last_change), and tar_terra_vect stores targets as
+# GeoPackages. So an identical SpatVector gets a new hash every time it is
+# rebuilt, and everything downstream reruns -- e.g. expert_maps ->
+# expert_offset_maps (~40 min) for no change. Pinning the timestamp makes those
+# writes byte-identical, so a rebuild that changes nothing stops there. Set as
+# an environment variable, not terra::setGDALconfig(), so it would also reach
+# any worker processes.
+Sys.setenv(
+  OGR_CURRENT_DATE = "2000-01-01T00:00:00Z"
+)
+
 tar_option_set(
   packages = c(
     #"tibble",
@@ -1090,6 +1102,42 @@ list(
     )
   ),
 
+  # countries for the country atlas and country rasters: the 47 WHO African
+  # Region member states plus Djibouti, Somalia and Sudan (WHO Eastern
+  # Mediterranean Region, malarious and inside the prediction area)
+  tar_target(
+    atlas_countries,
+    atlas_country_list()
+  ),
+
+  tar_target(
+    atlas_country_iso3,
+    atlas_countries$iso3
+  ),
+
+  # low-resolution GADM boundaries (resolution = 2): ample for a 10 km grid and
+  # a fraction of the size
+  tar_terra_vect(
+    atlas_country_boundaries,
+    gadm(
+      country = atlas_country_iso3,
+      level = 0,
+      path = "data/raster/geodata/",
+      resolution = 2
+    )
+  ),
+
+
+
+  # expert maps
+
+  # pharosnsis - add in ref
+
+  tar_terra_vect(
+    pharoensis_expert_map,
+    get_pharoensis_expert_map()
+  ),
+
 
   # expert maps from
   # Sinka, M.E., Bangs, M.J., Manguin, S. et al.
@@ -1099,7 +1147,7 @@ list(
   # supp file: 13071_2010_245_MOESM1_ESM.ZIP
 
   tar_terra_vect(
-    expert_maps,
+    sinka_expert_maps,
     get_expert_maps(
       sp = c(
         "arabiensis",
@@ -1120,9 +1168,24 @@ list(
   ),
 
   tar_terra_vect(
-    pharoensis_expert_map,
-    get_pharoensis_expert_map()
+    expert_maps,
+    sinka_expert_maps |>
+      add_expert_map(
+        new_map = pharoensis_expert_map,
+        species = "pharoensis"
+      )
   ),
+
+  # every expert map dissolved into one outer boundary, buffered by 1000 km and
+  # with holes filled: the outermost extent of any expert map plus 1000 km
+  tar_terra_vect(
+    expert_maps_buffer_1000,
+    make_expert_range_mask(
+      expert_maps,
+      buffer_km = 1000
+    )
+  ),
+
 
   # extent of this is too small?
   tar_terra_rast(
@@ -1519,7 +1582,7 @@ list(
      )
  ),
 
- # table 2 in manuscript
+ # table in manuscript
  tar_target(
    data_summary_table,
    make_data_summary_table(model_data_spatial),
@@ -1673,6 +1736,61 @@ list(
      expert_maps,
      project_mask_5
    )
+ ),
+
+ # two maps side by side: every observed record (colour = detected or not,
+ # shape = species; no inferred zeros or background points), and travel time
+ # from research facilities in hours. The observed records are the same in
+ # model_data_spatial and model_data_spatial_cx, which differ only in inferred
+ # zeros
+ tar_target(
+   plot_records_traveltime,
+   make_records_traveltime_plot(
+     model_data_spatial = model_data_spatial_cx,
+     project_mask = project_mask_5,
+     traveltime = bias_tt_raw,
+     file = "outputs/figures/records_traveltime.png"
+   ),
+   format = "file"
+ ),
+
+ # the 11 model covariates on one shared 0-1 scale, with the bioregions the
+ # model interacts them with as an enlarged map top-left. Landscape (5 columns,
+ # legends right), and portrait for an A4 manuscript page: saved at its printed
+ # size, 16 cm wide by ~21 cm, leaving room for a caption, with 7 pt text, 4
+ # columns, the colour bar in the grid's spare cell and the bioregion key
+ # across the bottom
+ tar_target(
+   plot_covariate_panels,
+   c(
+     make_covariate_panels(
+       covariates = covariate_rast_10,
+       covariate_names = target_covariate_names,
+       bioregions = oneearth_vect,
+       bioregion_names = bioregion_names,
+       plot_dir = "outputs/figures",
+       ncol = 5,
+       suffix = "landscape",
+       legend_position = "right"
+     ),
+     make_covariate_panels(
+       covariates = covariate_rast_10,
+       covariate_names = target_covariate_names,
+       bioregions = oneearth_vect,
+       bioregion_names = bioregion_names,
+       plot_dir = "outputs/figures",
+       ncol = 4,
+       suffix = "portrait",
+       legend_position = "bottom",
+       cell_size = 16 / 2.54 / 4,
+       base_size = 7,
+       key_ncol = 3,
+       bar_in_gap = TRUE,
+       label_width = 34,
+       legend_space = 2
+     )
+   ),
+   format = "file"
  ),
 
  # tar_target(
@@ -1993,7 +2111,7 @@ list(
  # stops there.
  tar_target(
    rep_tag,
-   "20260923"
+   "20260928"
  ),
 
  # the heavy artefacts are overwritten each run, so these stems carry no date
@@ -2034,8 +2152,8 @@ list(
      bioregion_names = bioregion_names,
      n_burnin = 2000,
      n_samples = 1000,
-     n_chains = 50,
-     n_cores = 32
+     n_chains = 40,
+     n_cores = 8
    )
  ),
 
@@ -2043,7 +2161,7 @@ list(
    resids_and_rhats_sre_rep,
    validation_and_checking(
      model_fit_image_multisp_pp_count_sm = model_fit_sre_rep,
-     nsims = 100,
+     nsims = 50,
      plotdir = rep_validation_dir
    )
  ),
@@ -2105,7 +2223,7 @@ list(
      plot_dir = rep_plot_dir,
      colscheme = "orchid",
      distpoints = FALSE,
-     guide = "none",
+     guide = "abundance",
      prefix = "lambda"
    )
  ),
@@ -2127,12 +2245,370 @@ list(
      pred_cv_rep,
      model_data_spatial,
      plot_dir = rep_plot_dir,
-     colscheme = "brick",
+     colscheme =  "brick",
      distpoints = FALSE,
-     guide = "none",
+     guide = "cv",
      prefix = "cv"
    )
  ),
+
+ # all species on one page: a 6 x 3 grid of each of the figures above, written
+ # as panel_distribution.png, panel_lambda.png and panel_cv.png into
+ # rep_plot_dir. Each figure is on one scale shared by every species, with one
+ # legend
+ tar_target(
+   plot_pred_panels_rep,
+   c(
+     make_distribution_panels(
+       pred_dist = pred_p_rep,
+       model_data_spatial,
+       plot_dir = rep_plot_dir,
+       guide = "prob"
+     ),
+     make_distribution_panels(
+       pred_lambda_rep,
+       model_data_spatial,
+       plot_dir = rep_plot_dir,
+       colscheme = "orchid",
+       guide = "abundance",
+       prefix = "lambda"
+     ),
+     make_distribution_panels(
+       pred_cv_rep,
+       model_data_spatial,
+       plot_dir = rep_plot_dir,
+       colscheme = "brick",
+       guide = "cv",
+       prefix = "cv"
+     )
+   ),
+   format = "file"
+ ),
+
+ # the same three figures with the main vectors featured: arabiensis, coluzzii,
+ # funestus and gambiae as large maps across the top half, the other 14 species
+ # as smaller maps below, and the colour bar in the space left at the end.
+ # Written as panel_distribution_featured.png, panel_lambda_featured.png and
+ # panel_cv_featured.png into rep_plot_dir
+ tar_target(
+   plot_pred_panels_featured_rep,
+   c(
+     make_distribution_panels_featured(
+       pred_dist = pred_p_rep,
+       plot_dir = rep_plot_dir,
+       guide = "prob"
+     ),
+     make_distribution_panels_featured(
+       pred_lambda_rep,
+       plot_dir = rep_plot_dir,
+       colscheme = "orchid",
+       guide = "abundance",
+       prefix = "lambda"
+     ),
+     make_distribution_panels_featured(
+       pred_cv_rep,
+       plot_dir = rep_plot_dir,
+       colscheme = "brick",
+       guide = "cv",
+       prefix = "cv"
+     )
+   ),
+   format = "file"
+ ),
+
+ # portrait versions of the featured figures: the four large maps 2 x 2 in the
+ # top half, the other 14 species in rows of four below (4, 4, 4, then 2 and
+ # the colour bar). Written as panel_distribution_featured_portrait.png,
+ # panel_lambda_featured_portrait.png and panel_cv_featured_portrait.png into
+ # rep_plot_dir
+ tar_target(
+   plot_pred_panels_featured_portrait_rep,
+   c(
+     make_distribution_panels_featured(
+       pred_dist = pred_p_rep,
+       plot_dir = rep_plot_dir,
+       guide = "prob",
+       featured_per_row = 2,
+       suffix = "featured_portrait"
+     ),
+     make_distribution_panels_featured(
+       pred_lambda_rep,
+       plot_dir = rep_plot_dir,
+       colscheme = "orchid",
+       guide = "abundance",
+       prefix = "lambda",
+       featured_per_row = 2,
+       suffix = "featured_portrait"
+     ),
+     make_distribution_panels_featured(
+       pred_cv_rep,
+       plot_dir = rep_plot_dir,
+       colscheme = "brick",
+       guide = "cv",
+       prefix = "cv",
+       featured_per_row = 2,
+       suffix = "featured_portrait"
+     )
+   ),
+   format = "file"
+ ),
+
+ # binary ranges: each species' probability of occurrence cut at the threshold
+ # that maximises sensitivity + specificity (maxSSS; Liu et al. 2005),
+ # evaluated on unique 10 km cells against the presences and absences this
+ # section's model was fitted to. Matches PresenceAbsence exactly; see
+ # extras/check_maxsss.R
+ tar_target(
+   thresholds_maxsss_rep,
+   maxsss_thresholds(
+     pred_p = pred_p_rep,
+     model_data_spatial = model_data_spatial
+   )
+ ),
+
+ tar_terra_rast(
+   pred_binary_rep,
+   binarise_by_threshold(
+     pred_p = pred_p_rep,
+     thresholds = thresholds_maxsss_rep
+   )
+ ),
+
+ # binary_<species>.png per species, and binary_thresholds_maxsss.csv
+ tar_target(
+   plot_pred_binary_rep,
+   make_binary_range_plots(
+     pred_binary = pred_binary_rep,
+     thresholds = thresholds_maxsss_rep,
+     plot_dir = rep_plot_dir
+   ),
+   format = "file"
+ ),
+
+ # featured panel versions: panel_binary_featured.png and
+ # panel_binary_featured_portrait.png
+ tar_target(
+   plot_pred_panels_binary_rep,
+   c(
+     make_distribution_panels_featured(
+       pred_dist = pred_binary_rep,
+       plots = binaryplotlist(
+         pred_binary_rep,
+         thresholds_maxsss_rep,
+         subtitle = "short"
+       ),
+       plot_dir = rep_plot_dir,
+       prefix = "binary"
+     ),
+     make_distribution_panels_featured(
+       pred_dist = pred_binary_rep,
+       plots = binaryplotlist(
+         pred_binary_rep,
+         thresholds_maxsss_rep,
+         subtitle = "short"
+       ),
+       plot_dir = rep_plot_dir,
+       prefix = "binary",
+       featured_per_row = 2,
+       suffix = "featured_portrait"
+     )
+   ),
+   format = "file"
+ ),
+
+ # the most abundant species in each cell, from the masked abundance map, in
+ # two versions. Cells where no species is above `threshold` are their own grey
+ # category: at the default of 0 those are the masked cells, where every species
+ # is exactly 0; at 0.001 they also include cells where the top species is too
+ # rare for "most abundant" to mean much. preserve_metadata = "zip" keeps the
+ # category labels, which a plain GeoTIFF in the store drops
+ tar_terra_rast(
+   pred_dominant_rep,
+   get_dominant_species(
+     pred_lambda_rep,
+     target_species
+   ),
+   preserve_metadata = "zip"
+ ),
+
+ tar_terra_rast(
+   pred_dominant_001_rep,
+   get_dominant_species(
+     pred_lambda_rep,
+     target_species,
+     threshold = 0.001
+   ),
+   preserve_metadata = "zip"
+ ),
+
+ tar_target(
+   plot_pred_dominant_rep,
+   c(
+     make_dominant_species_plot(
+       pred_dominant_rep,
+       plot_dir = rep_plot_dir,
+       filename = "dominant_species.png"
+     ),
+     make_dominant_species_plot(
+       pred_dominant_001_rep,
+       plot_dir = rep_plot_dir,
+       filename = "dominant_species_001.png"
+     )
+   ),
+   format = "file"
+ ),
+
+ # the same two dominant-species maps with everything outside
+ # expert_maps_buffer_1000 (all expert maps + 1000 km) masked out
+ tar_terra_rast(
+   pred_dominant_expert_rep,
+   mask(
+     pred_dominant_rep,
+     expert_maps_buffer_1000
+   ),
+   preserve_metadata = "zip"
+ ),
+
+ tar_terra_rast(
+   pred_dominant_001_expert_rep,
+   mask(
+     pred_dominant_001_rep,
+     expert_maps_buffer_1000
+   ),
+   preserve_metadata = "zip"
+ ),
+
+ tar_target(
+   plot_pred_dominant_expert_rep,
+   c(
+     make_dominant_species_plot(
+       pred_dominant_expert_rep,
+       plot_dir = rep_plot_dir,
+       filename = "dominant_species_expert_1000.png"
+     ),
+     make_dominant_species_plot(
+       pred_dominant_001_expert_rep,
+       plot_dir = rep_plot_dir,
+       filename = "dominant_species_001_expert_1000.png"
+     )
+   ),
+   format = "file"
+ ),
+
+ # species atlas: for each species, relative abundance, probability of
+ # occurrence, its CV, and probability with survey records, one map per page,
+ # with a clickable table of contents. Continental scales, as in the other
+ # figures. Page files are kept in species_atlas_pages/ beside the PDF
+ tar_target(
+   species_atlas_pdf_rep,
+   make_species_atlas(
+     abundance = pred_lambda_rep,
+     distribution = pred_p_rep,
+     cv = pred_cv_rep,
+     model_data_spatial = model_data_spatial,
+     file = file.path(
+       rep_plot_dir,
+       "species_atlas.pdf"
+     ),
+     subtitle = sprintf(
+       "Reparameterised multispecies model, run %s",
+       rep_tag
+     )
+   ),
+   format = "file"
+ ),
+
+ # country rasters: abundance, distribution and CV (one band per species) and
+ # travel time from research facilities (minutes, ~1 km), cropped to each
+ # country in outputs/rasters/countries_rep/<ISO3>/. One branch per country
+ tar_target(
+   country_rasters_rep,
+   write_country_rasters(
+     iso3 = atlas_country_iso3,
+     boundaries = atlas_country_boundaries,
+     abundance = pred_lambda_rep,
+     distribution = pred_p_rep,
+     cv = pred_cv_rep,
+     traveltime = bias_tt_raw,
+     outputdir = "outputs/rasters/countries_rep"
+   ),
+   pattern = map(atlas_country_iso3),
+   format = "file"
+ ),
+
+ # each country's atlas pages, drawn from its country rasters above: the four
+ # maps per species on per-country scales, plus travel time. One branch per
+ # country
+ tar_target(
+   country_pages_rep,
+   make_country_pages(
+     country_files = country_rasters_rep,
+     iso3 = atlas_country_iso3,
+     boundaries = atlas_country_boundaries,
+     model_data_spatial = model_data_spatial,
+     outputdir = file.path(
+       rep_plot_dir,
+       "country_pages"
+     )
+   ),
+   pattern = map(country_rasters_rep, atlas_country_iso3),
+   format = "file"
+ ),
+
+ # country atlas: every country's pages in one PDF (~3,650 pages). The printed
+ # contents list countries; each country opens with a clickable index of its
+ # species; the PDF bookmarks hold country > species > map
+ tar_target(
+   country_atlas_pdf_rep,
+   make_atlas_pdf(
+     pages = country_pages_rep,
+     file = file.path(
+       rep_plot_dir,
+       "country_atlas.pdf"
+     ),
+     type = "country",
+     title = "Predicted distribution and abundance of Anopheles species, by country",
+     subtitle = sprintf(
+       "Reparameterised multispecies model, run %s",
+       rep_tag
+     ),
+     countries = atlas_countries
+   ),
+   format = "file"
+ ),
+
+ # abundance again, on a shared log10 scale, from 0.001 to the maximum across
+ # all species. Anything below 0.001, masked cells included, takes the palest
+ # colour, labelled "<=0.001". The linear scale flattens the rarer species; this
+ # shows where they sit
+ # tar_target(
+ #   plot_pred_lambda_log_rep,
+ #   make_distribution_plots(
+ #     pred_lambda_rep,
+ #     model_data_spatial,
+ #     plot_dir = rep_plot_dir,
+ #     colscheme = "orchid",
+ #     distpoints = FALSE,
+ #     guide = "abundance",
+ #     log_scale = TRUE,
+ #     prefix = "lambda_log"
+ #   )
+ # ),
+ #
+ # # the log-scale version of panel_lambda.png
+ # tar_target(
+ #   plot_pred_panels_log_rep,
+ #   make_distribution_panels(
+ #     pred_lambda_rep,
+ #     model_data_spatial,
+ #     plot_dir = rep_plot_dir,
+ #     colscheme = "orchid",
+ #     guide = "abundance",
+ #     log_scale = TRUE,
+ #     prefix = "lambda_log"
+ #   ),
+ #   format = "file"
+ # ),
 
  tar_target(
    mod_dat_pts,
@@ -2142,6 +2618,695 @@ list(
  ),
  #write_csv(mod_dat_pts, "outputs/va_point_locations.csv")
 
+ ###################
+ # reparameterisation section WITHOUT CONTRADICTED INFERRED ZEROS (_cx)
+ #
+ # A copy of the reparameterisation section, identical except that every
+ # model_data_spatial is model_data_spatial_cx. That drops the inferred zeros
+ # generate_model_data_records() adds for a species at a location where
+ #   1. a complex or group containing it was recorded present, at any time
+ #      (complex_member_defs() lists the labels and their target members), or
+ #   2. the species itself was recorded present, at any time.
+ # The inference works survey by survey, so it does neither of these itself.
+ # On the 2026-09 data this drops 16,503 of 96,270 inferred rows: 14,465 by
+ # rule 1 and 3,109 by rule 2. Observed records and background points are
+ # all kept.
+ #
+ # Every target and output path carries _cx, so this runs alongside the
+ # original section and the two can be compared.
+ #
+ # This is the primary set of model results. Beyond the copy of the original
+ # section, it also has the RGB composition map of the main vectors and the
+ # species and country atlases, the country atlas opening with the continental
+ # maps.
+
+ # which target species each complex / group label in the data could be;
+ # a target, so editing the mapping invalidates only what depends on it
+ tar_target(
+   complex_members,
+   complex_member_defs()
+ ),
+
+ tar_target(
+   model_data_spatial_cx,
+   drop_contradicted_inferred_zeros(
+     model_data_spatial = model_data_spatial,
+     full_data_records = full_data_records,
+     complex_members = complex_members
+   )
+ ),
+ tar_target(
+   data_summary_table_cx,
+   make_data_summary_table(model_data_spatial_cx),
+ ),
+
+ tar_target(
+   data_summary_table_cx_csv,
+   {
+     file <- "outputs/tables/data_summary_table_cx.csv"
+     dir.create(
+       dirname(file),
+       recursive = TRUE,
+       showWarnings = FALSE
+     )
+     write_csv(
+       data_summary_table_cx,
+       file
+     )
+     file
+   },
+   format = "file"
+ ),
+
+
+ # Output paths for this section are built from the five targets below, so a
+ # rerun is a one-line edit rather than six. They are targets rather than plain
+ # globals to match landcover_prediction_year / footprint_prediction_year, and
+ # they are kept as separate targets rather than one list so that bumping the
+ # date does not invalidate the fit -- model_fit_sre_rep_cx depends on
+ # rep_fit_image_cx alone, so rep_tag_cx reaches the validation and plot targets and
+ # stops there.
+ tar_target(
+   rep_tag_cx,
+   "20260928"
+ ),
+
+ # the heavy artefacts are overwritten each run, so these stems carry no date
+ tar_target(
+   rep_fit_image_cx,
+   "outputs/images/model_fit_test_source_re_rep_cx.RData"
+ ),
+
+ tar_target(
+   rep_pred_prefix_cx,
+   "outputs/rasters/reparam_multispecies_pp_rep_cx"
+ ),
+
+ # the plot directories accumulate, so these are dated
+ tar_target(
+   rep_validation_dir_cx,
+   sprintf(
+     "outputs/figures/validation/sre_rep_cx_%s/",
+     rep_tag_cx
+   )
+ ),
+
+ tar_target(
+   rep_plot_dir_cx,
+   sprintf(
+     "outputs/figures/distribution_plots/distn_%s_rep_cx",
+     rep_tag_cx
+   )
+ ),
+
+ tar_target(
+   model_fit_sre_rep_cx,
+   fit_model_multispecies_pp_count_source_effect_reparam(
+     image_name = rep_fit_image_cx,
+     model_data_spatial = model_data_spatial_cx,
+     target_covariate_names = target_covariate_names,
+     target_species = target_species,
+     bioregion_names = bioregion_names,
+     n_burnin = 1000,
+     n_samples = 1000,
+     n_chains = 40,
+     n_cores = 8
+   )
+ ),
+
+ tar_target(
+   resids_and_rhats_sre_rep_cx,
+   validation_and_checking(
+     model_fit_image_multisp_pp_count_sm = model_fit_sre_rep_cx,
+     nsims = 100,
+     plotdir = rep_validation_dir_cx
+   )
+ ),
+
+ tar_target(
+   preds_sm_rep_cx,
+   predict_lambda_reparam(
+     image_name = model_fit_sre_rep_cx,
+     prediction_layer = covariate_rast_10, # use 10k for faster preds
+     target_species,
+     output_file_prefix = rep_pred_prefix_cx,
+     offset = offsets_avg_10,
+     sm = TRUE, # if predict survey method
+     nsims = 100 # lower for faster preds
+   )
+ ),
+
+
+ # distribution plots
+ tar_terra_rast(
+   pred_dist_not_masked_rep_cx,
+   rast(preds_sm_rep_cx$p)
+   #rast("spartan_model_comparison/m6/m6_p.tif")
+ ),
+
+ tar_terra_rast(
+   pred_p_rep_cx,
+   mask_landcover_and_expert_offset(
+     p = pred_dist_not_masked_rep_cx,
+     expert = expert_offset_maps_10,
+     bare = landcover_bare_10
+   )
+ ),
+
+ tar_target(
+   plot_pred_p_rep_cx,
+   make_distribution_plots(
+     pred_dist = pred_p_rep_cx,
+     model_data_spatial_cx,
+     plot_dir = rep_plot_dir_cx
+   )
+ ),
+
+ # average abundance plots
+ tar_terra_rast(
+   pred_lambda_rep_cx,
+   mask_landcover_and_expert_offset(
+     p = rast(preds_sm_rep_cx$lambda_no_offset)* offsets_avg_10,
+     expert = expert_offset_maps_10,
+     bare = landcover_bare_10
+   )
+ ),
+
+ tar_target(
+   plot_pred_lambda_rep_cx,
+   make_distribution_plots(
+     pred_lambda_rep_cx,
+     model_data_spatial_cx,
+     plot_dir = rep_plot_dir_cx,
+     colscheme = "orchid",
+     distpoints = FALSE,
+     guide = "abundance",
+     prefix = "lambda"
+   )
+ ),
+
+
+ # uncertainty plots
+ tar_terra_rast(
+   pred_cv_rep_cx,
+   mask_landcover_and_expert_offset(
+     p = rast(preds_sm_rep_cx$p_cv),
+     expert = expert_offset_maps_10,
+     bare = landcover_bare_10
+   )
+ ),
+
+ tar_target(
+   plot_pred_cv_rep_cx,
+   make_distribution_plots(
+     pred_cv_rep_cx,
+     model_data_spatial_cx,
+     plot_dir = rep_plot_dir_cx,
+     colscheme =  "brick",
+     distpoints = FALSE,
+     guide = "cv",
+     prefix = "cv"
+   )
+ ),
+
+ # all species on one page: a 6 x 3 grid of each of the figures above, written
+ # as panel_distribution.png, panel_lambda.png and panel_cv.png into
+ # rep_plot_dir_cx. Each figure is on one scale shared by every species, with one
+ # legend
+ tar_target(
+   plot_pred_panels_rep_cx,
+   c(
+     make_distribution_panels(
+       pred_dist = pred_p_rep_cx,
+       model_data_spatial_cx,
+       plot_dir = rep_plot_dir_cx,
+       guide = "prob"
+     ),
+     make_distribution_panels(
+       pred_lambda_rep_cx,
+       model_data_spatial_cx,
+       plot_dir = rep_plot_dir_cx,
+       colscheme = "orchid",
+       guide = "abundance",
+       prefix = "lambda"
+     ),
+     make_distribution_panels(
+       pred_cv_rep_cx,
+       model_data_spatial_cx,
+       plot_dir = rep_plot_dir_cx,
+       colscheme = "brick",
+       guide = "cv",
+       prefix = "cv"
+     )
+   ),
+   format = "file"
+ ),
+
+ # the same three figures with the main vectors featured: arabiensis, coluzzii,
+ # funestus and gambiae as large maps across the top half, the other 14 species
+ # as smaller maps below, and the colour bar in the space left at the end.
+ # Written as panel_distribution_featured.png, panel_lambda_featured.png and
+ # panel_cv_featured.png into rep_plot_dir_cx
+ tar_target(
+   plot_pred_panels_featured_rep_cx,
+   c(
+     make_distribution_panels_featured(
+       pred_dist = pred_p_rep_cx,
+       plot_dir = rep_plot_dir_cx,
+       guide = "prob"
+     ),
+     make_distribution_panels_featured(
+       pred_lambda_rep_cx,
+       plot_dir = rep_plot_dir_cx,
+       colscheme = "orchid",
+       guide = "abundance",
+       prefix = "lambda"
+     ),
+     make_distribution_panels_featured(
+       pred_cv_rep_cx,
+       plot_dir = rep_plot_dir_cx,
+       colscheme = "brick",
+       guide = "cv",
+       prefix = "cv"
+     )
+   ),
+   format = "file"
+ ),
+
+ # portrait versions of the featured figures: the four large maps 2 x 2 in the
+ # top half, the other 14 species in rows of four below (4, 4, 4, then 2 and
+ # the colour bar). Written as panel_distribution_featured_portrait.png,
+ # panel_lambda_featured_portrait.png and panel_cv_featured_portrait.png into
+ # rep_plot_dir_cx
+ tar_target(
+   plot_pred_panels_featured_portrait_rep_cx,
+   c(
+     make_distribution_panels_featured(
+       pred_dist = pred_p_rep_cx,
+       plot_dir = rep_plot_dir_cx,
+       guide = "prob",
+       featured_per_row = 2,
+       suffix = "featured_portrait"
+     ),
+     make_distribution_panels_featured(
+       pred_lambda_rep_cx,
+       plot_dir = rep_plot_dir_cx,
+       colscheme = "orchid",
+       guide = "abundance",
+       prefix = "lambda",
+       featured_per_row = 2,
+       suffix = "featured_portrait"
+     ),
+     make_distribution_panels_featured(
+       pred_cv_rep_cx,
+       plot_dir = rep_plot_dir_cx,
+       colscheme = "brick",
+       guide = "cv",
+       prefix = "cv",
+       featured_per_row = 2,
+       suffix = "featured_portrait"
+     )
+   ),
+   format = "file"
+ ),
+
+ # binary ranges: each species' probability of occurrence cut at the threshold
+ # that maximises sensitivity + specificity (maxSSS; Liu et al. 2005),
+ # evaluated on unique 10 km cells against the presences and absences this
+ # section's model was fitted to. Matches PresenceAbsence exactly; see
+ # extras/check_maxsss.R
+ tar_target(
+   thresholds_maxsss_rep_cx,
+   maxsss_thresholds(
+     pred_p = pred_p_rep_cx,
+     model_data_spatial = model_data_spatial_cx
+   )
+ ),
+
+ tar_terra_rast(
+   pred_binary_rep_cx,
+   binarise_by_threshold(
+     pred_p = pred_p_rep_cx,
+     thresholds = thresholds_maxsss_rep_cx
+   )
+ ),
+
+ # binary_<species>.png per species, and binary_thresholds_maxsss.csv
+ tar_target(
+   plot_pred_binary_rep_cx,
+   make_binary_range_plots(
+     pred_binary = pred_binary_rep_cx,
+     thresholds = thresholds_maxsss_rep_cx,
+     plot_dir = rep_plot_dir_cx
+   ),
+   format = "file"
+ ),
+
+ # featured panel versions: panel_binary_featured.png and
+ # panel_binary_featured_portrait.png
+ tar_target(
+   plot_pred_panels_binary_rep_cx,
+   c(
+     make_distribution_panels_featured(
+       pred_dist = pred_binary_rep_cx,
+       plots = binaryplotlist(
+         pred_binary_rep_cx,
+         thresholds_maxsss_rep_cx,
+         subtitle = "short"
+       ),
+       plot_dir = rep_plot_dir_cx,
+       prefix = "binary"
+     ),
+     make_distribution_panels_featured(
+       pred_dist = pred_binary_rep_cx,
+       plots = binaryplotlist(
+         pred_binary_rep_cx,
+         thresholds_maxsss_rep_cx,
+         subtitle = "short"
+       ),
+       plot_dir = rep_plot_dir_cx,
+       prefix = "binary",
+       featured_per_row = 2,
+       suffix = "featured_portrait"
+     )
+   ),
+   format = "file"
+ ),
+
+ # the most abundant species in each cell, from the masked abundance map, in
+ # two versions. Cells where no species is above `threshold` are their own grey
+ # category: at the default of 0 those are the masked cells, where every species
+ # is exactly 0; at 0.001 they also include cells where the top species is too
+ # rare for "most abundant" to mean much. preserve_metadata = "zip" keeps the
+ # category labels, which a plain GeoTIFF in the store drops
+ tar_terra_rast(
+   pred_dominant_rep_cx,
+   get_dominant_species(
+     pred_lambda_rep_cx,
+     target_species
+   ),
+   preserve_metadata = "zip"
+ ),
+
+ tar_terra_rast(
+   pred_dominant_001_rep_cx,
+   get_dominant_species(
+     pred_lambda_rep_cx,
+     target_species,
+     threshold = 0.001
+   ),
+   preserve_metadata = "zip"
+ ),
+
+ tar_target(
+   plot_pred_dominant_rep_cx,
+   c(
+     make_dominant_species_plot(
+       pred_dominant_rep_cx,
+       plot_dir = rep_plot_dir_cx,
+       filename = "dominant_species.png"
+     ),
+     make_dominant_species_plot(
+       pred_dominant_001_rep_cx,
+       plot_dir = rep_plot_dir_cx,
+       filename = "dominant_species_001.png"
+     )
+   ),
+   format = "file"
+ ),
+
+ # relative composition of the three main vectors as one RGB map: red
+ # arabiensis, green gambiae + coluzzii (P(either)), blue funestus, from the
+ # masked probabilities; cells where none is above 0.05 are grey. Stored as
+ # float, not INT1U: INT1U reads 255 back as NA, and a cell where one species
+ # is the whole mix is exactly 255
+ tar_terra_rast(
+   rel_abund_rgb_rep_cx,
+   make_rel_abund_rgb(
+     x = pred_p_rep_cx,
+     threshold = 0.05
+   )
+ ),
+
+ tar_target(
+   plot_rel_abund_rgb_rep_cx,
+   make_rel_abund_rgb_plot(
+     rel_abund_rgb_rep_cx,
+     project_mask = project_mask_5,
+     filename = file.path(
+       rep_plot_dir_cx,
+       "rgb_relative_abundance.png"
+     )
+   ),
+   format = "file"
+ ),
+
+ # 1,000 posterior draws of the coefficients, thinned evenly within chains,
+ # pulled out of the ~6.8 GB fit image once (~1.5 min) so the plots below never
+ # load it. extract_cv_draws() works on any image from the reparameterised fit;
+ # it rebuilds beta from the traced beta_raw exactly, without greta
+ tar_target(
+   coef_draws_rep_cx,
+   extract_cv_draws(
+     image_name = model_fit_sre_rep_cx,
+     output_file = "outputs/draws/coef_draws_rep_cx.rds",
+     n_keep = 1000
+   ),
+   format = "file"
+ ),
+
+ # response plots, one per species, from the main effects (the average
+ # bioregion), against the average surveyed location: land cover as the
+ # relative abundance when a class is 10 percentage points higher than there,
+ # the rest of the mix shrinking in proportion; footprint and proximity to sea
+ # as curves. Greyscale. response_<species>.png in
+ # <rep_plot_dir_cx>/response_curves
+ tar_target(
+   plot_response_curves_rep_cx,
+   make_response_curve_plots(
+     coef_draws_file = coef_draws_rep_cx,
+     model_data_spatial = model_data_spatial_cx,
+     landcover_classes = model_landcover_classes,
+     plot_dir = file.path(
+       rep_plot_dir_cx,
+       "response_curves"
+     )
+   ),
+   format = "file"
+ ),
+
+ # bioregion x covariate terms, per species: each covariate's slope in each
+ # bioregion and its departure from the area-averaged slope, as heatmaps,
+ # dotted where the departure's 90% interval excludes 0.
+ # bioregion_slopes_<species>.png in <rep_plot_dir_cx>/bioregion_slopes
+ tar_target(
+   plot_bioregion_slopes_rep_cx,
+   make_bioregion_slope_heatmaps(
+     coef_draws_file = coef_draws_rep_cx,
+     covariates = covariate_rast_10,
+     plot_dir = file.path(
+       rep_plot_dir_cx,
+       "bioregion_slopes"
+     )
+   ),
+   format = "file"
+ ),
+
+ # the combined effect of all the covariate x bioregion terms on each species'
+ # relative abundance, as a multiplier, from the interaction coefficients'
+ # posterior mean. Individually the terms are weakly identified; together
+ # they are not
+ tar_terra_rast(
+   bioregion_effect_rep_cx,
+   bioregion_effect_rast(
+     coef_draws_file = coef_draws_rep_cx,
+     covariates = covariate_rast_10
+   )
+ ),
+
+ # those multipliers mapped for every species, as
+ # <rep_plot_dir_cx>/bioregion_effect_maps.png
+ tar_target(
+   plot_bioregion_effect_rep_cx,
+   make_bioregion_effect_maps(
+     bioregion_effect = bioregion_effect_rep_cx,
+     plot_dir = rep_plot_dir_cx
+   ),
+   format = "file"
+ ),
+
+ # species atlas pages: for each species, relative abundance, probability of
+ # occurrence, its CV, and probability with survey records, on continental
+ # scales. A target of their own, rather than inside make_species_atlas(), so
+ # the country atlas can open with them too
+ tar_target(
+   species_atlas_pages_rep_cx,
+   render_species_atlas_pages(
+     abundance = pred_lambda_rep_cx,
+     distribution = pred_p_rep_cx,
+     cv = pred_cv_rep_cx,
+     model_data_spatial = model_data_spatial_cx,
+     outdir = file.path(
+       rep_plot_dir_cx,
+       "species_atlas_pages"
+     )
+   ),
+   format = "file"
+ ),
+
+ # species atlas: the pages above, one map per page, with a clickable table of
+ # contents
+ tar_target(
+   species_atlas_pdf_rep_cx,
+   make_atlas_pdf(
+     pages = species_atlas_pages_rep_cx,
+     file = file.path(
+       rep_plot_dir_cx,
+       "species_atlas.pdf"
+     ),
+     type = "species",
+     title = "Predicted distribution and abundance of Anopheles species in Africa",
+     subtitle = sprintf(
+       "Reparameterised multispecies model, contradicted inferred zeros removed, run %s",
+       rep_tag_cx
+     )
+   ),
+   format = "file"
+ ),
+
+ # continental travel time from research facilities, closing the continental
+ # section of the country atlas
+ tar_target(
+   traveltime_page_rep_cx,
+   make_traveltime_page(
+     traveltime = bias_tt_raw,
+     extent = project_mask_5,
+     file = file.path(
+       rep_plot_dir_cx,
+       "traveltime_africa.pdf"
+     )
+   ),
+   format = "file"
+ ),
+
+ # country rasters: abundance, distribution and CV (one band per species) and
+ # travel time from research facilities (minutes, ~1 km), cropped to each
+ # country in outputs/rasters/countries_rep_cx/<ISO3>/. One branch per country
+ tar_target(
+   country_rasters_rep_cx,
+   write_country_rasters(
+     iso3 = atlas_country_iso3,
+     boundaries = atlas_country_boundaries,
+     abundance = pred_lambda_rep_cx,
+     distribution = pred_p_rep_cx,
+     cv = pred_cv_rep_cx,
+     traveltime = bias_tt_raw,
+     outputdir = "outputs/rasters/countries_rep_cx"
+   ),
+   pattern = map(atlas_country_iso3),
+   format = "file"
+ ),
+
+ # each country's atlas pages, drawn from its country rasters above: the four
+ # maps per species on per-country scales, plus travel time. One branch per
+ # country
+ tar_target(
+   country_pages_rep_cx,
+   make_country_pages(
+     country_files = country_rasters_rep_cx,
+     iso3 = atlas_country_iso3,
+     boundaries = atlas_country_boundaries,
+     model_data_spatial = model_data_spatial_cx,
+     outputdir = file.path(
+       rep_plot_dir_cx,
+       "country_pages"
+     )
+   ),
+   pattern = map(country_rasters_rep_cx, atlas_country_iso3),
+   format = "file"
+ ),
+
+ # country atlas (~3,720 pages): after the contents, a continental section --
+ # the species atlas pages on continental scales, then travel time -- and then
+ # every country's pages. The printed contents list Africa and the countries;
+ # each section opens with a clickable index of its species; the PDF bookmarks
+ # hold section > species > map
+ tar_target(
+   country_atlas_pdf_rep_cx,
+   make_atlas_pdf(
+     pages = country_pages_rep_cx,
+     file = file.path(
+       rep_plot_dir_cx,
+       "country_atlas.pdf"
+     ),
+     type = "country",
+     title = "Predicted distribution and abundance of Anopheles species, by country",
+     subtitle = sprintf(
+       "Reparameterised multispecies model, contradicted inferred zeros removed, run %s",
+       rep_tag_cx
+     ),
+     countries = atlas_countries,
+     continental_pages = species_atlas_pages_rep_cx,
+     continental_traveltime = traveltime_page_rep_cx
+   ),
+   format = "file"
+ ),
+
+ # an atlas of its own for each country -- that country's pages, with a
+ # contents page listing its species -- as
+ # <rep_plot_dir_cx>/country_atlases/<ISO3>_<Country>.pdf. One branch per
+ # country
+ tar_target(
+   country_atlas_pdfs_rep_cx,
+   make_single_country_atlas(
+     pages = country_pages_rep_cx,
+     iso3 = atlas_country_iso3,
+     countries = atlas_countries,
+     outputdir = file.path(
+       rep_plot_dir_cx,
+       "country_atlases"
+     ),
+     subtitle = sprintf(
+       "Reparameterised multispecies model, contradicted inferred zeros removed, run %s",
+       rep_tag_cx
+     )
+   ),
+   pattern = map(country_pages_rep_cx, atlas_country_iso3),
+   format = "file"
+ ),
+
+ # abundance again, on a shared log10 scale, from 0.001 to the maximum across
+ # all species. Anything below 0.001, masked cells included, takes the palest
+ # colour, labelled "<=0.001". The linear scale flattens the rarer species; this
+ # shows where they sit
+ # tar_target(
+ #   plot_pred_lambda_log_rep_cx,
+ #   make_distribution_plots(
+ #     pred_lambda_rep_cx,
+ #     model_data_spatial_cx,
+ #     plot_dir = rep_plot_dir_cx,
+ #     colscheme = "orchid",
+ #     distpoints = FALSE,
+ #     guide = "abundance",
+ #     log_scale = TRUE,
+ #     prefix = "lambda_log"
+ #   )
+ # ),
+ #
+ # # the log-scale version of panel_lambda.png
+ # tar_target(
+ #   plot_pred_panels_log_rep_cx,
+ #   make_distribution_panels(
+ #     pred_lambda_rep_cx,
+ #     model_data_spatial_cx,
+ #     plot_dir = rep_plot_dir_cx,
+ #     colscheme = "orchid",
+ #     guide = "abundance",
+ #     log_scale = TRUE,
+ #     prefix = "lambda_log"
+ #   ),
+ #   format = "file"
+ # ),
 
 
 

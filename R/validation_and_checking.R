@@ -621,9 +621,11 @@ validation_and_checking <- function(
   # traceplots and rhat
   ###############
 
-  # traceplots
+  # traceplots. Each gets only the parameters it shows: bayesplot turns the
+  # whole of `draws` into an array before applying regex_pars, 1.2 GB a call
+  # at ~3,900 parameters
   mcmc_trace(
-    x = draws,
+    x = subset_draws(draws, "alpha"),
     regex_pars = "alpha"
   )
   ggsave(
@@ -643,7 +645,7 @@ validation_and_checking <- function(
   # )
 
   mcmc_trace(
-    x = draws,
+    x = subset_draws(draws, c("delta", "gamma")),
     regex_pars = c("delta", "gamma")
   )
   ggsave(
@@ -654,7 +656,7 @@ validation_and_checking <- function(
   )
 
   mcmc_trace(
-    x = draws,
+    x = subset_draws(draws, "sampling"),
     regex_pars = "sampling"
   )
   ggsave(
@@ -665,10 +667,14 @@ validation_and_checking <- function(
   )
 
 
-  # generate and write out rhat for each param
-  rhats <- coda::gelman.diag(draws,
-                    autoburnin = FALSE,
-                    multivariate = FALSE)
+  # generate and write out rhat for each param. gelman_rhat() gives the same
+  # numbers as coda::gelman.diag(multivariate = FALSE) without building every
+  # chain's full parameter covariance matrix, which at ~3,900 parameters and 40
+  # chains needs ~21 GB (see R/gelman_rhat.R, extras/check_gelman_rhat.R)
+  rhats <- gelman_rhat(
+    draws,
+    autoburnin = FALSE
+  )
 
   write_csv(
     cbind(
@@ -690,7 +696,8 @@ validation_and_checking <- function(
     draws = draws,
     target_species = target_species,
     target_covariate_names = target_covariate_names,
-    sampling_methods = sampling_methods
+    sampling_methods = sampling_methods,
+    plotdir = plotdir
   )
 
   list(

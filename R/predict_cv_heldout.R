@@ -1,12 +1,11 @@
 # Posterior predictive draws for the records a fold held out.
 #
-# The arithmetic is the fit's own (fit_...reparam.R:239-365), reassembled in R from the
+# The arithmetic is the fit's own (fit_...reparam.R:255-381), reassembled in R from the
 # parameter draws. Three things it must get right, and each is a way to be silently wrong:
 #
-#   DESIGN. Built by cv_designmat(), which is one row per held-out COORDINATE, not per
-#   record. The fit shares a coordinate's first row across every record there, and `offset`
-#   varies within a coordinate on two thirds of the count records, by up to six orders of
-#   magnitude. Records reach their design row through `location_id`.
+#   DESIGN. Built by cv_designmat(), which is one row per held-out coordinate and
+#   `model_date`, not per record, keyed exactly as the fit keys it. Records reach their
+#   design row through `location_id`.
 #
 #   ZETA. The per-source effect. 51% of count sources sit at a single coordinate, so a
 #   spatial block usually removes an entire study and the source effect is genuinely
