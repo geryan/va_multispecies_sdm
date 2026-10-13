@@ -2,7 +2,7 @@
 #
 # WHY NOT calculate(). The obvious route is
 # `calculate(beta, alpha, sampling_re, values = draws, nsim = n)`, which is what
-# predict_lambda_reparam() does. It works, but it starts TensorFlow, re-traces the graph,
+# predict_lambda() does. It works, but it starts TensorFlow, re-traces the graph,
 # and returns a SUBSAMPLE of size nsim rather than the draws themselves. `beta` and `zeta`
 # are deterministic rescalings of traced arrays -- `beta = sweep(beta_raw, 1, beta_scale,
 # "*")` and `zeta = zeta_raw * zeta_regularised_sd` -- and `beta_scale` is a plain numeric
@@ -171,7 +171,7 @@ extract_cv_draws <- function(
   delta <- pull_param("delta")
   zeta_raw <- pull_param("zeta_raw")
 
-  # the deterministic rescalings the fit applies (fit_...reparam.R:221, :252)
+  # the deterministic rescalings the fit applies (fit_model_multispecies_pp_count.R:221, :252)
   beta <- sweep(
     beta_raw,
     2,

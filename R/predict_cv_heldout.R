@@ -1,6 +1,6 @@
 # Posterior predictive draws for the records a fold held out.
 #
-# The arithmetic is the fit's own (fit_...reparam.R:255-381), reassembled in R from the
+# The arithmetic is the fit's own (fit_model_multispecies_pp_count.R:255-381), reassembled in R from the
 # parameter draws. Three things it must get right, and each is a way to be silently wrong:
 #
 #   DESIGN. Built by cv_designmat(), which is one row per held-out coordinate and

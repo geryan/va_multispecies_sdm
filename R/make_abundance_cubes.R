@@ -12,11 +12,14 @@ make_abundance_cubes <- function(
   }
 
   if(!dir.exists(write_dir)){
-    dir.create(write_dir)
+    dir.create(
+      write_dir,
+      recursive = TRUE
+    )
   }
 
-
-  sapply(
+  # returns the files written, one per species, so the target can track them
+  filenames <- sapply(
     X = target_species,
     FUN = function(x, y, z, w){
 
@@ -32,18 +35,22 @@ make_abundance_cubes <- function(
 
       names(r) <- rnames
 
+      filename <- file.path(
+        w,
+        sprintf(
+          "%s_abundance.tif",
+          x
+        )
+      )
+
       writeRaster(
         x = r,
-        filename = sprintf(
-          "%s/%s_abundance.tif",
-          w,
-          x
-        ),
+        filename = filename,
         filetype = "GTiff",
         overwrite = TRUE
       )
 
-      x
+      filename
 
     },
     y = lambda_no_offset,
@@ -51,5 +58,6 @@ make_abundance_cubes <- function(
     w = write_dir
   )
 
+  unname(filenames)
 
 }

@@ -8,7 +8,7 @@
 #
 # WHY THE SEED IS PASSED IN. A callr child starts with a fresh RNG, and targets' per-target
 # seed does not reach it. Two things in the fit are random and unseeded from outside: the
-# background sampling-method imputation (fit_...reparam.R:134) and greta's MCMC
+# background sampling-method imputation (fit_model_multispecies_pp_count.R:134) and greta's MCMC
 # initialisation. `set.seed()` is therefore the first statement in the child.
 #
 # WHY THE PRODUCTION FIT FUNCTION IS CALLED UNMODIFIED. Folds are assigned by coordinate,
@@ -54,16 +54,39 @@ fit_cv_fold <- function(
     sprintf("cv_fold_%02i.RData", fold)
   )
 
-  # resumable: an interrupted five-fold run picks up at the fold it stopped on rather than
-  # refitting hours of completed work, matching download_mu_hfp() / prepare_esa_landcover()
-  if (file.exists(out_path) && !overwrite) {
-    return(out_path)
-  }
-
   cv_folds_path <- if (is.character(cv_folds)) {
     grep("cv_folds\\.csv$", cv_folds, value = TRUE)
   } else {
     cv_folds
+  }
+
+  fingerprint <- cv_fold_fingerprint(
+    model_data_spatial = model_data_spatial,
+    cv_folds_path = cv_folds_path,
+    fold = fold,
+    target_covariate_names = target_covariate_names,
+    target_species = target_species,
+    bioregion_names = bioregion_names,
+    n_burnin = n_burnin,
+    n_samples = n_samples,
+    n_chains = n_chains,
+    n_keep = n_keep,
+    seed = seed
+  )
+
+  # resumable: an interrupted five-fold run picks up at the fold it stopped on rather than
+  # refitting hours of completed work, matching download_mu_hfp() / prepare_esa_landcover().
+  # A file is reused only if it was fitted to these same inputs. Without that check a
+  # change in the data would rerun this target, hand back the old file unchanged, and
+  # leave every score downstream of it stale.
+  if (file.exists(out_path) && !overwrite) {
+
+    existing_fingerprint <- readRDS(out_path)$fingerprint
+
+    if (identical(existing_fingerprint, fingerprint)) {
+      return(out_path)
+    }
+
   }
 
   fold_seed <- seed + fold
@@ -107,7 +130,7 @@ fit_cv_fold <- function(
         target_species = target_species
       )
 
-      fit_model_multispecies_pp_count_source_effect_reparam(
+      fit_model_multispecies_pp_count(
         model_data_spatial = split$train,
         target_covariate_names = target_covariate_names,
         target_species = target_species,
@@ -176,11 +199,56 @@ fit_cv_fold <- function(
 
   draws$n_train <- nrow(model_data_spatial)
 
+  draws$fingerprint <- fingerprint
+
   saveRDS(
     draws,
     out_path
   )
 
   out_path
+
+}
+
+# Everything a fold's draws depend on, as one hash: the data, the folds, the fold, the
+# fit settings, the seed and the fit function's code. fit_cv_fold() stores it in the draws
+# file and reuses an existing file only when it matches. `n_cores` is left out: it changes
+# how long the fit takes, not what it is fitted to.
+cv_fold_fingerprint <- function(
+    model_data_spatial,
+    cv_folds_path,
+    fold,
+    target_covariate_names,
+    target_species,
+    bioregion_names,
+    n_burnin,
+    n_samples,
+    n_chains,
+    n_keep,
+    seed
+){
+
+  rlang::hash(
+    list(
+      model_data_spatial = model_data_spatial,
+      cv_folds = if (is.character(cv_folds_path)) {
+        unname(tools::md5sum(cv_folds_path))
+      } else {
+        cv_folds_path
+      },
+      fold = fold,
+      target_covariate_names = target_covariate_names,
+      target_species = target_species,
+      bioregion_names = bioregion_names,
+      n_burnin = n_burnin,
+      n_samples = n_samples,
+      n_chains = n_chains,
+      n_keep = n_keep,
+      seed = seed,
+      fit_function = deparse(
+        body(fit_model_multispecies_pp_count)
+      )
+    )
+  )
 
 }
