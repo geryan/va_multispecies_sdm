@@ -4,7 +4,7 @@ get_bioregions <- function(project_mask, vect = FALSE){
   # https://www.oneearth.org/datasets/
   # One Earth Bioregions Framework, One Earth. {2023} Los Angeles, CA. oneearth.org
 
-  v <- vect("data/one_earth-bioregions-2023.geojson") |>
+  v <- vect("data/vector/one_earth-bioregions-2023.geojson") |>
     crop(project_mask)
 
   if(vect){
