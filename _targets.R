@@ -43,7 +43,8 @@ tar_option_set(
     #"blockCV",
     "bssdm" # remotes::install_github("cebra-analytics/bssdm")
   ),
-  workspace_on_error = TRUE
+  workspace_on_error = TRUE,
+  error = "continue"
 )
 
 tar_source(files = "R")
@@ -2137,6 +2138,22 @@ list(
    )
  ),
 
+ # the same target run in a fresh R process (R/in_fresh_process.R). In one
+ # tar_make() run, preds leaves ~5.2 GB held after it finishes, and this then
+ # hits R's 16 GB limit. To use it, comment out the target above and uncomment
+ # this one
+ # tar_target(
+ #   resids_and_rhats,
+ #   in_fresh_process(
+ #     "validation_and_checking",
+ #     list(
+ #       model_fit_image_multisp_pp_count_sm = model_fit_image,
+ #       nsims = 100,
+ #       plotdir = validation_dir
+ #     )
+ #   )
+ # ),
+
  # the output paths never change, so the files' md5s are added to the value;
  # without them a rerun returns an identical list and the maps never update.
  # preds$p etc. still work downstream
@@ -2162,6 +2179,36 @@ list(
      )
    }
  ),
+
+ # the same target run in a fresh R process (R/in_fresh_process.R).
+ # greta::calculate() in predict_lambda() leaves ~5.2 GB held after it
+ # returns, which is what pushes the targets after it over R's 16 GB limit.
+ # To use it, comment out the target above and uncomment this one
+ # tar_target(
+ #   preds,
+ #   {
+ #     pred_files <- in_fresh_process(
+ #       "predict_lambda",
+ #       list(
+ #         image_name = model_fit_image,
+ #         prediction_layer = covariate_rast_10, # use 10k for faster preds
+ #         target_species = target_species,
+ #         output_file_prefix = pred_prefix,
+ #         offset = offsets_avg_10,
+ #         sm = TRUE, # if predict survey method
+ #         nsims = 100 # lower for faster preds
+ #       )
+ #     )
+ #     c(
+ #       pred_files,
+ #       md5 = list(
+ #         tools::md5sum(
+ #           unlist(pred_files)
+ #         )
+ #       )
+ #     )
+ #   }
+ # ),
 
 
 
@@ -2520,6 +2567,22 @@ list(
    ),
    format = "file"
  ),
+
+ # the same target run in a fresh R process, for the same reason as the
+ # commented-out resids_and_rhats above. To use it, comment out the target
+ # above and uncomment this one
+ # tar_target(
+ #   coef_draws,
+ #   in_fresh_process(
+ #     "extract_cv_draws",
+ #     list(
+ #       image_name = model_fit_image,
+ #       output_file = "outputs/draws/coef_draws.rds",
+ #       n_keep = 1000
+ #     )
+ #   ),
+ #   format = "file"
+ # ),
 
  # response plots, one per species, from the main effects (the average
  # bioregion), against the average surveyed location: land cover as the
