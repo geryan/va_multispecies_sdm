@@ -35,29 +35,16 @@ and relative abundance of 18 *Anopheles* species across Africa.
 - **`_targets.R` pins GDAL's `OGR_CURRENT_DATE`,** so the GeoPackages behind
   `tar_terra_vect` targets are byte-stable. Otherwise every rebuild changes their
   hash and cascades downstream, for example into the ~40 min `expert_offset_maps`.
-- **Build by name.** A plain `tar_make()` also builds about 50 stale side targets
-  (listed under the overhaul, below) and the five CV folds at about 2 h each. To
-  build the model and everything that hangs off it:
-
-  ```r
-  targets::tar_make(
-    names = c(
-      resids_and_rhats,
-      starts_with("plot_pred"),
-      starts_with("plot_bioregion"),
-      plot_rel_abund_rgb,
-      plot_response_curves,
-      ends_with("atlas_pdf"),
-      country_atlas_pdfs,
-      abundance_cubes
-    )
-  )
-  ```
+- **Build everything but the CV** with `targets::tar_make(!starts_with("cv_"))`,
+  which is what the user runs. The five CV folds take about 2 h each, so they are
+  built separately. `tar_option_set()` has `error = "continue"` and
+  `workspace_on_error = TRUE`, so one failed target does not stop the rest.
 - **Resources:**
-  - `model_fit` takes about 10 h (40 chains, 2000 warm-up + 1000 samples,
-    8 cores);
-  - the fit image is about 6.5 GB;
-  - R's vector memory limit on the laptop is 16 GB.
+  - `model_fit` takes about 12 h (40 chains, 2000 warm-up + 1000 samples,
+    8 cores; 11.9 h on 2026-10-16);
+  - the fit image is about 6.75 GB;
+  - R's vector memory limit on the laptop is 16 GB. Targets that load the fit
+    image can go over it when they share a `tar_make()`: see "Memory", below.
 
 ## Pipeline, in file order
 
@@ -85,7 +72,7 @@ and relative abundance of 18 *Anopheles* species across Africa.
    offset and (1 − bare) as `pred_lambda` is, times each month's offset, so the
    mean of a species' last 12 layers is its `pred_lambda` layer.
 5. **Spatial block cross-validation (`cv_*`),** on `model_data_spatial_cx`. Only
-   the fold fits exist (`cv_folds_file`, `cv_fold_draws`), and none has been
+   the fold fits exist (`cv_folds_file`, `cv_fold_draws`), and neither has been
    built. The scoring targets are still to be written; their helpers already
    exist (`predict_cv_heldout()`, `extract_cv_draws()`, `split_cv_fold()`,
    `cv_designmat()`). `fit_cv_fold()` reuses an existing fold file only when its
@@ -211,6 +198,41 @@ columns, so the atlas draws with `maxcell = Inf`; `distplot()` still defaults to
 - country rasters: `outputs/rasters/countries/<ISO3>/`
 - coefficient draws: `outputs/draws/coef_draws.rds`
 
+## Memory: targets that load the fit image
+
+**`greta::calculate()` on the loaded fit image keeps about 5.2 GB of R memory
+after the calling function returns.** Neither `gc()`, Python's `gc.collect()`
+nor TensorFlow's `clear_session()` releases it. targets runs every target in one
+R process, so in the 2026-10-16 run `preds` (which calls `calculate()`) went
+first, and `resids_and_rhats` and `coef_draws` then hit "vector memory limit of
+16.0 Gb reached" within 20 s. Each succeeded when rerun in its own `tar_make()`.
+The earlier fix (`gelman_rhat()` in place of `coda::gelman.diag()`, ef9f7ba) is
+in place; it was not the cause.
+
+Measured in a fresh Rscript: `load()` of the image peaks at 7.8 GB and frees
+everything; `predict_lambda()` peaks at 12.4 GB and keeps 5.2 GB;
+`extract_cv_draws()` peaks at 15.5 GB on top of that and keeps nothing.
+
+**The fix, ready but not active:** `R/in_fresh_process.R`.
+`in_fresh_process("fun", list(...))` runs a function from `R/` in a `callr`
+child, which returns all its memory when it exits. It attaches the pipeline's
+packages, sources `R/`, sets the target's seed, and wraps and unwraps terra
+arguments. In `_targets.R`, wrapped versions of `preds`, `resids_and_rhats` and
+`coef_draws` sit commented out under the active targets, with a note on how to
+swap them in.
+- **Swap in `preds` and `resids_and_rhats`,** the two that call `calculate()`.
+  `coef_draws` does not need it.
+- **Swapping changes the commands,** so `preds` and everything below it rebuild
+  (about 1 h). In a scratch pipeline the rasters came out value-identical to the
+  unwrapped ones (same seed); their md5s differ, from file metadata. The parent
+  process held 47 MB after the wrapped `preds`, against 5,250 MB unwrapped.
+- **Without the swap,** rebuild the image-loading targets in separate
+  `tar_make()` calls, e.g. `tar_make(resids_and_rhats)`.
+
+**Upstream:** a reprex and issue text for greta are in `outputs/greta_issue/`
+(git-ignored), not yet filed. On greta 0.6.0 a small model with a likelihood keeps
+about 190 MB per `calculate()` call, and the amount adds up with each call.
+
 ## The 2026-10-14 overhaul
 
 `_targets.R` went from 232 targets to 186, on branch `reset_cx_to_main_pipeline`.
@@ -236,10 +258,13 @@ columns, so the atlas draws with `maxcell = Inf`; `distplot()` still defaults to
 - **Output paths** lost `_rep_cx` and the run tag is `20261014`, so the earlier
   outputs are untouched on disk.
 
-**State on the laptop.** The model targets have not been built under the new
-names: that is the user's run, about 10 h for the fit and 1 h for the rest.
-Nothing upstream of the fit is outdated, so only the fit and what follows will
-build. Until `tar_prune()` is run, the store still holds the `_rep_cx` objects.
+**State on the laptop (2026-10-16).** The overhaul is committed (3b2c00c). The
+user's `tar_make(!starts_with("cv_"))` built every target outside the CV:
+`model_fit` finished at 04:29, and `resids_and_rhats` and `coef_draws`, which
+ran out of memory in that run (see "Memory"), were rebuilt on their own by
+09:48 and 10:26. `tar_outdated()` lists nothing outside the CV. Of the CV,
+only `cv_tag`, `cv_k`, `cv_dir` and `cv_fold_ids` are built. Until `tar_prune()`
+is run, the store still holds the `_rep_cx` objects.
 
 **Checks** are in `extras/overhaul_checks/`, with results in
 `outputs/overhaul_check/`:
@@ -258,18 +283,23 @@ build. Until `tar_prune()` is run, the store still holds the `_rep_cx` objects.
 - `04_compare_after_run.R`: for after the user's run. Stored inputs and the data
   inside the new fit image against the snapshot, cubes against `pred_lambda`,
   and a report of old against new results. Tried on the smoke store; not yet
-  run on the real one.
+  run on the real one, though the run it needs is done. It loads the fit image
+  (~7.8 GB), so run it as its own `Rscript`, not in a session holding memory.
 - `list_duplicate_outputs.R` → `duplicate_outputs.csv`: superseded output files
   and orphaned store objects, for the user to check and delete.
 
 **Side targets, listed for the user and not removed.** None feeds the model,
-the cubes or the CV. Awaiting a decision on which to drop.
-- *Never built here:* the hull and range-offset chain (`bioregions_v`,
+the cubes or the CV. Awaiting a decision on which to drop. All of them were
+built, and are current, after the 2026-10-14/16 run.
+- *First built in that run:* the hull and range-offset chain (`bioregions_v`,
   `convex_hulls`, `bioregion_hulls`, `point_hulls_*`, `convex_offset_maps`,
-  `bioregion_offset_maps`, `range_offsets`), `bioregions_all`,
-  `species_unique_presence_location_records`, `mod_dat_pts`.
-- *Built, stale, nothing downstream:* the ten `africa_mess*` / `africa_exdet*`
-  novelty maps (on the pre-`_cx` data); `bg_points`; `bioregion_names_mask` →
+  `bioregion_offset_maps`, `range_offsets`; the two offset maps took 20 and
+  41 min), `bioregions_all`, `species_unique_presence_location_records`,
+  `mod_dat_pts`.
+- *Nothing downstream:* the ten `africa_mess*` / `africa_exdet*` novelty maps
+  (on the pre-`_cx` data; `africa_mess_br` and `africa_exdet_br` fail now and
+  then with a terra `writeRaster` bug, "too many values", and passed on
+  2026-10-15. `R/mess_safe.R` avoids it but is not wired in); `bg_points`; `bioregion_names_mask` →
   `bioregion_mask_5` → `bioregion_mask_10` → `landscape_mask_10`; `offsets_10`,
   `offsets_avg_p_5`, `offsets_avg_p_10`; `expert_offset_maps_500` →
   `expert_offset_maps_10_500`; `esa_landcover_year` → `esa_landcover_all`, and
@@ -284,10 +314,13 @@ the cubes or the CV. Awaiting a decision on which to drop.
   Removing these changes `covariate_rast_5_all` and invalidates everything below
   it, so do it only alongside a planned refit.
 
-## Open items (as of 2026-10-14)
+## Open items (as of 2026-10-16)
 
-- **The model set needs building** under its new names (see the overhaul, above).
-  Then run `extras/overhaul_checks/04_compare_after_run.R`.
+- **Run `extras/overhaul_checks/04_compare_after_run.R`** now that the model set
+  is built.
+- **Decide whether to swap in the fresh-process `preds` and `resids_and_rhats`**
+  (see "Memory"). Until then, a refit needs the image-loading targets rebuilt in
+  separate `tar_make()` calls.
 - **Old outputs and store objects** are listed in
   `outputs/overhaul_check/duplicate_outputs.csv` for the user to delete. The old
   fit image, prediction rasters and coefficient draws are needed by check 04, so
@@ -304,9 +337,16 @@ the cubes or the CV. Awaiting a decision on which to drop.
   is *An. gambiae*-based for every species.
 - **Travel time has no data** for some island states (Cabo Verde, Seychelles). Cabo
   Verde also lies outside the prediction grid.
-- **Convergence.** The last fit (2026-09-30, 1000 warm-up) was not fully
-  converged: max R-hat 1.14 gate / 1.16 beta. The fit target now has 2000
-  warm-up; check the R-hats after the refit.
+- **Convergence.** The 2026-10-16 fit (2000 warm-up) is close: max R-hat 1.106,
+  with 4 of 3,907 parameters over 1.1 and 72 over 1.05, all in `beta_raw` (64)
+  and `alpha` (8, max 1.091). Every other group is under 1.03. The fit before
+  (2026-09-30, 1000 warm-up) had max R-hats of 1.14 (gate) and 1.16 (beta).
+  The values are in `tar_read(resids_and_rhats)$rhats` and
+  `outputs/figures/validation/20261014/last_rhats.csv`.
+- **No rootograms are drawn.** `rootgram_data()` fails with "subscript out of
+  bounds" (`yrep_matrix[, 1:ncol_yrep]`), and `try()` in
+  `validation_and_checking()` hides it. This predates the overhaul: the
+  2026-09-28 validation folder has none either.
 - **The continental PNG figures are thinned:** `distplot()` defaults to tidyterra's
   500,000-cell cap, and the 10 km grid is 732,511 cells. Setting the default to
   `Inf` was offered and not yet decided.
@@ -317,12 +357,17 @@ the cubes or the CV. Awaiting a decision on which to drop.
     effect;
   - the mangrove effect (melas, squamosus) rests on 2 locations;
   - the shrubland effect for leesoni and rivulorum rests on 3 detections each.
-- **Uncommitted work:** the whole overhaul (`_targets.R`, `R/`, `AGENTS.md`,
-  `extras/overhaul_checks/`, `extras/refit_cascade_fix.md`). The `R/` deletions
-  and renames are staged, because they were made with `git rm` and `git mv`.
+- **Uncommitted work** (the overhaul itself is 3b2c00c):
+  - `_targets.R`: `error = "continue"` (the user's) and the three commented-out
+    fresh-process targets;
+  - new, untracked: `R/in_fresh_process.R`, `extras/overhaul_checks/`,
+    `extras/refit_cascade_fix.md`, which 3b2c00c left out;
+  - `R/get_bioregions.R`: the user's change of the GeoJSON path to
+    `data/vector/`;
+  - this file.
 - **Session artefacts** (git-ignored): `outputs/session_20261001/`, with test
   renders, bioregion prototypes and final test figures, the abundance-driver
-  analysis and its scripts; `outputs/overhaul_check/`.
+  analysis and its scripts; `outputs/overhaul_check/`; `outputs/greta_issue/`.
 
 ## Checks in `extras/`
 

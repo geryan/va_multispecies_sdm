@@ -5,6 +5,14 @@
 #' clickable and fills the PDF's bookmark sidebar; every page footer links back
 #' to the contents.
 #'
+#' The cover carries the Vector Atlas logo, the title and, prominently, how to
+#' cite the atlas. Every later page has a footer with the logo, the same
+#' citations in small type, the link to the contents and the page number. The
+#' logo is a PDF converted from data/vector-atlas-logo.svg
+#' (`rsvg-convert -f pdf`): xelatex can't include an SVG, and a vector PDF
+#' (6 KB) is smaller than the PNG (104 KB). It is embedded once and reused on
+#' every page.
+#'
 #' The structure is read from the page file names, as written by
 #' render_species_pages() and make_country_pages():
 #'
@@ -37,6 +45,9 @@
 #' @param toc_depth levels in the printed contents: by default 2 for type
 #'   "species" and 1 for type "country". A one-country atlas wants 2, so its
 #'   contents list the species
+#' @param logo path of the logo for the cover and footers, PDF (or PNG)
+#' @param citations how to cite the atlas, one string per citation, written
+#'   as LaTeX so the links can be clickable
 #' @return `file`
 #' @author geryan
 #' @export
@@ -49,7 +60,18 @@ make_atlas_pdf <- function(
     countries = NULL,
     continental_pages = NULL,
     continental_traveltime = NULL,
-    toc_depth = NULL
+    toc_depth = NULL,
+    logo = "data/vector-atlas-logo.pdf",
+    citations = c(
+      paste(
+        "Vector Atlas (2026) Vector Atlas,",
+        "\\href{https://www.vectoratlas.icipe.org}{www.vectoratlas.icipe.org}"
+      ),
+      paste(
+        "Ryan GE, Sinka M, Golding N (2026) Vector Atlas Species Abundance and",
+        "Distribution Maps, Figshare, \\url{https://doi.org/10.26188/34044441}"
+      )
+    )
 ){
 
   type <- match.arg(type)
@@ -76,9 +98,14 @@ make_atlas_pdf <- function(
     continental_traveltime <- normalizePath(continental_traveltime)
   }
 
-  if (any(grepl(" ", c(pages, continental_pages, continental_traveltime)))) {
+  logo <- normalizePath(
+    logo,
+    mustWork = TRUE
+  )
+
+  if (any(grepl(" ", c(pages, continental_pages, continental_traveltime, logo)))) {
     stop(
-      "make_atlas_pdf(): page paths must not contain spaces",
+      "make_atlas_pdf(): page and logo paths must not contain spaces",
       call. = FALSE
     )
   }
@@ -346,33 +373,82 @@ make_atlas_pdf <- function(
 
   }
 
+  # each citation its own paragraph, wrapped lines indented under the first
+  cite_paragraphs <- sprintf(
+    "\\hangindent=1.5em\\hangafter=1 %s\\par",
+    citations
+  )
+
   doc <- c(
     "\\documentclass[a4paper,11pt]{article}",
-    "\\usepackage[margin=1.5cm,footskip=0.8cm]{geometry}",
+    # the footer is two lines beside the logo, so the bottom margin is deeper
+    # than the others
+    "\\usepackage[margin=1.5cm,bottom=2.6cm,footskip=1.8cm]{geometry}",
     "\\usepackage{fontspec}",
     "\\usepackage{graphicx}",
     "\\usepackage{xcolor}",
     "\\usepackage{fancyhdr}",
-    "\\usepackage[colorlinks=true,linkcolor=blue!50!black,bookmarksdepth=3]{hyperref}",
+    "\\usepackage[colorlinks=true,linkcolor=blue!50!black,urlcolor=blue!50!black,bookmarksdepth=3]{hyperref}",
     "\\usepackage{bookmark}",
+    "\\urlstyle{same}",
+    "\\definecolor{vagreen}{HTML}{038543}",
     "\\setcounter{secnumdepth}{0}",
     sprintf(
       "\\setcounter{tocdepth}{%d}",
       toc_depth
     ),
+    "\\newsavebox{\\footerlogo}",
     "\\pagestyle{fancy}",
     "\\fancyhf{}",
     "\\renewcommand{\\headrulewidth}{0pt}",
-    "\\fancyfoot[L]{\\hyperlink{contents}{Contents}}",
-    "\\fancyfoot[R]{\\thepage}",
-    sprintf("\\title{%s}", tex_escape(title)),
-    "\\author{}",
-    sprintf(
-      "\\date{%s}",
-      if (is.null(subtitle)) "" else tex_escape(subtitle)
-    ),
+    # logo | citations | contents link and page number
+    "\\fancyfoot[C]{%",
+    "\\parbox[c]{\\textwidth}{%",
+    "\\usebox{\\footerlogo}\\hspace{4mm}%",
+    "\\parbox[c]{\\dimexpr\\textwidth-\\wd\\footerlogo-4mm-20mm\\relax}{\\scriptsize\\raggedright",
+    cite_paragraphs,
+    "}\\hfill",
+    "\\parbox[c]{16mm}{\\footnotesize\\raggedleft\\hyperlink{contents}{Contents}\\\\\\thepage}%",
+    "}%",
+    "}",
     "\\begin{document}",
-    "\\maketitle",
+    sprintf(
+      "\\sbox{\\footerlogo}{\\includegraphics[height=7mm]{%s}}",
+      logo
+    ),
+    # cover: logo, title, and how to cite
+    "\\thispagestyle{empty}",
+    "\\begin{center}",
+    "\\vspace*{1.5cm}",
+    sprintf(
+      "\\includegraphics[width=0.7\\textwidth]{%s}\\par",
+      logo
+    ),
+    "\\vspace{3cm}",
+    sprintf(
+      "{\\huge\\bfseries %s\\par}",
+      tex_escape(title)
+    ),
+    "\\vspace{1cm}",
+    if (!is.null(subtitle)) {
+      sprintf(
+        "{\\large %s\\par}",
+        tex_escape(subtitle)
+      )
+    },
+    "\\end{center}",
+    "\\vfill",
+    "\\noindent{\\color{vagreen}\\rule{\\textwidth}{1.5pt}}\\par",
+    "\\vspace{4mm}",
+    "\\noindent{\\Large\\bfseries Please cite as\\par}",
+    "\\vspace{3mm}",
+    "{\\large\\raggedright\\parskip=3mm",
+    cite_paragraphs,
+    "}",
+    "\\vspace{2mm}",
+    "\\noindent{\\color{vagreen}\\rule{\\textwidth}{1.5pt}}\\par",
+    "\\vspace*{1cm}",
+    "\\clearpage",
     "\\hypertarget{contents}{}",
     "\\tableofcontents",
     "\\clearpage",
