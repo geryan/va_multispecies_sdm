@@ -33,7 +33,8 @@
 # beta_regularised_sd = 0.1, zeta_regularised_sd = 0.1, delta ~ N(1, 0.5)+, gamma_mean ~ N(0,10),
 # all *_sd ~ N(0,1)+), the design matrix (landcover main effects + landcover x bioregion
 # interactions), the offset, the PA (logit_icloglog / bernoulli) and PO/bg (Poisson)
-# likelihoods, the count < 1000 filter, and the bg sampling-method / species imputation.
+# likelihoods, the count < 1000 filter, and the bg species replication. Since 2026-10-19
+# background points no longer get a randomly drawn sampling method; see `sampling_re_bg`.
 # The large inert experimental comment blocks from the original (subrealm SVCs, SMC
 # initialisation, Poisson alternative) are omitted for clarity.
 #
@@ -127,20 +128,30 @@ fit_model_multispecies_pp_count <- function(
   sampling_methods <- row.names(sm_prop)
   n_sampling_methods <- length(sampling_methods)
 
-  ## impute bg sampling methods and species
+  ## background points have no sampling method. In the PO/bg likelihood each one
+  ## takes the method effects averaged over the methods' shares, `sampling_re_bg`.
+  ## Every other record must have a method of its own
   model_data_spatial_bg <- model_data_spatial |>
     mutate(
-      sampling_method = case_when(
-        data_type == "bg" ~ sample(
-          x = sampling_methods,
-          size = n(),
-          replace = TRUE,
-          prob = sm_prop
-        ),
-        .default = sampling_method
-      ),
       sampling_method_id = match(sampling_method, sampling_methods)
     )
+
+  n_no_method <- model_data_spatial_bg |>
+    filter(
+      data_type != "bg",
+      is.na(sampling_method_id)
+    ) |>
+    nrow()
+
+  if (n_no_method > 0) {
+    stop(
+      sprintf(
+        "%i records other than background points have no sampling method",
+        n_no_method
+      ),
+      call. = FALSE
+    )
+  }
 
   bg_data <- model_data_spatial_bg |>
     filter(data_type == "bg") |>
@@ -370,8 +381,37 @@ fit_model_multispecies_pp_count <- function(
 
   log_bias_obs_pobg <- log_bias[pobg_data_loc_sp_idx]
 
+  # The background points stand in for the whole sampled area under every method
+  # at once, so each takes the method effects averaged over the methods' shares
+  # of the records: log(sum_m p_m * exp(sampling_re_m)). That is the expected
+  # value of the random draw this replaced (until 2026-10-19 each point got one
+  # method, drawn with probabilities p), without its noise. With ~250 points, a
+  # rare method got only a handful, its expected PO count came from those few
+  # places, and the draw shifted every method effect and the level of every map
+  # (indoor HLC by 0.35 between two fits of the same data). Equivalent to
+  # copying each point once per method with weight w * p_m.
+  sampling_re_bg <- log(
+    sum(
+      as.numeric(sm_prop) * exp(sampling_re)
+    )
+  )
+
+  pobg_is_bg <- model_data |>
+    filter(data_type %in% c("po", "bg")) |>
+    pull(data_type) == "bg"
+
+  # bg rows index the extra last element
+  pobg_sampling_idx <- ifelse(
+    pobg_is_bg,
+    n_sampling_methods + 1,
+    pobg_data_index$sampling_method_id
+  )
+
   log_lambda_obs_pobg <- log_lambda[pobg_data_loc_sp_idx] +
-    sampling_re[pobg_data_index$sampling_method_id]
+    rbind(
+      sampling_re,
+      sampling_re_bg
+    )[pobg_sampling_idx]
 
   po_data_response_expected <- exp(
     log_lambda_obs_pobg +
