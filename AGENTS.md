@@ -71,12 +71,17 @@ and relative abundance of 18 *Anopheles* species across Africa.
    series. It is the model's abundance without the offset, scaled by the expert
    offset and (1 − bare) as `pred_lambda` is, times each month's offset, so the
    mean of a species' last 12 layers is its `pred_lambda` layer.
-5. **Spatial block cross-validation (`cv_*`),** on `model_data_spatial_cx`. Only
-   the fold fits exist (`cv_folds_file`, `cv_fold_draws`), and neither has been
-   built. The scoring targets are still to be written; their helpers already
-   exist (`predict_cv_heldout()`, `extract_cv_draws()`, `split_cv_fold()`,
-   `cv_designmat()`). `fit_cv_fold()` reuses an existing fold file only when its
-   stored fingerprint matches the data, folds, settings and fit function.
+5. **Spatial block cross-validation (`cv_*`),** on `model_data_spatial_cx`. The
+   user commented these targets out on 2026-10-19 and wants no CV for now: leave
+   them so. Only the fold fits were written (`cv_folds_file`, `cv_fold_draws`),
+   and neither was built. The scoring targets are still to be written; their
+   helpers already exist (`predict_cv_heldout()`, `extract_cv_draws()`,
+   `split_cv_fold()`, `cv_designmat()`). `fit_cv_fold()` reuses an existing fold
+   file only when its stored fingerprint matches the data, folds, settings and
+   fit function.
+6. **The alternative model (`_os` targets),** at the end of the file: a
+   per-species offset strength, its maps and a comparison with the current
+   model. See "The alternative model: offset strength".
 
 ## The model
 
@@ -96,9 +101,12 @@ and relative abundance of 18 *Anopheles* species across Africa.
   - shared across all three: a sampling-method effect `sampling_re`, one per method
     for all species;
   - counts only: a per-source effect `zeta`.
-- **Background sampling methods are drawn at random** inside the fit, from the
-  target's seed. Renaming the fit target changes the draw, so two fits of the
-  same data differ there even before the MCMC.
+- **Background points have no sampling method** (since 2026-10-19). In the
+  presence-only likelihood each takes the method effects averaged over the
+  methods' shares of the records, `sampling_re_bg = log(sum_m p_m *
+  exp(sampling_re[m]))`. Until then each point got one method drawn at random
+  from the target's seed, which moved the level of every map; see the first
+  open item. The data the model sees no longer depend on the seed.
 - **Design rows:** one per distinct (latitude, longitude, `model_date`), the key the
   time-varying covariates and offset were joined on. This is `distinct_idx`,
   mirrored in `cv_designmat()`.
@@ -163,7 +171,11 @@ that never change, which used to stop a refit at the fit.
   counts, greyscale; and the multiplier maps (`bioregion_effect`);
 - the country atlas opens with a continental "Africa" section
   (`species_atlas_pages` + `traveltime_page`);
-- `data_summary_table_cx` (+ `_csv`).
+- `data_summary_table_cx` (+ `_csv`), from `make_data_summary_table()`. Per
+  species: `count`, `count_p`, `count_0`, `count_imp`, `pa`, `pa_1`, `pa_0`,
+  `pa_imp`, `po`, `p_n` (all present records) and `p_unique` (distinct
+  latitude-longitude pairs of those). `count_p`, `pa_1`, `p_n` and `p_unique`
+  were added 2026-11-06.
 
 **Why there are no covariate-slope figures** (from
 `outputs/session_20261001/response_review/REVIEW.md`):
@@ -173,8 +185,18 @@ that never change, which used to stop a refit at the fit.
   showed bioregion levels rather than covariate effects.
 
 **Data and covariate figures** (outside the model set): `plot_records_traveltime`
-(records next to travel time) and `plot_covariate_panels` (landscape 5×3, and
-portrait sized for an A4 page).
+(records next to travel time) and `plot_covariate_panels`. It makes four
+figures in `outputs/figures/`:
+- `covariate_panels_landscape.png` (5×3) and `covariate_panels_portrait.png`
+  (sized for an A4 page);
+- since 2026-11-06, each part alone for the A4 manuscript, through
+  `make_covariate_panels(panels = )`: `covariate_panels_bioregions.png` (map
+  with the key on the right, no title, 16 × 11 cm) and
+  `covariate_panels_covariates.png` (3 rows × 4, colour bar in the last cell,
+  16 × 13.1 cm). Both have 7 pt text at printed size, `maxcell = Inf` (every
+  10 km cell) and 600 dpi. The new arguments (`panels`, `maxcell`, `dpi`,
+  `width`, `height`) default to the old behaviour, so the first two are
+  pixel-identical to before; the portrait is still thinned and 300 dpi.
 
 **Atlas rendering.** The atlas pages are `cairo_pdf`s with the map embedded as an
 image, one pixel per 10 km cell. PDF viewers (Preview, browsers) smooth small
@@ -187,16 +209,171 @@ travel time). tidyterra thins anything over 500,000 cells by dropping rows and
 columns, so the atlas draws with `maxcell = Inf`; `distplot()` still defaults to
 5e5.
 
+**Atlas cover, footer and citations** (`make_atlas_pdf()`, so all three atlas
+targets; added 2026-10-16, cfaf971). The cover has the Vector Atlas logo, the
+title and subtitle, and "Please cite as" with two citations between green
+rules: Vector Atlas (2026), and Ryan, Sinka & Golding (2026) on Figshare,
+doi 10.26188/34044441. Every later page's footer has a small logo, the same two
+citations, the "Contents" link and the page number. Both URLs are clickable.
+The contents starts on page 2.
+- The citations are the `citations` argument's default, written as LaTeX.
+- The logo is `data/vector-atlas-logo.pdf` (the `logo` argument), made from the
+  SVG with `rsvg-convert -f pdf`: xelatex can't include an SVG, and the PDF is
+  5.7 KB against the PNG's 104 KB. It is embedded once and reused on every page,
+  so the species atlas grew by only 41 KB.
+- `data/` is git-ignored, so the logo PDF must be copied to Spartan before the
+  atlases are built there. targets doesn't track it: a new logo needs the
+  atlases invalidated by hand.
+- The cover subtitle and title come from `_targets.R`. The subtitle still reads
+  "Reparameterised multispecies model, contradicted inferred zeros removed, run
+  …", and *Anopheles* in the title is not italic.
+
 **Outputs:**
 - fit image: `outputs/images/model_fit.RData`
 - prediction rasters: `outputs/rasters/multispecies_pp{,_p,_p_cv}.tif`
 - abundance cubes: `outputs/rasters/abundance_cubes_masked/`
 - plots: `outputs/figures/distribution_plots/distn_<run_tag>/`, including
   `species_atlas.pdf`, `country_atlas.pdf`, `country_pages/<ISO3>/`,
-  `response_curves/`, `bioregion_multipliers/`
+  `country_atlases/<ISO3>_<Country>.pdf`, `response_curves/`,
+  `bioregion_multipliers/`
 - validation: `outputs/figures/validation/<run_tag>/`
 - country rasters: `outputs/rasters/countries/<ISO3>/`
 - coefficient draws: `outputs/draws/coef_draws.rds`
+
+## The alternative model: offset strength (`os`)
+
+Added 2026-10-19 at the user's request. Fitted 2026-10-20 (`model_fit_os`,
+11.3 h), with the comparison built; see "Results (2026-10-20)" below.
+
+**Why.** The *An. gambiae* offset hides 127 presence cells (see the open item on
+hidden presences). The offset is there to keep species out of the Sahara, where
+no data say so. On the maps the bare-ground mask does most of that, so a plain
+per-species power on the offset is safe there (see the same open item).
+
+**The model.** It is `model_fit`'s model with one change:
+
+    log λ_s = α_s + x·β_s + κ_s · log(offset),   κ_s = exp(b_s),   b_s ~ Student-t(3, 0, 0.05)
+
+- κ_s = 1 is the current model.
+- Without evidence, κ_s stays within about 0.95–1.05 (61% of the prior). The
+  heavy tails let a species whose data clearly favour another value move there.
+  The penalty, in log-likelihood units, is about 4 at κ = 0.8, 8 at 0.5 and 11
+  at 0.25.
+- The user chose the Student-t over a horseshoe, which would have the funnel
+  geometry greta's sampler struggles with. They chose scale 0.05 over 0.1 for a
+  stronger penalty.
+- The fit applies κ to each record's monthly offset.
+
+**The user's rules for this work:**
+- Don't modify the existing functions. The os versions are copies with an
+  `os_` prefix: `os_fit_model_multispecies_pp_count()`, `os_predict_lambda()`
+  and `os_extract_cv_draws()`.
+- No CV, no R-hat comparisons, and no long fits in the comparison. (On
+  2026-10-21 the user asked for `resids_and_rhats_os`, the same validation as the
+  current model's.)
+- Only the distribution and abundance maps for this model.
+
+**Predictions** (`os_predict_lambda()`):
+- For each species and draw, the effective offset is the mean over 2024's 12
+  months (`offsets_2024_10`) of offset^κ. With κ = 1 this is `offsets_avg_10`
+  (checked: relative difference ≤ 1.1e-7).
+- `<prefix>.tif` is λ **including** the offset (`preds_os$lambda`), since a
+  per-species power can't be applied afterwards. `pred_lambda_os` and
+  `pred_p_os` take the same masks as the current model.
+
+**The comparison** goes to `outputs/model_comparison/<run_tag>/` and needs both
+fits.
+- **`compare_loo_os`** (`os_compare_loo()`): PSIS-LOO on every record (counts,
+  presence-absence, presence-only + background; 105,314 rows). It gives the
+  difference os − current with its SE, overall, by data type and by species.
+  It uses `os_record_loglik()`, the fit's three likelihoods rebuilt in R from a
+  draws file; κ = 1 when the file has none.
+  - `os_record_loglik()` matches greta's expected values to about 1e-14 for
+    counts and PO/bg.
+  - For presence-absence it uses `-expm1(-λ)`, more accurate than the fit's
+    `logit_icloglog_safe()` at tiny λ, with the same clamp on log λ.
+- **`compare_maps_os`** (`os_compare_maps()`):
+  - presence cells hidden and newly shown;
+  - predicted range by offset level;
+  - area over the threshold before the masks where the offset is < 0.01.
+- **`plot_kappa_os`**: the κ table, a dot-and-interval figure and the
+  offset^κ curves.
+- **`plot_range_change_os`**: per-species maps of both / current only / os
+  only, with the records.
+
+**Outputs:**
+- fit image: `outputs/images/model_fit_os.RData`
+- rasters: `outputs/rasters/multispecies_pp_os{,_p,_p_cv}.tif`
+- maps: `outputs/figures/distribution_plots/distn_os_<run_tag>/`
+- validation: `outputs/figures/validation/os_<run_tag>/` (`resids_and_rhats_os`,
+  `validation_and_checking()` unchanged, on `model_fit_image_os`)
+- draws: `outputs/draws/coef_draws_os.rds`
+
+`preds_os`, `coef_draws_os` and `resids_and_rhats_os` run in fresh processes
+(`in_fresh_process()`).
+
+**Tested** on tiny fits (2 chains × 20 + 20) of the real data with
+`extras/check_os_model.R`: all checks pass. The tiny os fit already moved κ far
+from 1 for some species (pharoensis, funestus and arabiensis about 0.3–0.4;
+moucheti about 1.6), but 20 warm-up iterations say nothing about the real
+posterior.
+
+**Results (2026-10-20),** in `outputs/model_comparison/20261014/`:
+- **κ collapsed towards 0 for 17 of 18 species.** Posterior medians run from
+  0.0005 (pharoensis, coustani) to 0.19 (rivulorum); gambiae, whose offset it
+  is, 0.11 (90% 0.10–0.13). Only moucheti went up (2.1, 90% 1.8–2.4). The
+  Student-t's tails let this through: the penalty grows only logarithmically
+  (about 18 log-likelihood units at κ = 0.0005). Below κ ≈ 0.01, offset^κ ≈ 1,
+  so the chains disagree on log κ there (pharoensis −13 to −7 by chain) without
+  it mattering. α drops by 1–3 for most species to take up the offset's level.
+- **LOO prefers os by 17,744 elpd (SE 433, z = 41),** and in every data type:
+  presence-absence +10,151, presence-only + background +5,345, counts +2,248.
+  Worse only for moucheti (counts −9, presence-absence −33) and ziemanni counts
+  (−18). Pareto k > 0.7 on 302 rows for os against 115 for current, 189 of them
+  moucheti presence-absence, so moucheti's LOO is unreliable.
+- **Maps:** with the offset gone, the ranges grow into low-offset land the masks
+  don't cover. Area over threshold where the 2024 offset < 0.01, after the
+  masks: leesoni 472,500 km², quadriannulatus 410,000, squamosus 397,000,
+  rivulorum 364,000, pretoriensis 245,000 (current: 0 for these). arabiensis
+  gains 45,212 cells (Horn of Africa, Namibia/Botswana, southern Africa) and
+  loses 3,476; leesoni reaches the Mediterranean coast and Nile delta. gambiae
+  shrinks (1.7 M km² less) and hides 169 presence cells against 118. Hidden
+  presence cells fall for most other species (arabiensis 321 → 151).
+- **Abundance ratio maps** (2026-10-21, `os_plot_abundance_difference()`, run on
+  the stored `pred_lambda` and `pred_lambda_os`; not a target yet):
+  `abundance_difference_<species>.png` (current | os | log2 ratio) and
+  `abundance_ratio_all.png`. os is higher almost everywhere, by ×16–64+ where
+  the offset is low: the Maghreb coast, the northern Sahel edge, the Ethiopian
+  highlands and Horn, and Namibia/South Africa. It's the same pattern for most
+  species. pharoensis is ×16–64 nearly everywhere (its α didn't drop to
+  compensate). moucheti is the only one with large lower areas.
+- **The os fit mixes much worse** (`resids_and_rhats_os`, built 2026-10-21, 1 min
+  53 s): max classic R-hat 1.253, 49 over 1.1 and 1,352 over 1.05, against the
+  current fit's 1.077, 0 and 55. The worst is `log_kappa` (9 of 18 over 1.1:
+  merus 1.25, pharoensis 1.24, rufipes 1.20, pretoriensis 1.20, funestus 1.18,
+  leesoni 1.17, arabiensis 1.15, melas 1.15, nili 1.09). Then `alpha` (3 over
+  1.1), `beta_raw` (37 over 1.1, 1,246 over 1.05) and `zeta_raw` (76 over 1.05,
+  max 1.08). Once κ is near 0, the likelihood is nearly flat in log κ, so the
+  chains drift along the prior's tail, and α and β, which trade off against
+  κ·log(offset), drift with them. The maps depend on offset^κ, which stays ≈ 1,
+  so they are less affected than the R-hats suggest. The LOO and β-based
+  results rest on a fit that hasn't converged.
+- **Count residuals, arabiensis and funestus** (2026-10-21, scratch analysis;
+  figure `count_residuals_arabiensis_funestus.png` in the comparison folder).
+  Both models' "underprediction" comes mainly from the NB1 dispersion, not the
+  offset. With `gamma_nb` 176 (arabiensis) and 314 (funestus), the model gives
+  P(0) 0.86 / 0.95 against observed zero shares of 0.60 / 0.69. A record that
+  caught anything had on average a 20% / 11% predicted chance of catching ≥ 1.
+  So 53% / 73% of positive counts sit above the predictive 97.5% quantile
+  (expected: 2.5%). os cuts the share of count records above it from 21.6 to
+  17.1% (arabiensis) and 23.2 to 19.6% (funestus). The gain is where the offset
+  is 0.01–0.1 (55 → 20%, 49 → 19%) and in Madagascar (26 → 7%, 29 → 10%). It is
+  a little worse where the offset is > 1. Neither model reaches the counts over
+  500 (50 and 44 records, above all 100 simulations). The largest is funestus
+  342,645 in one indoor CDC light trap (Mozambique, 2020-05), against an
+  expected ~1: worth checking whether it is a pooled count.
+- Not decided: whether the offset should stay, at what strength, or with a
+  tighter prior; the user has the results.
 
 ## Memory: targets that load the fit image
 
@@ -219,7 +396,8 @@ child, which returns all its memory when it exits. It attaches the pipeline's
 packages, sources `R/`, sets the target's seed, and wraps and unwraps terra
 arguments. In `_targets.R`, wrapped versions of `preds`, `resids_and_rhats` and
 `coef_draws` sit commented out under the active targets, with a note on how to
-swap them in.
+swap them in. The function and the commented-out targets were committed in
+3fc3700 without being swapped in.
 - **Swap in `preds` and `resids_and_rhats`,** the two that call `calculate()`.
   `coef_draws` does not need it.
 - **Swapping changes the commands,** so `preds` and everything below it rebuild
@@ -262,9 +440,15 @@ about 190 MB per `calculate()` call, and the amount adds up with each call.
 user's `tar_make(!starts_with("cv_"))` built every target outside the CV:
 `model_fit` finished at 04:29, and `resids_and_rhats` and `coef_draws`, which
 ran out of memory in that run (see "Memory"), were rebuilt on their own by
-09:48 and 10:26. `tar_outdated()` lists nothing outside the CV. Of the CV,
-only `cv_tag`, `cv_k`, `cv_dir` and `cv_fold_ids` are built. Until `tar_prune()`
-is run, the store still holds the `_rep_cx` objects.
+09:48 and 10:26. Of the CV, only `cv_tag`, `cv_k`, `cv_dir` and `cv_fold_ids`
+are built.
+
+**State on the laptop (2026-10-19).** Later on 2026-10-16 the user rebuilt the
+three atlas targets with the new cover and footer (14:22–14:25), ran
+`tar_prune()` (the store holds no `_rep_cx` objects), and committed 446ede1,
+3fc3700 and cfaf971. `tar_outdated()` listed only `cv_folds_file` and
+`cv_fold_draws`, until the background-method fix later on 2026-10-19 outdated
+`model_fit` and everything below it.
 
 **Checks** are in `extras/overhaul_checks/`, with results in
 `outputs/overhaul_check/`:
@@ -282,9 +466,11 @@ is run, the store still holds the `_rep_cx` objects.
 - `check_cv_fold_resume.R`: the CV fold resume guard, without fitting. Passes.
 - `04_compare_after_run.R`: for after the user's run. Stored inputs and the data
   inside the new fit image against the snapshot, cubes against `pred_lambda`,
-  and a report of old against new results. Tried on the smoke store; not yet
-  run on the real one, though the run it needs is done. It loads the fit image
-  (~7.8 GB), so run it as its own `Rscript`, not in a session holding memory.
+  and a report of old against new results. Run on the real store on
+  2026-10-19: all checks pass (results in `compare_after_run.rds`). Its section
+  D report reads as "MCMC noise", but it hides a level shift: see the open item
+  on the background sampling-method draw. It loads the fit image (~7.8 GB), so
+  run it as its own `Rscript`, not in a session holding memory.
 - `list_duplicate_outputs.R` → `duplicate_outputs.csv`: superseded output files
   and orphaned store objects, for the user to check and delete.
 
@@ -314,21 +500,140 @@ built, and are current, after the 2026-10-14/16 run.
   Removing these changes `covariate_rast_5_all` and invalidates everything below
   it, so do it only alongside a planned refit.
 
-## Open items (as of 2026-10-16)
+## Country data extracts (set aside; not part of this project)
 
-- **Run `extras/overhaul_checks/04_compare_after_run.R`** now that the model set
-  is built.
+Two folders of covariates cut out for the user to keep for other work. Nothing
+in the pipeline, `R/` or the model reads them, and they are not to be developed
+further here. Don't extend, regenerate or wire them in unless asked.
+
+- **`nigeria_environmental_space/`** (made 2026-10-19 by
+  `extras/make_nigeria_environmental_space.R`): land cover (11 ESA class
+  proportions) and Mu footprint for 2013–2022, plus 51 *An. gambiae* presence
+  records and a plotting script. It has a `README.md` with citations and an
+  `AGENTS.md` handoff note that describes the data for an agent working in that
+  folder.
+- **`uganda_environmental_space/`** (made 2026-10-23 by
+  `extras/make_uganda_environmental_space.R`): the same land cover for every
+  year (1992–2022) and footprint for every year (2000–2024), with no records.
+  It has a `README.md` with citations.
+- Both are cropped and masked to GADM 4.1 level 0 (the `nga` and `uga`
+  targets), on the 5 km project grid, read from `outputs/raster/` and the
+  store. That is the finest the project holds: the raw 1 km footprint was not
+  kept, and the 300 m ESA source holds one class per cell, not proportions.
+- The `.tif` and `.csv` files are git-ignored. The boundary `.gpkg`s, the
+  scripts and the notes are untracked, not ignored.
+
+## Open items (as of 2026-11-04)
+
+**State on the laptop (2026-11-04).** Nothing has been built since
+`resids_and_rhats_os` (2026-10-21), and `tar_outdated()` is empty. The decision
+on the offset strength model (see "The alternative model") is still the user's.
+
+- **The background sampling-method draw set the level of every map. Fixed in
+  code 2026-10-19 (uncommitted), refitted 2026-10-20.** Found by check 04.
+  - The fit gave each background point one sampling method, at random. Those
+    points are the presence-only integral (weights ~120,000 km² each against 1
+    for a presence), and `sampling_re` is shared by all three likelihoods, so
+    the draw moved every method effect.
+  - The 2026-09-30 and 2026-10-16 fits have identical data apart from this
+    draw (and warm-up). `sampling_re` is well mixed in both (R-hat ≤ 1.02), yet
+    the posterior means differ by up to 5.5 posterior SDs: outdoor resting
+    1.03 → 0.07; indoor HLC, the method the maps predict for, −0.32 → +0.03.
+  - So every species' abundance rose by about ×1.4 (median ×1.1–1.6 by
+    species) and mean probability by 15–60%. The correlations in check 04
+    (≥ 0.99) hide it, since a shared scale change keeps the correlation. Relative
+    comparisons between species are mostly unaffected.
+  - Each method's share of background area hardly changed (indoor HLC 8.5% →
+    8.2%), so it is where a method's few points fall, not how many there are.
+  - The counts did not hold the level: the shift is the same (×1.3–1.4) at
+    the cells with indoor-HLC counts. They are very overdispersed (count
+    variance ~100–300× the mean for arabiensis, gambiae and funestus), so they
+    say little about the mean.
+  - **The fix:** background rows get `sampling_re_bg`, the average over the
+    method shares (see "The model"), in place of one drawn method. It equals the
+    old draw on average and is the same as one copy of each point per method with
+    weight w × p_m. Also in `predict_cv_heldout()`, using the fit's shares, which
+    `extract_cv_draws()` now saves as `sm_prop`.
+  - **Tested** (`extras/check_bg_method_average.R`, two 2-chain × 20 + 20 fits
+    on the real data): the model data are identical
+    across seeds; the built model gives every background row exactly the
+    averaged term (error ~1e-15) and every presence-only row its own method's;
+    `extract_cv_draws()`, `predict_cv_heldout()` and `validation_and_checking()`
+    run on the result. The validation plots by method now show background rows
+    as an "NA" panel.
+  - **Refitted 2026-10-20** (`model_fit` 10.9 h, finished 14:06; everything
+    below rebuilt by 15:13, no errors, `tar_outdated()` empty). Method effects
+    now sit between the two earlier fits: indoor HLC −0.04 (SD 0.18), outdoor
+    resting 0.65. Against the 2026-09-30 fit, median abundance is ×1.0–1.6 by
+    species (most ×1.3) and mean probability ×1.1–1.4; correlations of log λ
+    are ≥ 0.99. These are the fits to keep.
+- **Presence records the maps hide** (`extras/check_masked_presences.R`,
+  2026-10-19, on the 2026-10-16 fit; 4,471 species × 10 km presence cells).
+  "Hidden" = below the species' maxSSS threshold on `pred_p`.
+  - *The expert-range masks hide none* (expert factor ≥ 0.57 at every hidden
+    presence cell). *Bare ground hides 4* (arabiensis 2, coluzzii 2).
+  - *The An. gambiae offset hides 127 cells in 12 species*, where it is at least
+    10× below the species' usual: arid margins (Sudan, Mauritania, Niger,
+    Botswana, Namibia), highlands (Ethiopia, Kenya, Rwanda) and North Africa
+    (pharoensis in Egypt, 55 records; ziemanni in Morocco). Most: arabiensis 40,
+    pharoensis 20, ziemanni 17, funestus 15. Not a 2024 artefact: the records'
+    own survey months had an even lower offset (median 0.0043, against 0.9 at
+    other presences), so the fit never fitted them either.
+  - *A plain per-species exponent on the offset* (`κ_s log(offset)`): what it
+    would do to the Sahara, from the 2026-10-16 fit with habitat held fixed and
+    each species re-levelled (scratch calculation, 2026-10-19; maps for 7
+    species in `outputs/kappa_sahara_preview/`). The offset is never 0 (median
+    1e-4 in a 17–30°N, 13°W–34°E box), but the maps barely change there: the
+    bare-ground mask blanks it (96% of the box is over 90% bare). At κ = 0.5 the
+    box gains 7 cells over arabiensis' threshold, 19 for coluzzii, all at
+    17–20°N, and pharoensis 148 more, mostly in the Nile valley. Before the
+    masks, arabiensis' median Sahara probability goes 0.0002 → 0.016
+    (threshold 0.59). coluzzii is the exception: its fitted habitat there is
+    high, and 13% of the box would pass its threshold before masking. The
+    larger change from a low κ is outside the Sahara: arabiensis' binary range
+    spreads over the Horn of Africa and southern Africa at κ ≤ 0.5. 23 of the
+    127 cells have a 2024 offset below 0.01 (the Nile valley, some Ethiopian
+    highland cells, part of Morocco). Fitted as the `_os` model (see "The
+    alternative model: offset strength"): κ went to ~0, not 0.5.
+  - *The ziemanni Morocco records* are 11 presence-only locations from one source
+    (1002703), each entered twice (indoor HLC and "other"). Worth checking the
+    identification: ziemanni is not usually reported from North Africa.
+  - *The water mask drops 129 presence cells (402 records) before the model*:
+    coastal and lakeshore records in a 5 km cell `water_mask_5` calls water.
+    gambiae 28 cells, coluzzii 22, melas 22 (a coastal species), arabiensis 19.
+    58 have land in the same 10 km cell. The user does not consider these a
+    worry (2026-10-19): leave them.
+  - 13 cells are off the offset's area altogether: arabiensis on Réunion (10
+    cells, 78 records) and Cabo Verde (2), and one coluzzii on the Cameroon coast.
 - **Decide whether to swap in the fresh-process `preds` and `resids_and_rhats`**
   (see "Memory"). Until then, a refit needs the image-loading targets rebuilt in
   separate `tar_make()` calls.
-- **Old outputs and store objects** are listed in
-  `outputs/overhaul_check/duplicate_outputs.csv` for the user to delete. The old
-  fit image, prediction rasters and coefficient draws are needed by check 04, so
-  they go last.
-- **CV scoring targets** are not written yet.
+- **Old outputs:** `tar_prune()` has cleared the store, but the output files in
+  `outputs/overhaul_check/duplicate_outputs.csv` are still on disk: 65 items,
+  about 30 GB (groups "older", "removed set" and "renamed", plus 3 tiny
+  orphaned objects in `_targets/objects`, group "store"). Check 04 has run, so
+  the 5 marked `keep_until_check_04` (the old fit image, prediction rasters and
+  coefficient draws) can go too. The old image is the only other draw of the
+  background methods, so keep it if a comparison across draws is wanted.
+- **Atlas cover text:** whether to replace the working subtitle and italicise
+  *Anopheles* in the titles (both in `_targets.R`; see "Atlas cover, footer and
+  citations").
+- **CV scoring targets** are not written yet, and the CV targets are commented
+  out (the user, 2026-10-19: no CV for now).
 - **`pred_cv` scales the CV down** by the expert offset and by (1 − bare), which
   makes uncertainty look lower near range edges. It should probably be masked
   instead of scaled.
+- **1,113 present records enter the count likelihood as zero catches**
+  (found 2026-11-06, on `model_data_spatial_cx`; not fixed). They are species
+  recorded present, not inferred, in a survey that counted other species, but
+  with no count of their own (`occurrence_n` is NA). `generate_model_data_records()`
+  gives them `data_type = "count"`, `presence = 1` and, by its `data_type ==
+  "count" ~ 0` branch, `count = 0`, so `n = 0`, which the fit uses as the
+  response. 32% of the 3,550 present count rows; most are arabiensis 359,
+  funestus 294, pharoensis 176, gambiae 65. Fixing it (e.g. making them `pa`
+  or `po`) changes the model data and needs a refit.
+  `make_data_summary_table()` counts them in `count_p` (present), so `count_p`
+  is not the number of counts > 0.
 - **`clean_species()` misses two labels.** It maps "funestus-like" and
   "rivulorum-like" with hyphens, but the data spell them with spaces. Fixing this
   invalidates everything downstream.
@@ -337,12 +642,22 @@ built, and are current, after the 2026-10-14/16 run.
   is *An. gambiae*-based for every species.
 - **Travel time has no data** for some island states (Cabo Verde, Seychelles). Cabo
   Verde also lies outside the prediction grid.
-- **Convergence.** The 2026-10-16 fit (2000 warm-up) is close: max R-hat 1.106,
+- **Convergence.** The 2026-10-20 fit (after the background-method fix): max
+  classic R-hat 1.077, none over 1.1, 55 over 1.05 (beta_raw 50, alpha 5);
+  every other group under 1.035. On the split measure it is 1.18 (gate) and
+  1.20 (beta), bulk ESS 174, a little worse than before.
+- The 2026-10-16 fit (2000 warm-up) was close: max R-hat 1.106,
   with 4 of 3,907 parameters over 1.1 and 72 over 1.05, all in `beta_raw` (64)
-  and `alpha` (8, max 1.091). Every other group is under 1.03. The fit before
-  (2026-09-30, 1000 warm-up) had max R-hats of 1.14 (gate) and 1.16 (beta).
-  The values are in `tar_read(resids_and_rhats)$rhats` and
+  and `alpha` (8, max 1.091). Every other group is under 1.03. The values are
+  in `tar_read(resids_and_rhats)$rhats` and
   `outputs/figures/validation/20261014/last_rhats.csv`.
+  - Doubling the warm-up barely helped. On the same measure (classic R-hat,
+    `gelman_rhat()`) the fit before (2026-09-30, 1000 warm-up) had max 1.098,
+    0 over 1.1 and 100 over 1.05.
+  - Two R-hats are in use. `resids_and_rhats` is classic Gelman–Rubin;
+    `coef_draws$convergence` (`extract_cv_draws()`) is rank-normalised split
+    R-hat, which runs higher. On the split measure both fits are 1.14 (gate)
+    and 1.16 (beta), with bulk ESS 187 → 201. Don't compare across the two.
 - **No rootograms are drawn.** `rootgram_data()` fails with "subscript out of
   bounds" (`yrep_matrix[, 1:ncol_yrep]`), and `try()` in
   `validation_and_checking()` hides it. This predates the overhaul: the
@@ -357,13 +672,19 @@ built, and are current, after the 2026-10-14/16 run.
     effect;
   - the mangrove effect (melas, squamosus) rests on 2 locations;
   - the shrubland effect for leesoni and rivulorum rests on 3 detections each.
-- **Uncommitted work** (the overhaul itself is 3b2c00c):
-  - `_targets.R`: `error = "continue"` (the user's) and the three commented-out
-    fresh-process targets;
-  - new, untracked: `R/in_fresh_process.R`, `extras/overhaul_checks/`,
-    `extras/refit_cascade_fix.md`, which 3b2c00c left out;
-  - `R/get_bioregions.R`: the user's change of the GeoJSON path to
-    `data/vector/`;
+- **Uncommitted work:** everything up to cfaf971 is committed. Not committed
+  from 2026-10-19:
+  - the background-method fix (`R/fit_model_multispecies_pp_count.R`,
+    `R/predict_cv_heldout.R`, `R/extract_cv_draws.R`, `R/fit_cv_fold.R`,
+    `extras/model_equations_sre_reparam.md`);
+  - the os model (`R/os_*.R` and the `_os` targets in `_targets.R`, where the
+    user also commented out the CV);
+  - the checks in `extras/` (`check_bg_method_average.R`,
+    `check_masked_presences.R`, `check_os_model.R`), plus the still-untracked
+    `extras/overhaul_checks/` and `extras/refit_cascade_fix.md`;
+  - the country extracts (`nigeria_environmental_space/`,
+    `uganda_environmental_space/` and their two scripts in `extras/`; see
+    "Country data extracts");
   - this file.
 - **Session artefacts** (git-ignored): `outputs/session_20261001/`, with test
   renders, bioregion prototypes and final test figures, the abundance-driver
@@ -375,6 +696,19 @@ built, and are current, after the 2026-10-14/16 run.
   `coda::gelman.diag()`, at a fraction of the memory.
 - `check_maxsss.R`: `maxsss_thresholds()` gives thresholds identical to
   `PresenceAbsence::optimal.thresholds()`.
+- `check_bg_method_average.R`: the background-method fix, on two tiny fits of
+  the real data (see the first open item). Passes.
+- `check_masked_presences.R` → `outputs/mask_check/masked_presences.csv`: every
+  species × 10 km cell with a presence record, what hides it on the maps (or
+  drops it before the model) and why. See the open item on hidden presences.
+- `check_os_model.R`: the os model and its comparison functions, on tiny fits of
+  the real data. It checks that:
+  - κ enters `log_lambda` exactly, and at κ = 1 it is the current model;
+  - `os_record_loglik()` reproduces greta's expected values for both models;
+  - `os_predict_lambda()` matches an independent reconstruction;
+  - the comparison runs end to end.
+  `Rscript extras/check_os_model.R fit <seed> <image>`, then `... check
+  <image_os> <image_current> <outdir>`. Passes.
 - `overhaul_checks/`: the checks on the 2026-10-14 pipeline overhaul, described
   under it above.
 

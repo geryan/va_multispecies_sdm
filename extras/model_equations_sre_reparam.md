@@ -189,16 +189,26 @@ $y_r = 1$ for a presence-only record and $y_r = 0$ for a background point, and $
 quadrature weight ($A_r = 1$ for presence-only records, the k-means cluster area for
 background points):
 
-$$\log \nu_r = \log \lambda_{i[r],\,s[r]} + \psi_{k[r]} + \log \eta_{i[r],\,s[r]} + \log A_r$$
+$$\log \nu_r = \log \lambda_{i[r],\,s[r]} + \tilde\psi_r + \log \eta_{i[r],\,s[r]} + \log A_r$$
 
 $$y_r \sim \mathrm{Poisson}(\nu_r)$$
+
+where $\tilde\psi_r = \psi_{k[r]}$ for a presence-only record, and for a background point
+
+$$\tilde\psi_r = \log \sum_k q_k \exp(\psi_k),$$
+
+with $q_k$ the share of method $k$ among all observed records. A background point stands
+in for its area sampled under every method at once, so it takes the method effects
+averaged over their shares. This is the expected value of assigning each background
+point one method drawn with probabilities $q_k$, which the fit did until 2026-10-19, and
+is equivalent to replicating each background point once per method with weight
+$q_k A_r$.
 
 The observed presence-only intensity is therefore the product of true abundance
 $\lambda$, the sampling-method effect, and the reporting bias $\eta$; the bias term
 appears in this likelihood only, which is what identifies $\gamma$ and $\delta$
 separately from $\alpha$ and $\beta$. Background points are replicated across all $S$
-species, and each is assigned a sampling method drawn from the empirical frequency
-distribution of the observed sampling methods.
+species.
 
 # 7. Parameterisation notes
 
