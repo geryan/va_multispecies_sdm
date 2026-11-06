@@ -272,6 +272,12 @@ extract_cv_draws <- function(
     chain = chain,
     iteration = iteration,
     sampling_methods = fit$sampling_methods,
+    # the methods' shares of the records, which weight the background points'
+    # averaged method effect (`sampling_re_bg` in the fit)
+    sm_prop = stats::setNames(
+      as.numeric(fit$sm_prop),
+      fit$sampling_methods
+    ),
     count_sids = fit$count_sids,
     sid_lookup = fit$model_data |>
       filter(!is.na(source_id)) |>

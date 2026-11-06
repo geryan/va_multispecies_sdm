@@ -7,9 +7,9 @@
 # process, so branches share it -- the isolation has to come from here.
 #
 # WHY THE SEED IS PASSED IN. A callr child starts with a fresh RNG, and targets' per-target
-# seed does not reach it. Two things in the fit are random and unseeded from outside: the
-# background sampling-method imputation (fit_model_multispecies_pp_count.R:134) and greta's MCMC
-# initialisation. `set.seed()` is therefore the first statement in the child.
+# seed does not reach it. greta's MCMC initialisation is random and unseeded from outside
+# (until 2026-10-19 the background sampling-method draw was too), so `set.seed()` is the
+# first statement in the child.
 #
 # WHY THE PRODUCTION FIT FUNCTION IS CALLED UNMODIFIED. Folds are assigned by coordinate,
 # so a fold's training frame is a row subset in which every retained coordinate keeps all
@@ -112,7 +112,7 @@ fit_cv_fold <- function(
       keep_image
     ){
 
-      # FIRST statement: covers the bg sampling-method imputation and greta's inits
+      # FIRST statement: covers greta's inits
       set.seed(fold_seed)
 
       suppressMessages({
