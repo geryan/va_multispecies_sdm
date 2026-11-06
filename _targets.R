@@ -1719,7 +1719,6 @@ list(
    make_covariate_plots(
      model_data_spatial,
      cvnames = c(
-       # offset_names,
        bias_names
      )
    )
@@ -1768,7 +1767,10 @@ list(
  # legends right), and portrait for an A4 manuscript page: saved at its printed
  # size, 16 cm wide by ~21 cm, leaving room for a caption, with 7 pt text, 4
  # columns, the colour bar in the grid's spare cell and the bioregion key
- # across the bottom
+ # across the bottom. Also each part alone, for the manuscript: the bioregions
+ # (map with the key on the right, 16 x 11 cm, no title) and the covariates
+ # (3 rows of 4, the colour bar in the last cell, 16 x 13.1 cm), both 7 pt
+ # text at printed size, every 10 km cell drawn, 600 dpi
  tar_target(
    plot_covariate_panels,
    c(
@@ -1797,6 +1799,41 @@ list(
        bar_in_gap = TRUE,
        label_width = 34,
        legend_space = 2
+     ),
+     make_covariate_panels(
+       covariates = covariate_rast_10,
+       covariate_names = target_covariate_names,
+       bioregions = oneearth_vect,
+       bioregion_names = bioregion_names,
+       plot_dir = "outputs/figures",
+       panels = "bioregions",
+       suffix = "bioregions",
+       legend_position = "right",
+       cell_size = 10.5 / 2.54 / 2,
+       base_size = 7,
+       key_ncol = 1,
+       label_width = 45,
+       maxcell = Inf,
+       dpi = 600,
+       width = 16 / 2.54,
+       height = 11 / 2.54
+     ),
+     make_covariate_panels(
+       covariates = covariate_rast_10,
+       covariate_names = target_covariate_names,
+       bioregions = oneearth_vect,
+       bioregion_names = bioregion_names,
+       plot_dir = "outputs/figures",
+       panels = "covariates",
+       ncol = 4,
+       suffix = "covariates",
+       legend_position = "bottom",
+       cell_size = 16 / 2.54 / 4,
+       base_size = 7,
+       bar_in_gap = TRUE,
+       legend_space = 0.45,
+       maxcell = Inf,
+       dpi = 600
      )
    ),
    format = "file"
