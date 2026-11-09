@@ -2166,28 +2166,31 @@ list(
    format = "file"
  ),
 
+ # run in a fresh R process (R/in_fresh_process.R), which gives all its memory
+ # back when it ends. In one tar_make() run, preds leaves ~5.2 GB held after it
+ # finishes, and this target, run in the pipeline's own process, then hits R's
+ # 16 GB limit. Swapped in 2026-11-09. The function is passed itself, not its
+ # name as a string, so targets still tracks it
  tar_target(
    resids_and_rhats,
-   validation_and_checking(
-     model_fit_image_multisp_pp_count_sm = model_fit_image,
-     nsims = 100,
-     plotdir = validation_dir
+   in_fresh_process(
+     validation_and_checking,
+     list(
+       model_fit_image_multisp_pp_count_sm = model_fit_image,
+       nsims = 100,
+       plotdir = validation_dir
+     )
    )
  ),
 
- # the same target run in a fresh R process (R/in_fresh_process.R). In one
- # tar_make() run, preds leaves ~5.2 GB held after it finishes, and this then
- # hits R's 16 GB limit. To use it, comment out the target above and uncomment
- # this one
+ # the same target run in the pipeline's own process, as it was until
+ # 2026-11-09
  # tar_target(
  #   resids_and_rhats,
- #   in_fresh_process(
- #     "validation_and_checking",
- #     list(
- #       model_fit_image_multisp_pp_count_sm = model_fit_image,
- #       nsims = 100,
- #       plotdir = validation_dir
- #     )
+ #   validation_and_checking(
+ #     model_fit_image_multisp_pp_count_sm = model_fit_image,
+ #     nsims = 100,
+ #     plotdir = validation_dir
  #   )
  # ),
 
@@ -2219,13 +2222,15 @@ list(
 
  # the same target run in a fresh R process (R/in_fresh_process.R).
  # greta::calculate() in predict_lambda() leaves ~5.2 GB held after it
- # returns, which is what pushes the targets after it over R's 16 GB limit.
- # To use it, comment out the target above and uncomment this one
+ # returns, which pushed the targets after it over R's 16 GB limit. Not
+ # needed while resids_and_rhats and coef_draws run in fresh processes
+ # (since 2026-11-09). To use it, comment out the target above and uncomment
+ # this one
  # tar_target(
  #   preds,
  #   {
  #     pred_files <- in_fresh_process(
- #       "predict_lambda",
+ #       predict_lambda,
  #       list(
  #         image_name = model_fit_image,
  #         prediction_layer = covariate_rast_10, # use 10k for faster preds
@@ -2594,29 +2599,29 @@ list(
  # pulled out of the ~6.8 GB fit image once (~1.5 min) so the plots below never
  # load it. extract_cv_draws() works on any image the fit function saves, a CV
  # fold's included; it rebuilds beta from the traced beta_raw exactly, without
- # greta
+ # greta. Run in a fresh R process, for the same reason as resids_and_rhats
+ # (swapped in 2026-11-09)
  tar_target(
    coef_draws,
-   extract_cv_draws(
-     image_name = model_fit_image,
-     output_file = "outputs/draws/coef_draws.rds",
-     n_keep = 1000
+   in_fresh_process(
+     extract_cv_draws,
+     list(
+       image_name = model_fit_image,
+       output_file = "outputs/draws/coef_draws.rds",
+       n_keep = 1000
+     )
    ),
    format = "file"
  ),
 
- # the same target run in a fresh R process, for the same reason as the
- # commented-out resids_and_rhats above. To use it, comment out the target
- # above and uncomment this one
+ # the same target run in the pipeline's own process, as it was until
+ # 2026-11-09
  # tar_target(
  #   coef_draws,
- #   in_fresh_process(
- #     "extract_cv_draws",
- #     list(
- #       image_name = model_fit_image,
- #       output_file = "outputs/draws/coef_draws.rds",
- #       n_keep = 1000
- #     )
+ #   extract_cv_draws(
+ #     image_name = model_fit_image,
+ #     output_file = "outputs/draws/coef_draws.rds",
+ #     n_keep = 1000
  #   ),
  #   format = "file"
  # ),

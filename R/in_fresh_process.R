@@ -13,7 +13,14 @@
 #' cannot be sent to another process as they are, so SpatRaster and SpatVector
 #' arguments are wrapped here and unwrapped in the child.
 #'
-#' @param fun name of a function defined in R/, as a string
+#' Pass the function itself (`in_fresh_process(validation_and_checking, ...)`),
+#' not its name as a string: targets finds dependencies from the symbols in a
+#' command, so with a string it would not rerun the target when the function
+#' changes. The function is sent to the child, which looks up whatever it
+#' calls in its own freshly sourced R/.
+#'
+#' @param fun a function defined in R/ (or its name as a string, which targets
+#'   does not track)
 #' @param args named list of arguments to `fun`
 #' @return whatever `fun` returns
 #' @author geryan
