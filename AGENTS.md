@@ -41,10 +41,12 @@ and relative abundance of 18 *Anopheles* species across Africa.
   `workspace_on_error = TRUE`, so one failed target does not stop the rest.
 - **Resources:**
   - `model_fit` takes about 12 h (40 chains, 2000 warm-up + 1000 samples,
-    8 cores; 11.9 h on 2026-10-16);
+    8 cores; 11.9 h on 2026-10-16, 12.3 h on 2026-11-07);
   - the fit image is about 6.75 GB;
   - R's vector memory limit on the laptop is 16 GB. Targets that load the fit
-    image can go over it when they share a `tar_make()`: see "Memory", below.
+    image went over it when they shared a `tar_make()`; since 2026-11-09
+    `resids_and_rhats` and `coef_draws` run in their own R processes: see
+    "Memory", below.
 
 ## Pipeline, in file order
 
@@ -62,7 +64,14 @@ and relative abundance of 18 *Anopheles* species across Africa.
    - `raw_data` (`data/tabular/va.data_20260616.csv`) → `full_data_records`
      (`clean_full_data_records()`, `clean_species()`).
    - → `model_data_records` (`generate_model_data_records()`: assigns data types and
-     infers zeros).
+     infers zeros). Data types are set per location-date (source × sampling
+     method × detailed method × location × start date × duration), the same
+     grouping the zeros are inferred in. A row with its own count is a count,
+     zeros included. Where some species were counted and others recorded
+     without a count, the uncounted rows (those presences and the inferred
+     zeros) are presence-absence (since 2026-11-06; before, they were zero
+     counts). Where everything recorded was counted, inferred zeros are zero
+     counts.
    - → `model_data_spatial`: background points added; offset matched on year-month;
      land cover and footprint matched on each record's year.
 3. **The model:** one set, on `model_data_spatial_cx`. See below.
@@ -81,7 +90,8 @@ and relative abundance of 18 *Anopheles* species across Africa.
    fit function.
 6. **The alternative model (`_os` targets),** at the end of the file: a
    per-species offset strength, its maps and a comparison with the current
-   model. See "The alternative model: offset strength".
+   model. See "The alternative model: offset strength". **Commented out on
+   2026-11-06** at the user's request: only the main pipeline runs for now.
 
 ## The model
 
@@ -140,7 +150,8 @@ depends on `fit_image` alone, so a new `run_tag` does not refit.
 
 **The set runs:**
 1. fit (`model_fit`), then `model_fit_image`;
-2. validation (`resids_and_rhats`, using the memory-light `gelman_rhat()`);
+2. validation (`resids_and_rhats`, using the memory-light `gelman_rhat()`, in
+   a fresh R process);
 3. predictions (`preds`);
 4. masked rasters (`pred_p`, `pred_lambda`, `pred_cv`);
 5. plots: per-species, panels (3×6 grid, plus featured landscape and portrait),
@@ -244,6 +255,13 @@ The contents starts on page 2.
 
 Added 2026-10-19 at the user's request. Fitted 2026-10-20 (`model_fit_os`,
 11.3 h), with the comparison built; see "Results (2026-10-20)" below.
+
+**Commented out 2026-11-06** at the user's request: the whole `_os` block at
+the end of `_targets.R`, so `tar_manifest()` has no `_os` targets. `R/os_*.R`
+are unchanged and still sourced, but nothing calls them. The fit image and
+outputs are still on disk; the store keeps their entries until `tar_prune()`
+is run. Its results below are on the data before the 2026-11-06 data-type
+fix (see the open items).
 
 **Why.** The *An. gambiae* offset hides 127 presence cells (see the open item on
 hidden presences). The offset is there to keep species out of the Sahara, where
@@ -390,22 +408,31 @@ Measured in a fresh Rscript: `load()` of the image peaks at 7.8 GB and frees
 everything; `predict_lambda()` peaks at 12.4 GB and keeps 5.2 GB;
 `extract_cv_draws()` peaks at 15.5 GB on top of that and keeps nothing.
 
-**The fix, ready but not active:** `R/in_fresh_process.R`.
-`in_fresh_process("fun", list(...))` runs a function from `R/` in a `callr`
+**The fix, active for two targets since 2026-11-09:** `R/in_fresh_process.R`.
+`in_fresh_process(fun, list(...))` runs a function from `R/` in a `callr`
 child, which returns all its memory when it exits. It attaches the pipeline's
 packages, sources `R/`, sets the target's seed, and wraps and unwraps terra
-arguments. In `_targets.R`, wrapped versions of `preds`, `resids_and_rhats` and
-`coef_draws` sit commented out under the active targets, with a note on how to
-swap them in. The function and the commented-out targets were committed in
-3fc3700 without being swapped in.
-- **Swap in `preds` and `resids_and_rhats`,** the two that call `calculate()`.
-  `coef_draws` does not need it.
-- **Swapping changes the commands,** so `preds` and everything below it rebuild
-  (about 1 h). In a scratch pipeline the rasters came out value-identical to the
-  unwrapped ones (same seed); their md5s differ, from file metadata. The parent
-  process held 47 MB after the wrapped `preds`, against 5,250 MB unwrapped.
-- **Without the swap,** rebuild the image-loading targets in separate
-  `tar_make()` calls, e.g. `tar_make(resids_and_rhats)`.
+arguments. The function was committed in 3fc3700.
+- **`resids_and_rhats` and `coef_draws` run through it** (the user's choice,
+  2026-11-09), so after a refit they no longer need their own `tar_make()`
+  calls. Their plain versions sit commented out under them.
+- **`preds` still runs in the pipeline's process,** so it still leaves ~5.2 GB
+  held for the rest of the run. Its wrapped version is commented out under it.
+  Swapping it in would rebuild `preds` and everything below it (about 1 h). In
+  a scratch pipeline the rasters came out value-identical to the unwrapped ones
+  (same seed); their md5s differ, from file metadata. The parent process held
+  47 MB after the wrapped `preds`, against 5,250 MB unwrapped.
+- **Pass the function itself, not its name as a string:**
+  `in_fresh_process(validation_and_checking, ...)`. targets finds dependencies
+  from the symbols in a command, so with a string an edit to the function
+  would not rerun the target (checked with `tar_deps()`). The child calls the
+  function it is sent, and finds what that calls in its own freshly sourced
+  `R/`. Strings still work, untracked; the commented-out `_os` targets use
+  them.
+- **The swap changed the two commands,** so both rebuild on the next
+  `tar_make()` (about 2 min each, the first since the swap). The four plots
+  below `coef_draws` show as outdated too. `extract_cv_draws()` has no random
+  step, so they should be skipped if the draws file comes out the same.
 
 **Upstream:** a reprex and issue text for greta are in `outputs/greta_issue/`
 (git-ignored), not yet filed. On greta 0.6.0 a small model with a likelihood keeps
@@ -484,8 +511,8 @@ built, and are current, after the 2026-10-14/16 run.
   `mod_dat_pts`.
 - *Nothing downstream:* the ten `africa_mess*` / `africa_exdet*` novelty maps
   (on the pre-`_cx` data; `africa_mess_br` and `africa_exdet_br` fail now and
-  then with a terra `writeRaster` bug, "too many values", and passed on
-  2026-10-15. `R/mess_safe.R` avoids it but is not wired in); `bg_points`; `bioregion_names_mask` →
+  then with a terra `writeRaster` bug, "too many values". Both passed on
+  2026-10-15; `africa_mess_br` failed again on 2026-11-09. `R/mess_safe.R` avoids it but is not wired in); `bg_points`; `bioregion_names_mask` →
   `bioregion_mask_5` → `bioregion_mask_10` → `landscape_mask_10`; `offsets_10`,
   `offsets_avg_p_5`, `offsets_avg_p_10`; `expert_offset_maps_500` →
   `expert_offset_maps_10_500`; `esa_landcover_year` → `esa_landcover_all`, and
@@ -523,11 +550,28 @@ further here. Don't extend, regenerate or wire them in unless asked.
 - The `.tif` and `.csv` files are git-ignored. The boundary `.gpkg`s, the
   scripts and the notes are untracked, not ignored.
 
-## Open items (as of 2026-11-04)
+## Open items (as of 2026-11-09)
 
-**State on the laptop (2026-11-04).** Nothing has been built since
-`resids_and_rhats_os` (2026-10-21), and `tar_outdated()` is empty. The decision
-on the offset strength model (see "The alternative model") is still the user's.
+**State on the laptop (2026-11-09).**
+- **Refitted after the data-type fix** ("Present records with no count",
+  below). `model_fit` finished 2026-11-07 05:30 (12.3 h), and everything
+  below it was rebuilt by 05:57. `resids_and_rhats`, `coef_draws` and the four
+  coefficient plots were rebuilt on 2026-11-09, 09:04–09:07, before the swap.
+- **These are the fits to keep.** `run_tag` is still `20261014`, so this fit
+  overwrote the 2026-10-20 fit's image, rasters, `distn_20261014/` and
+  validation folder.
+- **The fresh-process swap is made** for `resids_and_rhats` and `coef_draws`
+  (see "Memory"). `tar_outdated()` lists:
+  - those two, whose commands changed;
+  - the four plots below `coef_draws`, which should be skipped;
+  - `africa_mess_br`, which failed again on 2026-11-09 with the terra
+    `writeRaster` bug (see the side targets; `africa_exdet_br` passed).
+- **The new data:** `model_data_spatial_cx` has 15,911 / 2,437 counts
+  (absent / present), 66,886 / 12,130 presence-absence, 3,468 presence-only
+  and 249 background rows. No present count row has a count of 0.
+- **Convergence** is in the convergence item below.
+- **Still the user's decision:** the offset strength model (see "The
+  alternative model"). Its comparison was made on the data before the fix.
 
 - **The background sampling-method draw set the level of every map. Fixed in
   code 2026-10-19 (uncommitted), refitted 2026-10-20.** Found by check 04.
@@ -566,7 +610,8 @@ on the offset strength model (see "The alternative model") is still the user's.
     now sit between the two earlier fits: indoor HLC −0.04 (SD 0.18), outdoor
     resting 0.65. Against the 2026-09-30 fit, median abundance is ×1.0–1.6 by
     species (most ×1.3) and mean probability ×1.1–1.4; correlations of log λ
-    are ≥ 0.99. These are the fits to keep.
+    are ≥ 0.99. Superseded by the 2026-11-07 refit after the data-type fix,
+    which overwrote its outputs.
 - **Presence records the maps hide** (`extras/check_masked_presences.R`,
   2026-10-19, on the 2026-10-16 fit; 4,471 species × 10 km presence cells).
   "Hidden" = below the species' maxSSS threshold on `pred_p`.
@@ -605,9 +650,10 @@ on the offset strength model (see "The alternative model") is still the user's.
     worry (2026-10-19): leave them.
   - 13 cells are off the offset's area altogether: arabiensis on Réunion (10
     cells, 78 records) and Cabo Verde (2), and one coluzzii on the Cameroon coast.
-- **Decide whether to swap in the fresh-process `preds` and `resids_and_rhats`**
-  (see "Memory"). Until then, a refit needs the image-loading targets rebuilt in
-  separate `tar_make()` calls.
+- **The fresh-process `preds` is not swapped in** (see "Memory"). Since
+  2026-11-09 `resids_and_rhats` and `coef_draws` run in fresh processes, so
+  a refit runs in one `tar_make()`. Untested in a full run until the next
+  `tar_make()`.
 - **Old outputs:** `tar_prune()` has cleared the store, but the output files in
   `outputs/overhaul_check/duplicate_outputs.csv` are still on disk: 65 items,
   about 30 GB (groups "older", "removed set" and "renamed", plus 3 tiny
@@ -623,17 +669,34 @@ on the offset strength model (see "The alternative model") is still the user's.
 - **`pred_cv` scales the CV down** by the expert offset and by (1 − bare), which
   makes uncertainty look lower near range edges. It should probably be masked
   instead of scaled.
-- **1,113 present records enter the count likelihood as zero catches**
-  (found 2026-11-06, on `model_data_spatial_cx`; not fixed). They are species
-  recorded present, not inferred, in a survey that counted other species, but
-  with no count of their own (`occurrence_n` is NA). `generate_model_data_records()`
-  gives them `data_type = "count"`, `presence = 1` and, by its `data_type ==
-  "count" ~ 0` branch, `count = 0`, so `n = 0`, which the fit uses as the
-  response. 32% of the 3,550 present count rows; most are arabiensis 359,
-  funestus 294, pharoensis 176, gambiae 65. Fixing it (e.g. making them `pa`
-  or `po`) changes the model data and needs a refit.
-  `make_data_summary_table()` counts them in `count_p` (present), so `count_p`
-  is not the number of counts > 0.
+- **Present records with no count were fitted as zero catches. Fixed in code
+  2026-11-06 (uncommitted), refitted 2026-11-07.**
+  - *The error:* species recorded present (not inferred) at a location-date
+    where other species were counted, but with no count of their own
+    (`occurrence_n` NA). `generate_model_data_records()` made them counts with
+    `count = 0`, so `n = 0` was the fit's response for a species that was
+    there. 1,113 rows in `model_data_spatial_cx`, 32% of the present count
+    rows: arabiensis 359, funestus 294, pharoensis 176, gambiae 65 the most.
+    The inferred zeros at those location-dates were zero counts too.
+  - *The fix (the user's rule):* per location-date, the grouping the zeros are
+    inferred in. If every recorded row there has its own count, inferred zeros
+    stay zero counts; otherwise the uncounted rows (presences and inferred
+    zeros) are presence-absence. Recorded counts, zeros included, stay counts
+    (the user's choice). The new `full_count` rule in the `data_type`
+    `case_when`.
+  - *Effect on `model_data_records`:* 1,115 presences go count → pa, and 6,063
+    inferred zeros count → pa 0, at 437 location-dates from 67 sources. 30 of
+    the 6,063 are at 2 location-dates where the uncounted row is a recorded
+    absence. Nothing else changes: same rows and keys, same `presence`, and
+    `count` and `n` change only on those rows. No present count row has a
+    count of 0 any more. Counts 26,677 / 3,603 (absent / present) →
+    20,614 / 2,488; presence-absence 77,675 / 11,484 → 83,738 / 12,599.
+  - *Tested:* the edited function against the stored `model_data_records`, and
+    a 2-chain × 20 + 20 fit on `model_data_spatial_cx` patched the same way in
+    memory (`extras/check_uncounted_pa.R`; passes). Its stored responses are
+    exact. Don't check greta data with `calculate()`: it simulates them.
+  - Rebuilt, so `make_data_summary_table()`'s `count_p` is now the number of
+    counts > 0.
 - **`clean_species()` misses two labels.** It maps "funestus-like" and
   "rivulorum-like" with hyphens, but the data spell them with spaces. Fixing this
   invalidates everything downstream.
@@ -642,7 +705,13 @@ on the offset strength model (see "The alternative model") is still the user's.
   is *An. gambiae*-based for every species.
 - **Travel time has no data** for some island states (Cabo Verde, Seychelles). Cabo
   Verde also lies outside the prediction grid.
-- **Convergence.** The 2026-10-20 fit (after the background-method fix): max
+- **Convergence.** The 2026-11-07 fit (after the data-type fix): max classic
+  R-hat 1.109 (`beta_raw[1,12]`), 7 over 1.1 (all beta_raw), 69 over 1.05
+  (beta_raw 60, alpha 9); every other group under 1.04 (zeta_raw 1.039). On
+  the split measure it is 1.16 (gate; worst alpha[3,1], coustani) and 1.18
+  (beta), min bulk ESS 199 (gate) and 180 (beta). That is about where the
+  2026-10-16 fit was, and a little worse than the 2026-10-20 fit.
+- The 2026-10-20 fit (after the background-method fix): max
   classic R-hat 1.077, none over 1.1, 55 over 1.05 (beta_raw 50, alpha 5);
   every other group under 1.035. On the split measure it is 1.18 (gate) and
   1.20 (beta), bulk ESS 174, a little worse than before.
@@ -672,19 +741,15 @@ on the offset strength model (see "The alternative model") is still the user's.
     effect;
   - the mangrove effect (melas, squamosus) rests on 2 locations;
   - the shrubland effect for leesoni and rivulorum rests on 3 detections each.
-- **Uncommitted work:** everything up to cfaf971 is committed. Not committed
-  from 2026-10-19:
-  - the background-method fix (`R/fit_model_multispecies_pp_count.R`,
-    `R/predict_cv_heldout.R`, `R/extract_cv_draws.R`, `R/fit_cv_fold.R`,
-    `extras/model_equations_sre_reparam.md`);
-  - the os model (`R/os_*.R` and the `_os` targets in `_targets.R`, where the
-    user also commented out the CV);
-  - the checks in `extras/` (`check_bg_method_average.R`,
-    `check_masked_presences.R`, `check_os_model.R`), plus the still-untracked
-    `extras/overhaul_checks/` and `extras/refit_cascade_fix.md`;
-  - the country extracts (`nigeria_environmental_space/`,
-    `uganda_environmental_space/` and their two scripts in `extras/`; see
-    "Country data extracts");
+- **Uncommitted work (2026-11-09):** everything up to 5d9e074 is committed,
+  including the background-method fix, the os model, the country extracts,
+  the summary-table columns, the covariate panel figures and the earlier
+  checks. Not committed:
+  - the data-type fix (`R/generate_model_data_records.R`) and its check
+    (`extras/check_uncounted_pa.R`, untracked), from 2026-11-06;
+  - in `_targets.R`: the `_os` block commented out (2026-11-06) and the
+    fresh-process swap of `resids_and_rhats` and `coef_draws` (2026-11-09);
+  - the note on passing functions in `R/in_fresh_process.R` (2026-11-09);
   - this file.
 - **Session artefacts** (git-ignored): `outputs/session_20261001/`, with test
   renders, bioregion prototypes and final test figures, the abundance-driver
@@ -698,6 +763,10 @@ on the offset strength model (see "The alternative model") is still the user's.
   `PresenceAbsence::optimal.thresholds()`.
 - `check_bg_method_average.R`: the background-method fix, on two tiny fits of
   the real data (see the first open item). Passes.
+- `check_uncounted_pa.R`: the 2026-11-06 data-type fix. A tiny fit on
+  `model_data_spatial_cx` patched in memory, checking the count and PA
+  responses. `Rscript extras/check_uncounted_pa.R <image>`, about 1 min.
+  Passes.
 - `check_masked_presences.R` → `outputs/mask_check/masked_presences.csv`: every
   species × 10 km cell with a presence record, what hides it on the maps (or
   drops it before the model) and why. See the open item on hidden presences.
