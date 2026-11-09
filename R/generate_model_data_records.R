@@ -1,11 +1,23 @@
-#' .. content for \description{} (no empty lines) ..
+#' Model records for the target species, with data types and inferred zeros
 #'
-#' .. content for \details{} ..
+#' Keeps the target species' point records with usable georeferencing, and
+#' adds inferred zeros: at each location-date (source, sampling method,
+#' location, start date and duration) with genetic identification or a stated
+#' absence, every target species not recorded there gets a row with presence 0.
 #'
-#' @title
-#' @param full_data_records
-#' @param target_species description
-#' @return
+#' Data types, set per location-date:
+#' - a row with its own count is `count` (zeros included), except for larvae
+#'   and "other" methods, which are `pa`;
+#' - where some species were counted and others recorded without a count, the
+#'   uncounted rows (presences, and the inferred zeros) are `pa`;
+#' - where everything recorded was counted, inferred zeros are zero counts;
+#' - otherwise rows at a location-date with inferred zeros, or a stated
+#'   absence, are `pa`, and the rest are `po`.
+#'
+#' @title Generate model data records
+#' @param full_data_records cleaned records, from `clean_full_data_records()`
+#' @param target_species species to keep and to infer zeros for
+#' @return a tibble with one row per record, including the inferred zeros
 #' @author geryan
 #' @export
 generate_model_data_records <- function(
@@ -112,9 +124,17 @@ generate_model_data_records <- function(
       study_months
     ) |>
     mutate(
+      # every recorded (not inferred) row at this location-date has a count of
+      # its own; zeros count as counts
+      full_count = all(data_type_inf1[!inferred] %in% "count"),
       data_type = case_when(
         data_type_inf1 == "count" ~ "count",
         data_type_inf1 == "pa" ~ "pa",
+        # some species counted, others recorded without a count: the uncounted
+        # rows (presences and inferred zeros) are presence-absence, not zero
+        # counts
+        any(data_type_inf1 %in% "count") & !full_count ~ "pa",
+        # everything recorded was counted: inferred zeros are zero counts
         any(data_type_inf1 == "count") ~ "count",
         any(inferred) ~ "pa",
         (babs & !bpres) ~ "pa",
