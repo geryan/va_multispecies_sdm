@@ -2,26 +2,38 @@
 
 ## What this is
 
-A small, self-contained set of data for Nigeria, 2013–2022:
-- annual land-cover class proportions;
-- annual human footprint;
-- *Anopheles gambiae* s.s. presence records.
+A small, self-contained set of data for Nigeria:
+- annual land-cover class proportions, 2013–2022;
+- annual human footprint, 2013–2022;
+- TerraClimate precipitation, maximum temperature and vapour pressure deficit:
+  annual for 2000–2025 and monthly for 2019–2022;
+- *Anopheles gambiae* s.s. presence records, 2013–2022.
 
 It was cut out of the Vector Atlas multispecies SDM repository (the parent
 folder) to keep for separate work. Nothing in the parent project uses it.
 
 Everything here can be read with `terra` and base R, with this folder as the
-working directory. `plot_nigeria_environmental_space.R` reads every file and
-makes simple maps. Citations for every source are in `README.md`.
+working directory. `plot_nigeria_environmental_space.R` reads the land cover,
+footprint and records and makes simple maps; it doesn't read the climate files.
+Citations for every source are in `README.md`.
 
-**Provenance.** Made on 2026-10-19 by `extras/make_nigeria_environmental_space.R`
-in the parent repository. That script reads the parent's `targets` store and
-its processed rasters, so it can't be rerun outside that repository. Treat the
-files here as the data, and don't try to rebuild them.
+**Provenance.**
+- Land cover, footprint, records and boundary: made on 2026-10-19 by
+  `extras/make_nigeria_environmental_space.R` in the parent repository. That
+  script reads the parent's `targets` store and its processed rasters, so it
+  can't be rerun outside that repository.
+- Climate: made on 2026-11-24 by `extras/make_nigeria_terraclimate.R` in the
+  parent repository. It downloads from the TerraClimate server and needs only
+  this folder's land-cover grid and boundary. A rerun would fetch whatever
+  version the server then holds.
+- Treat the files here as the data, and don't try to rebuild them.
 
-**Years.** 2013–2022 is the last ten years both raster series cover: land cover
-runs 1992–2022 and footprint 2000–2024. The same data for Uganda, for all years,
-are in `../uganda_environmental_space/`.
+**Years.** The series cover different years:
+- Land cover and footprint: 2013–2022, the last ten years both raster series
+  cover (land cover runs 1992–2022, footprint 2000–2024).
+- Climate: annual 2000–2025 and monthly 2019–2022, as asked for.
+- The same land cover and footprint for Uganda, for all years, are in
+  `../uganda_environmental_space/`.
 
 ## Files
 
@@ -29,6 +41,8 @@ are in `../uganda_environmental_space/`.
 |---|---|
 | `landcover_<class>_2013_2022.tif` | Land-cover class proportion (0–1). 11 files, 10 layers each (`<class>_<year>`). |
 | `footprint_2013_2022.tif` | Human Footprint index (0–50), 10 layers (`footprint_<year>`). |
+| `terraclimate_<var>_annual_2000_2025.tif` | `ppt`, `tmax`, `vpd`: 3 files, 26 layers each (`<var>_<year>`). |
+| `terraclimate_<var>_monthly_2019_2022.tif` | `ppt`, `tmax`, `vpd`: 3 files, 48 layers each (`<var>_<year>_<month>`, e.g. `ppt_2020_08`). |
 | `gambiae_records_nigeria_2013_2022.csv` | 51 records: `month`, `year`, `latitude`, `longitude`. |
 | `nigeria_boundary.gpkg` | Nigeria, GADM 4.1 level 0 (attributes `GID_0`, `COUNTRY`). |
 | `plot_nigeria_environmental_space.R` | Reads everything and draws quick-look plots. |
@@ -97,6 +111,54 @@ which runs to 2024 although the paper's title says 2018.
   source has no values over water, and those 235 cells are mostly water (median
   water proportion 0.81).
 
+## Climate (TerraClimate)
+
+Source: TerraClimate v1.1 (Abatzoglou et al. 2026; Zenodo
+doi:10.5281/zenodo.23961197), created 2026-11-14 and downloaded 2026-11-24
+from the Climatology Lab's THREDDS server. v1.1 is monthly, 1950–2025, at 1/30°
+(about 3.7 km), built from ERA5 with CHELSA v2.1 climatologies. It replaces
+v1.0 (1/24°, 1958–2024), so values differ from work that used v1.0.
+
+- **Variables:**
+
+| File prefix | Variable | Units | Annual value |
+|---|---|---|---|
+| `terraclimate_ppt` | precipitation | mm | total of the 12 months |
+| `terraclimate_tmax` | maximum 2 m temperature | °C | mean of the 12 monthly values |
+| `terraclimate_vpd` | vapour pressure deficit | kPa | mean of the 12 monthly values |
+
+- **Two sets:** annual for 2000–2025 (26 layers), and the monthly values as
+  TerraClimate gives them for 2019–2022 (48 layers). TerraClimate has no
+  annual product; the annual values were made from the monthly ones on the
+  native grid.
+- **Time axis:** annual files carry years (`time(r)` gives 2000 to 2025,
+  `tstep = "years"`). Monthly files carry the first day of each month as a
+  date (`time(r)` gives `2019-01-01` to `2022-12-01`).
+- **Regridding:** from 1/30° to this folder's 1/24° grid by area-weighted
+  mean. The two grids share a 1/120° lattice, so each native cell was split
+  4 × 4 and blocks of 5 × 5 averaged, which is exact (NA cells left out). The
+  sum or mean of a year's 12 monthly layers matches its annual layer to
+  float32 precision (relative difference ≤ 1.2e-7).
+- **Cells:** 43,849 non-NA cells, the same in every layer. That is every
+  land-cover cell plus 19 coastal cells inside the boundary that land cover
+  (and footprint) leave NA as sea.
+- **Ranges:** annual ppt 143–5,969 mm, tmax 22.9–38.0 °C, vpd 0.41–3.08 kPa.
+  Monthly ppt 0–1,326 mm, tmax 19.4–43.2 °C, vpd 0.05–4.75 kPa.
+- **Nigerian means:** ppt 1,173 mm in 2000 and 1,154 in 2025; tmax 32.3 °C
+  and 33.6 °C; vpd 1.71 and 1.68 kPa.
+- **The wettest cell** is on the Cameroon border in the Gotel mountains
+  (11.0 E, 7.0 N), with 4,034–5,969 mm a year. 209 cells pass 4,000 mm in at
+  least one year.
+- **Some months and years are extreme.** At 12.5 N, 6.4 E (Zamfara), August
+  2020 has 963 mm against 241–471 mm in the other Augusts of 2019–2022. The
+  2020 total there is 1,644 mm, against 693–1,256 mm in the other years apart
+  from 2024 (1,465 mm). These are TerraClimate's values (the regridding is
+  linear and checked), but they have not been checked against independent
+  rainfall data. Check whether such peaks matter before relying on a single
+  month or year.
+- These variables follow Nigeria's north–south gradient, as land cover does,
+  so expect them to be correlated with each other.
+
 ## *An. gambiae* records
 
 Source: the Vector Atlas data extract of 2026-06-16, as cleaned by the parent
@@ -133,7 +195,9 @@ project.
 ## Working here
 
 - Use `terra` for the rasters: `rast()` on one file gives all its years as
-  layers, and `r[[time(r) == 2020]]` picks one year.
+  layers, and `r[[time(r) == 2020]]` picks one year. In the monthly climate
+  files, pick by name (`r[["ppt_2020_08"]]`) or by date
+  (`r[[format(time(r), "%Y") == "2020"]]`).
 - Read the boundary with `vect("nigeria_boundary.gpkg")`.
 - Read the records with `read.csv()` and turn them into points with
   `vect(records, geom = c("longitude", "latitude"), crs = "EPSG:4326")`.
