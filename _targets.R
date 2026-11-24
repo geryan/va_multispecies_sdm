@@ -303,30 +303,9 @@ list(
       )
   ),
 
-  ## bare landcover from worldcover -- REPLACED by the ESA version above
-  # tar_terra_rast(
-  #   landcover_bare_raw,
-  #   gt_lndcvr(
-  #     vars = c(
-  #       "bare"
-  #     ),
-  #     ifelse(
-  #       user_is_gerry_spartan,
-  #       "/data/gpfs/projects/punim1422/va_multispecies_sdm/data/raster/geodata/",
-  #       "data/raster/geodata/"
-  #     )
-  #   )
-  # ),
-  #
-  # tar_terra_rast(
-  #   landcover_bare,
-  #   landcover_bare_raw |>
-  #     aggregate(fact = 5) |>
-  #     crop(y = project_mask_5) |>
-  #     resample(y = project_mask_5) |>
-  #     fill_na_with_nearest_mean(maxRadiusCell = 50) |>
-  #     mask(mask = project_mask_5)
-  # ),
+  # Parked in extras/parked_targets/covariates.R: the WorldCover bare-ground
+  #   layers (landcover_bare_raw, landcover_bare), replaced by the ESA version
+  #   above on 2026-09-03.
 
   # distance from sea
   tar_terra_rast(
@@ -528,22 +507,10 @@ list(
     # with more mosquitoes
   ),
 
-  ## landcover vars from worldcover -- REPLACED by landcover_esa_5 above.
-  # `landcover_raw` itself is still needed: water_mask_5, and so project_mask_5,
-  # are built from it.
-  # tar_terra_rast(
-  #   landcover_covs,
-  #   landcover_raw |>
-  #     aggregate(fact = 5) |>
-  #     crop(y = project_mask_5) |>
-  #     resample(y = project_mask_5) |>
-  #     fill_na_with_nearest_mean(maxRadiusCell = 50) |>
-  #     mask(mask = project_mask_5) #|> scale()
-  #   # don't scale landcover types, so they remain 0-1, and a
-  #   # positive-constrained coefficient enforces that more habitat corresponds
-  #   # with more mosquitoes
-  #
-  # ),
+  # Parked in extras/parked_targets/covariates.R: the WorldCover land-cover
+  #   covariates (landcover_covs), replaced by landcover_esa_5 on 2026-09-03.
+  #   landcover_raw itself stays: water_mask_5, and so project_mask_5, are
+  #   built from it.
 
   # this reads in the bioregions as a single file
   # but it's useless for passing on the categories
@@ -567,137 +534,9 @@ list(
     split_bioregions(project_mask = project_mask_5)
   ),
 
-  # layers from Malaria Atlas Project
-  #
-
-  # # built volume
-  #
-  # tar_terra_rast(
-  #   built_volume_raw,
-  #   rast("/Users/gryan/Documents/tki_work/vector_atlas/africa_spatial_data/data/raster/MAP_covariates/GHSL_2023/GHS_BUILT_V_R23A.2020.Annual.Data.1km.Data.tif") |>
-  #   set_layer_names("built_volume")
-  # ),
-  #
-  # tar_terra_rast(
-  #   built_volume_5,
-  #   built_volume_raw |>
-  #     aggregate(fact = 5) |>
-  #     crop(y = project_mask_5) |>
-  #     resample(y = project_mask_5) |>
-  #     fill_na_with_nearest_mean(maxRadiusCell = 50) |>
-  #     mask(mask = project_mask_5) |>
-  #     scale()
-  # ),
-  #
-  # # EVI
-  # # monthly EVI available from MAP, need to work out some code to process this
-  # # stuff on MAP workbench so that I don't need to download all the enormous
-  # # layers
-  # tar_terra_rast(
-  #   evi_raw,
-  #   prepare_multi_layer(
-  #     data_dir ="/Users/gryan/Documents/tki_work/vector_atlas/africa_spatial_data/data/raster/MAP_covariates/EVI/"#,
-  #     # layer_prefix = "evi",
-  #     # file_id_prefix = ".*v6\\.",
-  #     # file_id_suffix = "\\.Annual.*"
-  #   )
-  # ),
-  #
-  # tar_terra_rast(
-  #   evi_5,
-  #   evi_raw |>
-  #     mean() |>
-  #     set_layer_names("evi") |>
-  #     crop(y = project_mask_5) |>
-  #     aggregate(fact = 5) |>
-  #     resample(y = project_mask_5) |>
-  #     fill_na_with_nearest_mean(maxRadiusCell = 50) |>
-  #     mask(mask = project_mask_5) |>
-  #     scale()
-  # ),
-  #
-  #
-  # # Tasseled Cap Brightness
-  # # same for
-  # # TCB re monthly data
-  # tar_terra_rast(
-  #   tcb_raw,
-  #   prepare_multi_layer(
-  #     data_dir ="/Users/gryan/Documents/tki_work/vector_atlas/africa_spatial_data/data/raster/MAP_covariates/TCB/"
-  #   )
-  # ),
-  #
-  # tar_terra_rast(
-  #   tcb_5,
-  #   tcb_raw |>
-  #     mean() |>
-  #     set_layer_names("tcb") |>
-  #     crop(y = project_mask_5) |>
-  #     aggregate(fact = 5) |>
-  #     resample(y = project_mask_5) |>
-  #     fill_na_with_nearest_mean(maxRadiusCell = 50) |>
-  #     mask(mask = project_mask_5) |>
-  #     scale()
-  # ),
-  #
-  #
-  # # land surface temperature at night annual mean
-  # # also same for lst re monthly data
-  # tar_terra_rast(
-  #   lst_night_raw,
-  #   prepare_multi_layer(
-  #     data_dir ="/Users/gryan/Documents/tki_work/vector_atlas/africa_spatial_data/data/raster/MAP_covariates/LST_Night/"
-  #   )
-  # ),
-  #
-  # tar_terra_rast(
-  #   lst_night_5,
-  #   lst_night_raw |>
-  #     mean() |>
-  #     set_layer_names("lst_night") |>
-  #     aggregate(fact = 5) |>
-  #     crop(y = project_mask_5) |>
-  #     resample(y = project_mask_5) |>
-  #     fill_na_with_nearest_mean(maxRadiusCell = 50) |>
-  #     mask(mask = project_mask_5) |>
-  #     scale()
-  # ),
-  #
-  # #
-  # # via `geodata`
-  # #
-  #
-  # # elevation
-  #
-  # tar_terra_rast(
-  #   elevation_raw,
-  #   global_regions |>
-  #     filter(continent == "Africa") |>
-  #     pull(iso3) |>
-  #     lapply(
-  #       FUN = function(x){
-  #         elevation_30s(
-  #           country = x,
-  #           path = "data/raster/geodata"
-  #         )
-  #       }
-  #     ) |>
-  #     sprc() |>
-  #     merge() |>
-  #     set_layer_names("elevation")
-  # ),
-  #
-  # tar_terra_rast(
-  #   elevation_5,
-  #   elevation_raw |>
-  #     aggregate(fact = 5) |>
-  #     crop(y = project_mask_5) |>
-  #     resample(y = project_mask_5) |>
-  #     fill_na_with_nearest_mean(maxRadiusCell = 50) |>
-  #     mask(mask = project_mask_5) |>
-  #     scale()
-  # ),
-  #
+  # Parked in extras/parked_targets/covariates.R: Malaria Atlas Project layers
+  #   (built volume, EVI, tasselled-cap brightness, night land surface
+  #   temperature, elevation; raw and 5 km), not used by the model.
   # soil clay
 
   tar_terra_rast(
@@ -862,34 +701,9 @@ list(
     # is no aggregate / crop / resample / scale step here
   ),
 
-  # tar_terra_rast(
-  #   built_volume_5,
-  #   built_volume_raw |>
-  #     aggregate(fact = 5) |>
-  #     crop(y = project_mask_5) |>
-  #     resample(y = project_mask_5) |>
-  #     fill_na_with_nearest_mean(maxRadiusCell = 50) |>
-  #     mask(mask = project_mask_5) |>
-  #     scale()
-  # ),
-
-  # tar_terra_rast(
-  #   offset_temp_5,
-  #   make_temperature_offset(project_mask_5)
-  # ),
-
-
-  # # irrigation
-  # # The map shows the amount of area equipped for irrigation around the year 2005 in percentage of the total area on a raster with a resolution of 5 minutes.
-  # # Stefan Siebert, Verena Henrich, Karen Frenken and Jacob Burke (2013). Global Map of Irrigation Areas version 5. Rheinische Friedrich-Wilhelms-University, Bonn, Germany / Food and Agriculture Organization of the United Nations, Rome, Italy
-  # # https://www.fao.org/aquastat/en/geospatial-information/global-maps-irrigated-areas/latest-version
-  # tar_terra_rast(
-  #   irrigation_raw,
-  #   rast(x = "data/raster/gmia_v5_aei_pct.asc") |>
-  #     crop(project_mask_10) |>
-  #     resample(covariate_rast_10[[1]]) |>
-  #     mask(covariate_rast_10[[1]])
-  # ),
+  # Parked in extras/parked_targets/covariates.R: built_volume_5 (an aggregated
+  #   variant), offset_temp_5 (a temperature offset) and irrigation_raw (FAO
+  #   GMIA irrigated area), not used by the model.
 
   #
   # bias
@@ -1271,14 +1085,9 @@ list(
     }
   ),
 
-  # tar_target(
-  #   bg_kmeans_list_env,
-  #   bg_points_kmeans_env(
-  #     n_bg,
-  #     covariate_rast,
-  #     n_samples_per_bg = 200
-  #   )
-  # ),
+  # Parked in extras/parked_targets/records_and_background.R:
+  #   bg_kmeans_list_env, the environmental-space version of
+  #   bg_kmeans_list_spatial below.
 
   tar_target(
     bg_kmeans_list_spatial,
@@ -1451,30 +1260,9 @@ list(
 
 
 
- # tar_target(
- #   model_data_records_ni,
- #   generate_model_data_records_no_impute(
- #     full_data_records,
- #     target_species = target_species
- #   )
- # ),
-
- # tar_target(
- #   model_data_all,
- #   bind_rows(
- #     model_data_records,
- #     bg_points |>
- #       as_tibble() |>
- #       rename(
- #         latitude = y,
- #         longitude = x
- #       ) |>
- #       mutate(
- #         data_type = "bg",
- #         n = 0
- #       )
- #   )
- # ),
+ # Parked in extras/parked_targets/records_and_background.R:
+ #   model_data_records_ni (records without inferred zeros) and model_data_all
+ #   (records with the background points bound on).
 
  # This target extracts the spatial data from the covariate rasts
  # but also removes points that are outside of the project mask
@@ -1724,17 +1512,8 @@ list(
    )
  ),
 
- # tar_target(
- #   covs_plots_all,
- #   make_covariate_plots(
- #     record_data_spatial_all,
- #     target_species,
- #     target_covariate_names, # this needs tweaking as it
- #     # won't currently get the non-target covs which is the whole point - need to extract from covariate rasters
- #     offset_names,
- #     bias_names
- #   )
- # ),
+ # Parked in extras/parked_targets/plots.R: covs_plots_all, covariate plots for
+ #   all records (unfinished: it misses the non-target covariates).
 
 
  tar_target(
@@ -1839,13 +1618,8 @@ list(
    format = "file"
  ),
 
- # tar_target(
- #   expert_map_plots,
- #   make_expert_map_plots(
- #     expert_maps,
- #     new_mask
- #   )
- # ),
+ # Parked in extras/parked_targets/plots.R: expert_map_plots, plots of the
+ #   expert range maps.
 
  ## MESS Analysis
 
@@ -1992,38 +1766,9 @@ list(
 
 
 
- # ######
- # # PCA Covariate layers
- # ######
- # tar_terra_rast(
- #   pca_covariate_layers,
- #   make_pca_covariate_layers(
- #     covariate_rast_5,
- #     target_covariate_names,
- #     model_data_spatial
- #   )
- # ),
- #
- # tar_target(
- #   model_data_spatial_pca,
- #   get_spatial_values(
- #     pca_covariate_layers,
- #     model_data_spatial,
- #     project_mask_5
- #   ) |>
- #     select(
- #       - all_of(target_covariate_names),
- #     )
- # ),
- #
- # tar_target(
- #   covs_plots_pca,
- #   make_covariate_plots(
- #     model_data_spatial_pca,
- #     cvnames = names(pca_covariate_layers),
- #     fname = "outputs/figures/cov_violins_pca.png"
- #   )
- # ),
+ # Parked in extras/parked_targets/pca_covariates.R: PCA covariate layers, the
+ #   records' values on them and their plots (pca_covariate_layers,
+ #   model_data_spatial_pca, covs_plots_pca).
 
 
 
@@ -2183,16 +1928,8 @@ list(
    )
  ),
 
- # the same target run in the pipeline's own process, as it was until
- # 2026-11-09
- # tar_target(
- #   resids_and_rhats,
- #   validation_and_checking(
- #     model_fit_image_multisp_pp_count_sm = model_fit_image,
- #     nsims = 100,
- #     plotdir = validation_dir
- #   )
- # ),
+ # Parked in extras/parked_targets/process_variants.R: resids_and_rhats run in
+ #   the pipeline's own process, as it was until 2026-11-09.
 
  # the output paths never change, so the files' md5s are added to the value;
  # without them a rerun returns an identical list and the maps never update.
@@ -2220,37 +1957,10 @@ list(
    }
  ),
 
- # the same target run in a fresh R process (R/in_fresh_process.R).
- # greta::calculate() in predict_lambda() leaves ~5.2 GB held after it
- # returns, which pushed the targets after it over R's 16 GB limit. Not
- # needed while resids_and_rhats and coef_draws run in fresh processes
- # (since 2026-11-09). To use it, comment out the target above and uncomment
- # this one
- # tar_target(
- #   preds,
- #   {
- #     pred_files <- in_fresh_process(
- #       predict_lambda,
- #       list(
- #         image_name = model_fit_image,
- #         prediction_layer = covariate_rast_10, # use 10k for faster preds
- #         target_species = target_species,
- #         output_file_prefix = pred_prefix,
- #         offset = offsets_avg_10,
- #         sm = TRUE, # if predict survey method
- #         nsims = 100 # lower for faster preds
- #       )
- #     )
- #     c(
- #       pred_files,
- #       md5 = list(
- #         tools::md5sum(
- #           unlist(pred_files)
- #         )
- #       )
- #     )
- #   }
- # ),
+ # Parked in extras/parked_targets/process_variants.R: preds run in a fresh R
+ #   process (in_fresh_process()), which frees the ~5.2 GB greta::calculate()
+ #   leaves held. Not needed while resids_and_rhats and coef_draws run in
+ #   fresh processes.
 
 
 
@@ -2614,17 +2324,8 @@ list(
    format = "file"
  ),
 
- # the same target run in the pipeline's own process, as it was until
- # 2026-11-09
- # tar_target(
- #   coef_draws,
- #   extract_cv_draws(
- #     image_name = model_fit_image,
- #     output_file = "outputs/draws/coef_draws.rds",
- #     n_keep = 1000
- #   ),
- #   format = "file"
- # ),
+ # Parked in extras/parked_targets/process_variants.R: coef_draws run in the
+ #   pipeline's own process, as it was until 2026-11-09.
 
  # response plots, one per species, from the main effects (the average
  # bioregion), against the average surveyed location: land cover as the
@@ -2827,38 +2528,8 @@ list(
    format = "file"
  ),
 
- # abundance again, on a shared log10 scale, from 0.001 to the maximum across
- # all species. Anything below 0.001, masked cells included, takes the palest
- # colour, labelled "<=0.001". The linear scale flattens the rarer species; this
- # shows where they sit
- # tar_target(
- #   plot_pred_lambda_log,
- #   make_distribution_plots(
- #     pred_lambda,
- #     model_data_spatial_cx,
- #     plot_dir = plot_dir,
- #     colscheme = "orchid",
- #     distpoints = FALSE,
- #     guide = "abundance",
- #     log_scale = TRUE,
- #     prefix = "lambda_log"
- #   )
- # ),
- #
- # # the log-scale version of panel_lambda.png
- # tar_target(
- #   plot_pred_panels_log,
- #   make_distribution_panels(
- #     pred_lambda,
- #     model_data_spatial_cx,
- #     plot_dir = plot_dir,
- #     colscheme = "orchid",
- #     guide = "abundance",
- #     log_scale = TRUE,
- #     prefix = "lambda_log"
- #   ),
- #   format = "file"
- # ),
+ # Parked in extras/parked_targets/plots.R: abundance maps and panels on a
+ #   shared log10 scale (plot_pred_lambda_log, plot_pred_panels_log).
 
  ###################
  # abundance cubes
@@ -2890,363 +2561,17 @@ list(
  ),
 
 
- ###################
- # spatial block cross-validation
- #
- # Every check on this model is in-sample. This holds out blocks of SPACE, refits, and
- # scores the held-out count records, so there is a number for how well the model predicts
- # where it has not been -- which is the only way to know whether the 187 landcover x
- # bioregion interaction columns are buying spatial structure or fitting noise.
- #
- # Two things about the construction are load-bearing and are argued at length in the
- # functions themselves:
- #
- #   - folds are assigned to the ~250 background VORONOI CELLS, and every data coordinate
- #     takes the fold of the cell it sits in. The PO/bg likelihood is a Berman-Turner
- #     quadrature whose weights tile the continent exactly, so the held-out region has to
- #     be a union of whole cells or the presences and the integral disagree along every
- #     boundary. See cv_spatial_folds().
- #
- #   - because folds are then a function of the COORDINATE alone, a fold's training frame
- #     can be handed to the unmodified production fit function as a row subset:
- #     `distinct_idx` picks the same physical row per retained coordinate as it does on the
- #     full data, so the design matrix and offsets are bit-identical. Verified for both
- #     sides of all five folds. See cv_designmat(), which is also why prediction must go
- #     through the per-COORDINATE design and not a record's own covariate row.
- #
- # `seed` is the pipeline seed defined above the background points, so the quadrature the
- # folds are cut from and the folds themselves trace back to one number.
-
- # tar_target(
- #   cv_tag,
- #   "20260909"
- # ),
- #
- # tar_target(
- #   cv_k,
- #   5L
- # ),
- #
- # tar_target(
- #   cv_dir,
- #   sprintf(
- #     "outputs/cv/spatial_block_%s",
- #     cv_tag
- #   )
- # ),
- #
- # # returns c(cv_folds.csv, cv_blocks.gpkg, cv_autocor.csv). The block size is the median
- # # variogram range across the model covariates AFTER dropping the fits that ran away --
- # # on the 2026-09 covariate set `tree`, `water` and `urban` all fail to reach a sill, and
- # # taking blockCV's own median over the contaminated set gives a meaningless number.
- # tar_target(
- #   cv_folds_file,
- #   cv_spatial_folds(
- #     model_data_spatial = model_data_spatial_cx,
- #     bg_kmeans_df = bg_kmeans_df,
- #     covariate_rast = covariate_rast_10,
- #     target_covariate_names = target_covariate_names,
- #     k = cv_k,
- #     seed = seed,
- #     output_dir = cv_dir
- #   ),
- #   format = "file"
- # ),
- #
- # # the branching index, in the esa_landcover_years idiom: the fold fits below map over it
- # tar_target(
- #   cv_fold_ids,
- #   seq_len(cv_k)
- # ),
- #
- # # One branch per fold, each fitted in its own callr subprocess so TensorFlow memory is
- # # released between folds -- five sequential greta fits in one session will not survive
- # # 16 GB, which is the same reason extras/sre_lmax_sweep.sh spawns a fresh Rscript per
- # # configuration. The target returns the compact draws .rds, not the ~1.6 GB fit image:
- # # `format = "file"` hashes whatever it is handed, and hashing gigabytes on every status
- # # check is not worth it. The image path is recorded inside the .rds.
- # #
- # # `cv_folds_file` is deliberately NOT in the pattern, so every branch receives all of its
- # # paths -- the same trick as esa_landcover_proportion.
- # #
- # # 10 chains rather than the production 40, and 1000 burn-in rather than 2000: a fold is
- # # then ~2 h instead of ~10 h, and five folds fit in a night. That is a deliberate
- # # approximation -- CV measures predictive skill and does not need the tails resolved to
- # # the production standard -- and each fold carries its own convergence gate so a fold that
- # # did not mix cannot quietly contribute a number.
- # tar_target(
- #   cv_fold_draws,
- #   fit_cv_fold(
- #     model_data_spatial = model_data_spatial_cx,
- #     cv_folds = cv_folds_file,
- #     fold = cv_fold_ids,
- #     target_covariate_names = target_covariate_names,
- #     target_species = target_species,
- #     bioregion_names = bioregion_names,
- #     n_burnin = 1000,
- #     n_samples = 1000,
- #     n_chains = 10,
- #     n_cores = 8,
- #     seed = seed,
- #     output_dir = file.path(cv_dir, "folds")
- #   ),
- #   pattern = map(cv_fold_ids),
- #   format = "file"
- # ),
-
- # STILL TO COME, as their functions are written:
- #
- #   cv_fold_metrics score_cv_counts()      pattern = map(cv_fold_draws, cv_fold_ids)
- #   cv_fold_checks  cv_predictive_checks() pattern = map(cv_fold_draws, cv_fold_ids)
- #   cv_summary      summarise_cv_metrics() not branched -- takes every fold's paths
- #   cv_error_map    plot_cv_error_map()    not branched
- #   cv_fold_map     plot_cv_folds()
+ # Parked in extras/parked_targets/cross_validation.R: spatial block
+ #   cross-validation (the cv_* targets), off since 2026-10-19 at the user's
+ #   request: no CV for now. The fold-fit targets are written; the scoring
+ #   targets are not. See agent_notes/model.md.
 
 
 
- # The os section below was commented out on 2026-11-06 at the user's request:
- # only the main pipeline runs for now. Uncomment the whole block to restore it.
- # ###################
- # # alternative model: per-species offset strength ("os"), added 2026-10-19
- # #
- # # The same model as model_fit, except that each species' offset is raised to its own
- # # power kappa: log lambda = ... + kappa[s] * log(offset), with log kappa ~
- # # Student-t(3, 0, 0.05), so kappa stays near 1 (the current model) unless a species'
- # # data clearly favour another value. Motivated by the presence records the gambiae
- # # offset hides (extras/check_masked_presences.R). Functions are copies of the current
- # # ones with an `os_` prefix; the current functions are untouched.
- # #
- # # Only the fit, the distribution and abundance maps, and a comparison with the current
- # # model. The comparison is in-sample: PSIS-LOO on every record, and where the two
- # # models' binary ranges differ against the presence records and the offset. It needs
- # # both fits, so it waits for model_fit too. Results in outputs/model_comparison/<run_tag>/.
-
- # tar_target(
- #   fit_image_os,
- #   "outputs/images/model_fit_os.RData"
- # ),
-
- # tar_target(
- #   pred_prefix_os,
- #   "outputs/rasters/multispecies_pp_os"
- # ),
-
- # tar_target(
- #   plot_dir_os,
- #   sprintf(
- #     "outputs/figures/distribution_plots/distn_os_%s",
- #     run_tag
- #   )
- # ),
-
- # tar_target(
- #   comparison_dir_os,
- #   sprintf(
- #     "outputs/model_comparison/%s",
- #     run_tag
- #   )
- # ),
-
- # # ~12 h, as model_fit
- # tar_target(
- #   model_fit_os,
- #   os_fit_model_multispecies_pp_count(
- #     image_name = fit_image_os,
- #     model_data_spatial = model_data_spatial_cx,
- #     target_covariate_names = target_covariate_names,
- #     target_species = target_species,
- #     bioregion_names = bioregion_names,
- #     n_burnin = 2000,
- #     n_samples = 1000,
- #     n_chains = 40,
- #     n_cores = 8,
- #     kappa_scale = 0.05
- #   )
- # ),
-
- # # the image as a file target, as model_fit_image
- # tar_target(
- #   model_fit_image_os,
- #   model_fit_os,
- #   format = "file"
- # ),
-
- # # the 12 monthly offsets behind offsets_avg_10 (2024), at 10 km. The os maps average
- # # offset ^ kappa over the months; with kappa = 1 that is offsets_avg_10
- # tar_terra_rast(
- #   offsets_2024_10,
- #   aggregate(
- #     offsets_5[[289:300]],
- #     fact = 2,
- #     fun = "mean",
- #     cores = 4,
- #     na.rm = TRUE
- #   )
- # ),
-
- # # run in a fresh R process (R/in_fresh_process.R), so the memory greta::calculate()
- # # holds is given back. `lambda` here includes the offset
- # tar_target(
- #   preds_os,
- #   {
- #     pred_files <- in_fresh_process(
- #       "os_predict_lambda",
- #       list(
- #         image_name = model_fit_image_os,
- #         prediction_layer = covariate_rast_10,
- #         target_species = target_species,
- #         output_file_prefix = pred_prefix_os,
- #         offset = offsets_2024_10,
- #         sm = TRUE,
- #         nsims = 100
- #       )
- #     )
- #     c(
- #       pred_files,
- #       md5 = list(
- #         tools::md5sum(
- #           unlist(pred_files)
- #         )
- #       )
- #     )
- #   }
- # ),
-
- # tar_terra_rast(
- #   pred_p_os,
- #   mask_landcover_and_expert_offset(
- #     p = rast(preds_os$p),
- #     expert = expert_offset_maps_10,
- #     bare = landcover_bare_10
- #   )
- # ),
-
- # tar_terra_rast(
- #   pred_lambda_os,
- #   mask_landcover_and_expert_offset(
- #     p = rast(preds_os$lambda),
- #     expert = expert_offset_maps_10,
- #     bare = landcover_bare_10
- #   )
- # ),
-
- # tar_target(
- #   plot_pred_p_os,
- #   make_distribution_plots(
- #     pred_dist = pred_p_os,
- #     model_data_spatial_cx,
- #     plot_dir = plot_dir_os
- #   )
- # ),
-
- # tar_target(
- #   plot_pred_lambda_os,
- #   make_distribution_plots(
- #     pred_lambda_os,
- #     model_data_spatial_cx,
- #     plot_dir = plot_dir_os,
- #     colscheme = "orchid",
- #     distpoints = FALSE,
- #     guide = "abundance",
- #     prefix = "lambda"
- #   )
- # ),
-
- # # 1,000 draws out of the image, for the comparison; in a fresh process, as preds_os
- # tar_target(
- #   coef_draws_os,
- #   in_fresh_process(
- #     "os_extract_cv_draws",
- #     list(
- #       image_name = model_fit_image_os,
- #       output_file = "outputs/draws/coef_draws_os.rds",
- #       n_keep = 1000
- #     )
- #   ),
- #   format = "file"
- # ),
-
- # tar_target(
- #   thresholds_maxsss_os,
- #   maxsss_thresholds(
- #     pred_p = pred_p_os,
- #     model_data_spatial = model_data_spatial_cx
- #   )
- # ),
-
- # # PSIS-LOO on every record, os - current, by data type and species
- # tar_target(
- #   compare_loo_os,
- #   os_compare_loo(
- #     draws_file_current = coef_draws,
- #     draws_file_os = coef_draws_os,
- #     model_data_spatial = model_data_spatial_cx,
- #     output_dir = comparison_dir_os
- #   )
- # ),
-
- # # presence cells hidden and shown, range by offset level, and the low-offset area
- # # before the masks, each model at its own maxSSS threshold
- # tar_target(
- #   compare_maps_os,
- #   os_compare_maps(
- #     pred_p = pred_p,
- #     pred_p_os = pred_p_os,
- #     p_unmasked = pred_dist_not_masked,
- #     p_unmasked_os = rast(preds_os$p),
- #     thresholds = thresholds_maxsss,
- #     thresholds_os = thresholds_maxsss_os,
- #     offset = offsets_avg_10,
- #     model_data_records = model_data_records,
- #     target_species = target_species,
- #     output_dir = comparison_dir_os
- #   )
- # ),
-
- # tar_target(
- #   plot_kappa_os,
- #   os_plot_kappa(
- #     draws_file = coef_draws_os,
- #     output_dir = comparison_dir_os
- #   ),
- #   format = "file"
- # ),
-
- # tar_target(
- #   plot_range_change_os,
- #   os_plot_range_change(
- #     pred_p = pred_p,
- #     pred_p_os = pred_p_os,
- #     thresholds = thresholds_maxsss,
- #     thresholds_os = thresholds_maxsss_os,
- #     model_data_records = model_data_records,
- #     target_species = target_species,
- #     output_dir = comparison_dir_os
- #   ),
- #   format = "file"
- # ),
-
- # tar_target(
- #   validation_dir_os,
- #   sprintf(
- #     "outputs/figures/validation/os_%s/",
- #     run_tag
- #   )
- # ),
-
- # # predictive checks, residuals and R-hats for the os fit, as resids_and_rhats; in a
- # # fresh process, as preds_os
- # tar_target(
- #   resids_and_rhats_os,
- #   in_fresh_process(
- #     "validation_and_checking",
- #     list(
- #       model_fit_image_multisp_pp_count_sm = model_fit_image_os,
- #       nsims = 100,
- #       plotdir = validation_dir_os
- #     )
- #   )
- # ),
+ # Parked in extras/parked_targets/os_model.R: the alternative model with a
+ #   per-species offset strength (the _os targets) and its comparison with this
+ #   model, off since 2026-11-06 at the user's request. See
+ #   agent_notes/os_model.md.
 
 
 
