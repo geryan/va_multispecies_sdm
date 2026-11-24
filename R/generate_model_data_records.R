@@ -204,6 +204,10 @@ generate_model_data_records <- function(
       n,
       inferred,
       source_id
+    )|>
+    filter(
+      !(species == "coluzzii" & source_id == 2676),
+      !(species == "coluzzii" & source_id == 1001743)
     )
 
 }

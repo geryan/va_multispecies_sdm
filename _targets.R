@@ -953,6 +953,28 @@ list(
     get_pharoensis_expert_map()
   ),
 
+  # coluzzii: the area between the solid range line and the west African
+  # coast in
+  # Wiebe, A., Longbottom, J., Gleave, K. et al.
+  # Geographical distributions of African malaria vector sibling species and
+  # evidence for insecticide resistance.
+  # Malaria Journal 16, 85 (2017). https://doi.org/10.1186/s12936-017-1734-y
+  # Fig. 1a, digitised by extras/digitise_wiebe2017_coluzzii.R (mainland only).
+  # Tracked as a file so a redigitised map reruns the expert maps. data/ is
+  # git-ignored: copy the shapefile to Spartan before building there
+  tar_target(
+    coluzzii_expert_map_file,
+    "data/vector/other_expert_maps/wiebe2017/coluzzii.shp",
+    format = "file"
+  ),
+
+  tar_terra_vect(
+    coluzzii_expert_map,
+    get_coluzzii_expert_map(
+      path = coluzzii_expert_map_file
+    )
+  ),
+
 
   # expert maps from
   # Sinka, M.E., Bangs, M.J., Manguin, S. et al.
@@ -988,6 +1010,10 @@ list(
       add_expert_map(
         new_map = pharoensis_expert_map,
         species = "pharoensis"
+      ) |>
+      add_expert_map(
+        new_map = coluzzii_expert_map,
+        species = "coluzzii"
       )
   ),
 
