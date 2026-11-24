@@ -3,54 +3,59 @@
 # The multispecies point-process count model WITH the per-source random effect `zeta`.
 # Was fit_model_multispecies_pp_count_source_effect_reparam() until 2026-10-14. "The
 # original" below is the unreparameterised fit it replaced, now only in the git
-# history. This is the identical model with the four reparameterisations that let
-# greta 0.6.0's static-HMC sampler converge -- the original will not mix (rhat > 1.1).
+# history. It would not mix under greta 0.6.0's static-HMC sampler (R-hat > 1.1); the
+# changes below are what let this one converge.
 #
-# The four changes (full rationale + the 30-chain convergence result in
-# extras/sre_keepre_vs_original.md: max R-hat 1.036, median 1.007, 0% > 1.1,
-# min ESS ~1000):
+# The July 2026 reparameterisations, as they stand now (rationale, and the 30-chain
+# test fit on a subsample with max R-hat 1.036, in extras/sre_keepre_vs_original.md):
 #
-#   V1  HMC sampler:  hmc(Lmin = 3, Lmax = 25)  ->  hmc(Lmin = 30, Lmax = 150).
-#         The original's trajectories are too short to traverse the posterior (its chains
-#         effectively freeze). This is the single biggest lever.
+#   V1  HMC sampler: hmc(Lmin = 3, Lmax = 25) in the original -> hmc(Lmin = 5, Lmax = 60).
+#         The original's trajectories were too short to traverse the posterior (its chains
+#         effectively froze); trajectory length was the single biggest lever. The July
+#         fits used Lmin = 30, Lmax = 150; a sweep of effective samples per gradient
+#         (2026-07-29, extras/sre_lmax_sweep*) put the optimum near Lmax = 75, and
+#         60 / 5 is the setting in use.
 #   V2  `zeta` defined over COUNT sources only (not all n_sid). zeta enters only the count
 #         likelihood, so the ~700 non-count sources were pure-prior nuisance dimensions
 #         that starved the diagonal-mass sampler. No change to the likelihood itself.
-#   V3  NB dispersion on log(size):  log_size ~ N(2, 2), size = exp(log_size),  instead of
-#         sqrt_inv_size ~ N(0, 0.5)+, size = (1 / sqrt_inv_size)^2. Removes the
-#         size -> Inf boundary funnel. NOTE: this changes the dispersion PRIOR (the
-#         original was a penalised-complexity prior shrinking toward the Poisson limit).
 #   V5  alpha / gamma / sampling_re use the CENTRED parameterisation, e.g.
 #         alpha ~ N(alpha_mean, alpha_sd)  instead of  alpha = alpha_mean + alpha_raw*alpha_sd.
 #         These few-group hierarchies are well informed by data, so the funnel sat in the
 #         non-centred form; centring removes it.
 #
+# Count dispersion replaced V3 (the July log_size ~ N(2, 2), left commented out below):
+# NB1, with gamma_nb = mu / size per species, so var = mu * (1 + gamma_nb) and
+# gamma_nb = 0 is Poisson. Prior gamma_nb ~ Exponential(theta), with
+# theta = -log(0.05) / (2 - 1) ~= 3.0, i.e. Pr(variance > 2 x Poisson) = 0.05 (set
+# 2026-07-31). Derivation and checks: extras/pc_prior_nb_overdispersion.md.
+#
 # NOT changed (deliberately): `sampling_re` is KEPT in the count likelihood. Dropping it
 # (the exploration's "V4") would delete real model structure and is NOT applied -- the
 # model converges with it retained.
 #
-# Everything else is identical to the original: priors (intercept_sd = 10, beta_sd = sqrt(10),
+# Otherwise as the original: priors (intercept_sd = 10, beta_sd = sqrt(10),
 # beta_regularised_sd = 0.1, zeta_regularised_sd = 0.1, delta ~ N(1, 0.5)+, gamma_mean ~ N(0,10),
 # all *_sd ~ N(0,1)+), the design matrix (landcover main effects + landcover x bioregion
 # interactions), the offset, the PA (logit_icloglog / bernoulli) and PO/bg (Poisson)
-# likelihoods, the count < 1000 filter, and the bg species replication. Since 2026-10-19
-# background points no longer get a randomly drawn sampling method; see `sampling_re_bg`.
-# The large inert experimental comment blocks from the original (subrealm SVCs, SMC
-# initialisation, Poisson alternative) are omitted for clarity.
+# likelihoods, and the bg species replication. The original's count < 1000 filter is
+# commented out below, so all counts are used. Since 2026-10-19 background points no
+# longer get a randomly drawn sampling method; see `sampling_re_bg`. The large inert
+# experimental comment blocks from the original (subrealm SVCs, SMC initialisation,
+# Poisson alternative) are omitted for clarity.
 #
 # DOWNSTREAM NOTE -- traced / greta-array names changed vs the original:
 #     alpha_raw       -> alpha         (centred; per-species intercept traced directly)
 #     gamma_raw       -> gamma
 #     sampling_re_raw -> sampling_re
-#     sqrt_inv_size   -> log_size
+#     sqrt_inv_size   -> gamma_nb      (count overdispersion, see above)
 #     zeta_raw        now has length(count_sids), not n_sid
 # Post-processing that references the old names (e.g. calculate() on sqrt_inv_size or the
 # *_raw arrays) must be updated. As before, the WHOLE function environment is saved to
 # `image_name`, so all intermediate greta arrays are available on reload.
 #
-# Convergence needs adequate iterations: the study used ~2000 warmup / 2000 samples and
-# >= 20 chains (30 chains gave the result above). The n_burnin / n_samples / n_chains
-# defaults below match the original's placeholders -- set real values in the target.
+# Iterations: the n_burnin / n_samples / n_chains defaults below are small placeholders.
+# model_fit in _targets.R sets the real values (2000 warm-up, 1000 samples, 40 chains,
+# 8 cores; 9-12 h on the laptop). The current fit's convergence is in resids_and_rhats.
 
 fit_model_multispecies_pp_count <- function(
     model_data_spatial,
@@ -326,8 +331,9 @@ fit_model_multispecies_pp_count <- function(
     pull(species_id)
 
   # negative binomial, dispersion per species.
-  # --- REPARAM (V3): prior on log(size); size = exp(log_size). Removes the
-  #     size -> Inf boundary funnel of the original sqrt_inv_size / (1/x)^2 form.
+  # The July REPARAM (V3), no longer used: a prior on log(size), size = exp(log_size),
+  #     which removed the size -> Inf boundary funnel of the original
+  #     sqrt_inv_size / (1/x)^2 form. Replaced by the gamma_nb prior below (see header).
   #     original: sqrt_inv_size <- normal(0, 0.5, truncation = c(0, Inf), dim = n_species); size <- (1 / sqrt_inv_size) ^ 2
 
   # log_size <- normal(2, 2, dim = n_species)
@@ -423,7 +429,7 @@ fit_model_multispecies_pp_count <- function(
   #######################
 
   # define the model.
-  # --- REPARAM: trace the centred effects (alpha / gamma / sampling_re) and log_size,
+  # --- REPARAM: trace the centred effects (alpha / gamma / sampling_re) and gamma_nb,
   #     instead of the *_raw arrays / sqrt_inv_size of the original.
   m <- model(alpha_mean, alpha_sd, alpha,
              gamma_mean, gamma_sd, gamma,
@@ -436,8 +442,9 @@ fit_model_multispecies_pp_count <- function(
   ###################
   # fit model
   ###################
-  # --- REPARAM (V1): longer HMC trajectories (was Lmax = 25, Lmin = round(25 / 8) = 3).
-  #     Recommend >= ~2000 warmup / 2000 samples and >= 20 chains for convergence.
+  # --- REPARAM (V1): longer HMC trajectories (the original had Lmax = 25,
+  #     Lmin = round(25 / 8) = 3; the July 2026 fits used 150 / 30). model_fit runs
+  #     2000 warm-up, 1000 samples and 40 chains.
   Lmax <- 60
   Lmin <- 5
 
