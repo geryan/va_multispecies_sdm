@@ -2184,6 +2184,26 @@ list(
    format = "file"
  ),
 
+ # the four main vectors alone: arabiensis, coluzzii, funestus and gambiae as
+ # the large maps of the portrait figure, 2 x 2, with the colour bar on the
+ # right. Written as panel_distribution_main_vectors.png into plot_dir
+ tar_target(
+   plot_pred_panel_main_vectors,
+   make_distribution_panels_featured(
+     pred_dist = pred_p[[c(
+       "arabiensis",
+       "coluzzii",
+       "funestus",
+       "gambiae"
+     )]],
+     plot_dir = plot_dir,
+     guide = "prob",
+     featured_per_row = 2,
+     suffix = "main_vectors"
+   ),
+   format = "file"
+ ),
+
  # binary ranges: each species' probability of occurrence cut at the threshold
  # that maximises sensitivity + specificity (maxSSS; Liu et al. 2005),
  # evaluated on unique 10 km cells against the presences and absences the
