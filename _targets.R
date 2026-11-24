@@ -1842,6 +1842,27 @@ list(
    format = "file"
  ),
 
+ # one row: the records of all species together, by data type. Every column
+ # is the sum over species except p_unique, which counts each location once
+ # whichever species were recorded there
+ tar_target(
+   data_summary_totals_cx,
+   make_data_summary_totals(model_data_spatial_cx)
+ ),
+
+ # the table with the totals as its last row, for the manuscript: caption
+ # with the key as prose, the table, and the key as a table. Needs officer
+ # and flextable installed (called with ::, not attached)
+ tar_target(
+   data_summary_table_cx_docx,
+   make_data_summary_docx(
+     summary_table = data_summary_table_cx,
+     totals = data_summary_totals_cx,
+     file = "outputs/tables/data_summary_table_cx.docx"
+   ),
+   format = "file"
+ ),
+
 
  # Output paths for the model are built from the five targets below, so a
  # rerun is a one-line edit rather than six. They are targets rather than plain
