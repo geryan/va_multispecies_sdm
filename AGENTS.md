@@ -126,7 +126,7 @@ Fit image `outputs/images/model_fit.RData`; rasters
 `outputs/figures/validation/<run_tag>/`; draws `outputs/draws/coef_draws.rds`.
 `run_tag` is still `20261014`, so each refit overwrites those folders.
 
-## State (2026-11-24)
+## State (2026-11-26)
 
 - **Current fit:** 2026-11-22 (9.1 h), after the user's filter dropping coluzzii
   records from sources 2676 and 1001743. Classic R-hat max 1.088, none over 1.1,
@@ -137,12 +137,12 @@ Fit image `outputs/images/model_fit.RData`; rasters
 - The manuscript data paragraph was redone with the current numbers on
   2026-11-24 (the 2026-11-20 ones predated the coluzzii filter):
   `agent_notes/data.md`.
-- **Uncommitted** (`git status`): the coluzzii source filter
-  (`R/generate_model_data_records.R`); the coluzzii expert map; the main-vectors
-  panel and the data-summary targets; the Nigeria climate extract; two
-  untracked user scripts in `extras/`; the parked targets
-  (`extras/parked_targets/`) and the fit function's header fix; the
-  count-misfit record (`extras/count_misfit/`, 2026-11-25); and these notes.
+- **New raw data, not in the pipeline yet:** `va.data_20261116.csv` (replaces
+  `va.data_20260616.csv`, which `raw_data_file` still points to) and
+  `va.new.COMBINED_20261103.csv` (extra records). `extras/check_source_ids.R`
+  lists their source and duplicate-row problems for the data team
+  (`agent_notes/data.md`).
+- **All committed** and merged to `main` (PR #55, 2026-11-26).
 
 ## Open items
 
@@ -181,7 +181,7 @@ Known issues, not fixed:
 | File | Read when working on |
 |---|---|
 | `model.md` | the fit, likelihoods, priors, design matrix, predictions, convergence, CV, known misfit |
-| `data.md` | records, data types, inferred zeros, `_cx`, summary tables, manuscript numbers, the "other"-counts item |
+| `data.md` | records, data types, inferred zeros, `_cx`, summary tables, manuscript numbers, the "other"-counts item, the new raw data and its source checks |
 | `covariates.md` | covariate layers, matching records to dates, prediction years, land-cover and footprint traps |
 | `maps.md` | masks, expert ranges (incl. coluzzii), thresholds, hidden presences, abundance cubes |
 | `outputs.md` | figures, atlases, output paths, side targets, disk clean-up, the country extracts |

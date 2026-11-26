@@ -158,6 +158,30 @@ revisit. Don't change it unprompted; the rule is the user's decision.
   - check the window-exit count of 200,170 first;
   - any change reruns `model_data_records` onward, including the refit.
 
+## New raw data (2026-11): not in the pipeline yet
+
+`va.data_20261116.csv` replaces `va.data_20260616.csv` (`raw_data_file` still
+points to the old one); `va.new.COMBINED_20261103.csv` adds records (here
+"va_new"). `extras/check_source_ids.R` reads both and writes
+`outputs/source_id_checks/*.csv` for the data team (run 2026-11-25). Findings:
+
+- 13 source_ids have more than one version of (DOI, author, journal, year),
+  none of them only in va_data: drag-filled DOIs (1002380, 1390), typos (1332,
+  1226), year 2007 vs 2008 (2952), two different papers (1003565), and fields
+  blank in some rows (2429, 2465, 2484, 3478, 3734, 4164).
+- DOIs and titles shared across source_ids (matched on lower-case letters and
+  digits, since entries differ in line breaks, spaces and hyphens): 55 and 58
+  source_ids. Some pairs look like the same paper entered twice, others like a
+  wrong DOI or title (e.g. 3874 titled "annual report for the year 1999" but
+  dated 1986).
+- 239 source_ids are in both files; 5,455 sets of rows identical in all
+  columns (3,899 within va_data, 1,243 within va_new, 313 across files). The
+  pipeline does not drop identical rows, so the va_data copies are probably in
+  the current fit, unless they are real separate records.
+- Before switching `raw_data_file`: decide how to combine the files without
+  double counting, and apply the data team's fixes. Any change to the raw data
+  reruns everything down to the fit.
+
 ## Records worth checking
 
 - funestus 342,645 in one indoor CDC light trap (Mozambique, 2020-05), against
