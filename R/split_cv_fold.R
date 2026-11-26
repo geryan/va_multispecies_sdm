@@ -69,7 +69,7 @@ split_cv_fold <- function(
   ############
   # assertions. Leakage would invalidate the whole exercise without erroring, and the
   # species check guards a silent index misalignment: the fit derives n_species from the
-  # data it is given (fit_..._reparam.R:120-121) but species_id is matched against the
+  # data it is given (fit_model_multispecies_pp_count.R:120-121) but species_id is matched against the
   # passed-in target_species, so losing a species shrinks alpha/gamma_nb while the index
   # still reaches 18
   ############

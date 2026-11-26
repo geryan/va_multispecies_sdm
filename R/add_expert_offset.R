@@ -19,7 +19,9 @@ add_expert_offset <- function(
     fun = function(x, expert_offset_maps){
       sp <- names(x)
 
-      if(sp %in% c("coluzzii", "gambiae", "gambiae_coluzzii", "gambiae_complex")){
+      # coluzzii has its own map (Wiebe et al. 2017) since 2026-11-23, so it
+      # takes its own layer below rather than the gambiae one
+      if(sp %in% c("gambiae", "gambiae_coluzzii", "gambiae_complex")){
         terra::subset(x, sp) * terra::subset(expert_offset_maps, "gambiae")
       } else if (sp %in% c("funestus", "funestus_complex")){
         terra::subset(x, sp) * terra::subset(expert_offset_maps, "funestus")

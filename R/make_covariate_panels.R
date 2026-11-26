@@ -13,9 +13,15 @@
 #' grid exactly; `ncol = 4` leaves one cell, which `bar_in_gap` fills with the
 #' colour bar.
 #'
-#' The figure is saved at `ncol * cell_size` inches wide (plus the legend, if
-#' it is on the right), so to place it at its printed size -- with the text at
-#' `base_size` points -- set `cell_size` to the text width over `ncol`.
+#' `panels` draws either part alone: "bioregions" draws only the bioregion
+#' map, 2 x 2 cells, with its key; "covariates" draws only the small maps, in
+#' rows of `ncol`, with `bar_in_gap` putting the colour bar in the first empty
+#' cell (with 11 covariates and `ncol = 4`, the last cell of 3 rows).
+#'
+#' The figure is saved at `ncol * cell_size` inches wide (2 cells for
+#' "bioregions"; plus the legend, if it is on the right), so to place it at its
+#' printed size -- with the text at `base_size` points -- set `cell_size` to
+#' the text width over `ncol`.
 #'
 #' Writes `covariate_panels_<suffix>.png` into `plot_dir` and returns its path.
 #'
@@ -43,6 +49,14 @@
 #' @param bioregion_chroma the bioregion colours' chroma is multiplied by
 #'   this, and their lightness squeezed into 45-85, to soften the palette
 #'   while keeping its hue and lightness differences; 1 leaves the chroma as is
+#' @param panels "all" for the bioregions and the covariates together,
+#'   "bioregions" or "covariates" for either alone. "bioregions" has no plot
+#'   title, which a caption gives
+#' @param maxcell tidyterra draws at most this many cells of each map,
+#'   dropping rows and columns beyond it; `Inf` draws every cell
+#' @param dpi resolution of the PNG
+#' @param width,height size of the figure in inches, overriding the size
+#'   worked out from `cell_size` and `legend_space`
 #' @return path of the file written
 #' @author geryan
 #' @export
@@ -62,12 +76,18 @@ make_covariate_panels <- function(
     legend_space = NULL,
     labels = covariate_labels(),
     label_width = 28,
-    bioregion_chroma = 0.5
+    bioregion_chroma = 0.5,
+    panels = c("all", "bioregions", "covariates"),
+    maxcell = 5e5,
+    dpi = 300,
+    width = NULL,
+    height = NULL
 ){
 
   legend_position <- match.arg(legend_position)
+  panels <- match.arg(panels)
 
-  if (ncol < 3) {
+  if (panels == "all" && ncol < 3) {
     stop(
       "make_covariate_panels(): ncol must be at least 3",
       call. = FALSE
@@ -117,7 +137,8 @@ make_covariate_panels <- function(
   small_map <- function(nm, guide){
     ggplot() +
       tidyterra::geom_spatraster(
-        data = covariates[[nm]]
+        data = covariates[[nm]],
+        maxcell = maxcell
       ) +
       scale_fill_gradient(
         low = "grey95",
@@ -220,7 +241,8 @@ make_covariate_panels <- function(
 
   big <- ggplot() +
     tidyterra::geom_spatraster(
-      data = bioregion_rast
+      data = bioregion_rast,
+      maxcell = maxcell
     ) +
     scale_fill_manual(
       values = cols,
@@ -242,14 +264,15 @@ make_covariate_panels <- function(
       legend.key.size = unit(0.4 * base_size / 9, "cm")
     ) +
     labs(
-      title = "Bioregions"
+      title = if (panels == "all") "Bioregions"
     )
 
   # the layout as a patchwork design: "A" is the bioregion map, 2 x 2 cells in
   # the top-left; the small maps fill the cells beside it and then the rows
   # below, and with bar_in_gap the colour bar takes the first cell left over.
-  # Upper case only, because patchwork orders areas by sort(), and a
-  # locale-aware sort interleaves "a" with "A"
+  # Without the bioregion map, there is nothing beside and the small maps
+  # start at the top-left. Upper case only, because patchwork orders areas by
+  # sort(), and a locale-aware sort interleaves "a" with "A"
   n_small <- length(small)
 
   if (n_small + 2 > length(LETTERS)) {
@@ -260,11 +283,11 @@ make_covariate_panels <- function(
   }
 
   area <- LETTERS[seq_len(n_small) + 1]
-  n_beside <- 2 * (ncol - 2)
+  n_beside <- if (panels == "all") 2 * (ncol - 2) else 0
   n_below_rows <- ceiling(max(n_small - n_beside, 0) / ncol)
   n_empty <- n_beside + n_below_rows * ncol - n_small
 
-  if (bar_in_gap && n_empty == 0) {
+  if (panels != "bioregions" && bar_in_gap && n_empty == 0) {
     stop(
       sprintf(
         "make_covariate_panels(): bar_in_gap, but %d covariates fill %d columns exactly",
@@ -284,34 +307,48 @@ make_covariate_panels <- function(
     )
   )
 
+  # not cells[-seq_len(n_beside)], which is empty when n_beside is 0
   beside <- cells[seq_len(n_beside)]
-  below <- cells[-seq_len(n_beside)]
+  below <- cells[seq_along(cells) > n_beside]
 
-  rows <- c(
-    paste(
-      c(
-        "AA",
-        beside[seq_len(ncol - 2)]
-      ),
-      collapse = ""
-    ),
-    paste(
-      c(
-        "AA",
-        beside[ncol - 2 + seq_len(ncol - 2)]
-      ),
-      collapse = ""
-    ),
-    vapply(
-      split(
-        below,
-        ceiling(seq_along(below) / ncol)
-      ),
-      paste,
-      character(1),
-      collapse = ""
+  rows <- if (panels == "bioregions") {
+    c(
+      "AA",
+      "AA"
     )
-  )
+  } else {
+    c(
+      if (panels == "all") {
+        c(
+          paste(
+            c(
+              "AA",
+              beside[seq_len(ncol - 2)]
+            ),
+            collapse = ""
+          ),
+          paste(
+            c(
+              "AA",
+              beside[ncol - 2 + seq_len(ncol - 2)]
+            ),
+            collapse = ""
+          )
+        )
+      },
+      vapply(
+        split(
+          below,
+          ceiling(seq_along(below) / ncol)
+        ),
+        paste,
+        character(1),
+        collapse = ""
+      )
+    )
+  }
+
+  grid_ncol <- nchar(rows[1])
 
   design <- paste(
     rows,
@@ -322,7 +359,7 @@ make_covariate_panels <- function(
   # the right, wrapped into the panel area of its cell so it sits centred
   # where a map would be. Not `full =`: in the bottom row the full area runs
   # on down into the collected legend
-  bar <- if (bar_in_gap) {
+  bar <- if (panels != "bioregions" && bar_in_gap) {
 
     breaks <- seq(
       0,
@@ -398,8 +435,8 @@ make_covariate_panels <- function(
 
   p <- patchwork::wrap_plots(
     c(
-      list(big),
-      small,
+      if (panels != "covariates") list(big),
+      if (panels != "bioregions") small,
       bar
     ),
     design = design,
@@ -437,14 +474,22 @@ make_covariate_panels <- function(
     )
   )
 
+  if (is.null(width)) {
+    width <- grid_ncol * cell_size +
+      if (legend_position == "right") legend_space else 0
+  }
+
+  if (is.null(height)) {
+    height <- length(rows) * cell_size +
+      if (legend_position == "bottom") legend_space else 0
+  }
+
   ggsave(
     filename = file,
     plot = p,
-    width = ncol * cell_size +
-      if (legend_position == "right") legend_space else 0,
-    height = length(rows) * cell_size +
-      if (legend_position == "bottom") legend_space else 0,
-    dpi = 300,
+    width = width,
+    height = height,
+    dpi = dpi,
     units = "in",
     bg = "white"
   )

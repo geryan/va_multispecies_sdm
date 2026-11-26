@@ -4,7 +4,7 @@
 #' bioregion intercepts, and land cover sums to ~1, so one term on its own is
 #' weakly identified but their sum in a cell is not. This maps that sum, as a
 #' multiplier on relative abundance: exp(X_int %*% gamma), with X_int the
-#' cell's interaction columns, built as in predict_lambda_reparam(), and gamma
+#' cell's interaction columns, built as in predict_lambda(), and gamma
 #' the interaction coefficients' posterior mean. Since the sum is linear in
 #' gamma, this is exp of the posterior mean of its contribution to log
 #' relative abundance.

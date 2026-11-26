@@ -1,6 +1,6 @@
 # Posterior predictive draws for the records a fold held out.
 #
-# The arithmetic is the fit's own (fit_...reparam.R:255-381), reassembled in R from the
+# The arithmetic is the fit's own (fit_model_multispecies_pp_count.R:255-381), reassembled in R from the
 # parameter draws. Three things it must get right, and each is a way to be silently wrong:
 #
 #   DESIGN. Built by cv_designmat(), which is one row per held-out coordinate and
@@ -56,11 +56,22 @@ predict_cv_heldout <- function(
 
   ############
   # mirror the fit's background handling: bg rows carry no species and are replicated
-  # across all of them, with a sampling method drawn from the observed frequencies
+  # across all of them. They carry no sampling method either: each takes the method
+  # effects averaged over the fitted methods' shares, log(sum_m p_m * exp(sampling_re_m)),
+  # as `sampling_re_bg` does in the fit
   ############
 
-  sm_freq <- table(na.omit(test$sampling_method))
-  sm_prop <- as.numeric(sm_freq) / sum(sm_freq)
+  if (is.null(fit$sm_prop)) {
+    stop(
+      "predict_cv_heldout(): the draws file has no `sm_prop`; re-extract it with the current extract_cv_draws()",
+      call. = FALSE
+    )
+  }
+
+  # [D] per posterior draw
+  sre_bg <- log(
+    exp(fit$sampling_re) %*% fit$sm_prop[sampling_methods]
+  )[, 1]
 
   test_bg <- test |>
     filter(data_type == "bg")
@@ -69,15 +80,7 @@ predict_cv_heldout <- function(
 
     test_bg <- test_bg |>
       select(-species) |>
-      tidyr::expand_grid(species = target_species) |>
-      mutate(
-        sampling_method = sample(
-          x = names(sm_freq),
-          size = n(),
-          replace = TRUE,
-          prob = sm_prop
-        )
-      )
+      tidyr::expand_grid(species = target_species)
 
   }
 
@@ -116,7 +119,7 @@ predict_cv_heldout <- function(
   # a method the fold never saw gets one draw per method per posterior draw, from the
   # fitted hyperparameter -- the posterior predictive for a new level
   unseen_methods <- setdiff(
-    unique(test_all$sampling_method),
+    unique(test_all$sampling_method[test_all$data_type != "bg"]),
     sampling_methods
   )
 
@@ -135,7 +138,21 @@ predict_cv_heldout <- function(
 
     out <- t(fit$sampling_re[, k, drop = FALSE])
 
-    miss <- which(is.na(k))
+    bg <- which(test_all$data_type[rows] == "bg")
+
+    if (length(bg) > 0) {
+      out[bg, ] <- matrix(
+        sre_bg,
+        nrow = length(bg),
+        ncol = D,
+        byrow = TRUE
+      )
+    }
+
+    miss <- setdiff(
+      which(is.na(k)),
+      bg
+    )
 
     if (length(miss) > 0) {
       out[miss, ] <- sre_unseen[
@@ -278,7 +295,10 @@ predict_cv_heldout <- function(
     count_test = count_test,
     n_capped = n_capped,
     n_unseen_methods = length(unseen_methods),
-    n_records_unseen_method = sum(is.na(test_all$sampling_method_id)),
+    n_records_unseen_method = sum(
+      is.na(test_all$sampling_method_id) &
+        test_all$data_type != "bg"
+    ),
     prop_source_seen = mean(
       count_test$source_id %in%
         fit$sid_lookup$source_id[fit$sid_lookup$sid %in% fit$count_sids]

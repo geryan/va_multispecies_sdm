@@ -1,13 +1,35 @@
-# predict_lambda_reparam.R
+# os_predict_lambda.R
 #
-# Reparameterised version of predict_lambda() (R/predict_lambda.R), for predicting
-# from images saved by fit_model_multispecies_pp_count_source_effect_reparam()
-# (R/fit_model_multispecies_pp_count_source_effect_reparam.R) instead of
-# fit_model_multispecies_pp_count_source_effect().
+# OFFSET STRENGTH ("os") VERSION, 2026-10-19. A copy of predict_lambda() for images
+# saved by os_fit_model_multispecies_pp_count(), where each species has its own power
+# kappa on the offset. Three changes:
 #
-# Two things differ from predict_lambda():
+#   1. `offset` is a stack of MONTHLY offsets (the 12 months of 2024, `offsets_2024_10`),
+#      not their mean. For each species and posterior draw the effective offset is the
+#      mean over months of offset_m ^ kappa: the average monthly abundance the fitted
+#      model implies. With kappa = 1 it is the mean offset the original maps use
+#      (`offsets_avg_10`); with kappa != 1 the power of the mean would not be.
+#   2. `log_kappa` is drawn along with beta, alpha and sampling_re.
+#   3. The abundance raster INCLUDES the offset: `<prefix>.tif` is the median over draws
+#      of habitat x effective offset, returned as `lambda`. The original writes the
+#      habitat alone (`lambda_no_offset`) and multiplies by one shared offset later,
+#      which a species-specific power does not allow.
 #
-# 1. TRACED-NAME RENAME (from the reparam fit's DOWNSTREAM NOTE). Only one touches this
+# The probability `p` and its CV are computed as in the original, from the same lambda.
+# The original's header follows.
+#
+# ---------------------------------------------------------------------------------------
+#
+# predict_lambda.R
+#
+# Predicts from images saved by fit_model_multispecies_pp_count()
+# (R/fit_model_multispecies_pp_count.R). Was predict_lambda_reparam() until
+# 2026-10-14. "The original" below is the predict_lambda() it replaced, which
+# predicted from the unreparameterised fit and is now only in the git history.
+#
+# Two things differ from the original:
+#
+# 1. TRACED-NAME RENAME (from the fit's DOWNSTREAM NOTE). Only one touches this
 #    prediction, which builds larval-habitat lambda from `beta` and `alpha`:
 #        sampling_re_raw -> sampling_re   (centred; sampled directly as
 #                                          normal(0, sampling_re_sd, dim = n_sampling_methods))
@@ -18,7 +40,7 @@
 #    renames don't appear here -- this function references neither gamma, zeta, size, nor
 #    the per-source effect.)
 #
-# 2. MEMORY-SAFE PREDICTION (the substantive change). predict_lambda() calls
+# 2. MEMORY-SAFE PREDICTION (the substantive change). The original calls
 #        calculate(lambda_predict[, i], values = draws, nsim = nsims)
 #    inside the species loop, where lambda_predict is built from the full greta graph
 #        x_all_predict (n_pixel x n_cov_all)  %*%  beta (n_cov_all x n_species).
@@ -38,9 +60,9 @@
 #    numerically identical to the greta path (same posterior draws, same arithmetic).
 #
 # Everything else -- inputs, design matrix, offset-as-multiplier, bioregion masking, the
-# lambda / p / p_cv outputs and their filenames -- matches predict_lambda() exactly.
+# lambda / p / p_cv outputs and their filenames -- matches the original exactly.
 
-predict_lambda_reparam <- function(
+os_predict_lambda <- function(
     image_name,
     prediction_layer,
     target_species,
@@ -67,7 +89,7 @@ predict_lambda_reparam <- function(
   x_bioregion_predict <- layer_values[!naidx, bioregion_names]
 
   # design matrix: landcover main effects + landcover x bioregion interactions
-  # (identical to predict_lambda()). Kept as a plain R matrix: the matmul is now done
+  # (identical to the original). Kept as a plain R matrix: the matmul is now done
   # in R rather than in the greta graph (see header note 2).
   x_interactions_predict <- make_designmat_interactions(
     x_predict,
@@ -86,6 +108,7 @@ predict_lambda_reparam <- function(
     beta,
     alpha,
     sampling_re,
+    log_kappa,
     values = draws,
     nsim = nsims
   )
@@ -93,13 +116,19 @@ predict_lambda_reparam <- function(
   beta_draws  <- param_draws$beta                          # [S, K, n_species]
   alpha_draws <- array(param_draws$alpha,                  # -> [S, n_species]
                        dim = dim(param_draws$alpha)[1:2])
+  kappa_draws <- exp(                                      # -> [S, n_species]
+    array(
+      param_draws$log_kappa,
+      dim = dim(param_draws$log_kappa)[1:2]
+    )
+  )
 
-  # sm: predict as if surveyed by `sampling_method`, matching predict_lambda().
+  # sm: predict as if surveyed by `sampling_method`, matching the original.
   # --- REPARAM: centred sampling_re is sampled directly (was sampling_re_raw[5] * sampling_re_sd)
   #
   # Looked up BY NAME, not by position. `sampling_methods` is saved in the fit image
   # but is derived there from whatever data the model was fitted to
-  # (fit_model_multispecies_pp_count_source_effect_reparam.R:124-128), so the index of
+  # (fit_model_multispecies_pp_count.R:124-128), so the index of
   # a given method depends on which methods that fit actually saw. Position 5 is
   # human_landing_catch_ind only when all nine are present; a fit on any subset of the
   # data -- a cross-validation fold, say -- silently shifts it and predicts a different
@@ -111,7 +140,7 @@ predict_lambda_reparam <- function(
     if (is.na(sm_idx)) {
       stop(
         sprintf(
-          "predict_lambda_reparam(): sampling method '%s' was not seen by this fit. Available: %s",
+          "predict_lambda(): sampling method '%s' was not seen by this fit. Available: %s",
           sampling_method,
           paste(sampling_methods, collapse = ", ")
         ),
@@ -125,20 +154,23 @@ predict_lambda_reparam <- function(
     sampling_re_add <- rep(0, nsims)
   }
 
-  # optional bioregion mask, applied on the natural (lambda) scale as in predict_lambda()
+  # optional bioregion mask, applied on the natural (lambda) scale as in the original
   if (!is.null(bioregion_mask)) {
     bioreg_mask_vals <- values(bioregion_mask)
     bmv <- bioreg_mask_vals[!naidx]
   }
 
   # create rasters to put values into
-  rast_lambda_no_offset <- rep(r[[1]], times = n_species)
-  names(rast_lambda_no_offset) <- target_species
-  rast_p <- rast_lambda_no_offset
-  rast_p_cv <- rast_lambda_no_offset
+  rast_lambda <- rep(r[[1]], times = n_species)
+  names(rast_lambda) <- target_species
+  rast_p <- rast_lambda
+  rast_p_cv <- rast_lambda
 
-  offset_vals <- values(offset)
-  offset_vals <- offset_vals[!naidx]
+  # monthly offsets on the log scale, [n_pixel x n_months]
+  log_offset_months <- log(
+    values(offset)[!naidx, , drop = FALSE]
+  )
+  n_months <- ncol(log_offset_months)
 
   # iterate by species for memory efficiency
   for (i in 1:n_species) {
@@ -156,11 +188,28 @@ predict_lambda_reparam <- function(
       lambda_no_offset <- lambda_no_offset * bmv
     }
 
-    # median lambda (no offset) per pixel
-    preds_lambda_median <- apply(lambda_no_offset, 1, median, na.rm = TRUE)
+    # effective offset per pixel and draw: the mean over months of offset_m ^ kappa
+    offset_eff <- matrix(
+      0,
+      nrow = n_pixel_predict,
+      ncol = nsims
+    )
 
-    # apply offset as a per-pixel multiplier (offset_vals length n_pixel recycles per column)
-    preds_lambda <- lambda_no_offset * offset_vals
+    for (m in seq_len(n_months)) {
+      offset_eff <- offset_eff + exp(
+        outer(
+          log_offset_months[, m],
+          kappa_draws[, i]
+        )
+      )
+    }
+
+    offset_eff <- offset_eff / n_months
+
+    preds_lambda <- lambda_no_offset * offset_eff
+
+    # median lambda (with the offset) per pixel
+    preds_lambda_median <- apply(preds_lambda, 1, median, na.rm = TRUE)
 
     preds_p <- lambda_to_p(preds_lambda)
 
@@ -168,7 +217,7 @@ predict_lambda_reparam <- function(
     preds_p_sd <- apply(preds_p, 1, sd)
     preds_p_cv <- preds_p_sd / preds_p_mean
 
-    rast_lambda_no_offset[[i]][!naidx] <- preds_lambda_median
+    rast_lambda[[i]][!naidx] <- preds_lambda_median
     rast_p[[i]][!naidx] <- preds_p_mean
     rast_p_cv[[i]][!naidx] <- preds_p_cv
 
@@ -180,7 +229,7 @@ predict_lambda_reparam <- function(
   )
 
   writeRaster(
-    x = rast_lambda_no_offset,
+    x = rast_lambda,
     filename = output_filename_lambda,
     overwrite = TRUE
   )
@@ -208,7 +257,7 @@ predict_lambda_reparam <- function(
   )
 
   list(
-    lambda_no_offset = output_filename_lambda,
+    lambda = output_filename_lambda,
     p = output_filename_p,
     p_cv = output_filename_p_cv
   )

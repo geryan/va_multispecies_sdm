@@ -1,10 +1,33 @@
-# fit_model_multispecies_pp_count_source_effect_reparam.R
+# os_fit_model_multispecies_pp_count.R
 #
-# Reparameterised version of fit_model_multispecies_pp_count_source_effect()
-# (R/fit_model_multispecies_pp_count_source_effect.R). Identical multispecies
-# point-process count model WITH the per-source random effect `zeta`, but with the four
-# reparameterisations that let the static-HMC sampler in greta 0.6.0 actually converge --
-# the original fits but its MCMC will not mix (essentially all parameters rhat > 1.1).
+# OFFSET STRENGTH ("os") VERSION, 2026-10-19. A copy of
+# fit_model_multispecies_pp_count() (as it stood on 2026-10-19, with the background
+# sampling-method fix) with one change: each species gets its own strength on the
+# An. gambiae offset,
+#
+#     log lambda[i, s] = alpha[s] + x[i, ] beta[, s] + kappa[s] * log(offset[i])
+#
+#     kappa[s] = exp(log_kappa[s]),   log_kappa[s] ~ Student-t(df = 3, 0, kappa_scale)
+#
+# kappa = 1 is the original model. The Student-t keeps kappa near 1 for species whose
+# data say little (with kappa_scale = 0.05, 61% of the prior lies between 0.95 and 1.05)
+# and, through its heavy tails, lets a species whose data clearly favour another value
+# move there: the penalty levels off (about 4 at kappa = 0.8, 8 at 0.5, 11 at 0.25, in
+# log-likelihood units). kappa < 1 means the species is less limited than gambiae where
+# gambiae's offset is low (the arid margins, highlands and North Africa, where the offset
+# hides 127 presence cells; see extras/check_masked_presences.R); kappa > 1 more limited.
+# kappa is positive, so the offset cannot change direction. The fit uses each record's
+# monthly offset, as the original does.
+#
+# Everything else is the original, line for line. The original's header follows.
+#
+# ---------------------------------------------------------------------------------------
+#
+# The multispecies point-process count model WITH the per-source random effect `zeta`.
+# Was fit_model_multispecies_pp_count_source_effect_reparam() until 2026-10-14. "The
+# original" below is the unreparameterised fit it replaced, now only in the git
+# history. This is the identical model with the four reparameterisations that let
+# greta 0.6.0's static-HMC sampler converge -- the original will not mix (rhat > 1.1).
 #
 # The four changes (full rationale + the 30-chain convergence result in
 # extras/sre_keepre_vs_original.md: max R-hat 1.036, median 1.007, 0% > 1.1,
@@ -33,7 +56,8 @@
 # beta_regularised_sd = 0.1, zeta_regularised_sd = 0.1, delta ~ N(1, 0.5)+, gamma_mean ~ N(0,10),
 # all *_sd ~ N(0,1)+), the design matrix (landcover main effects + landcover x bioregion
 # interactions), the offset, the PA (logit_icloglog / bernoulli) and PO/bg (Poisson)
-# likelihoods, the count < 1000 filter, and the bg sampling-method / species imputation.
+# likelihoods, the count < 1000 filter, and the bg species replication. Since 2026-10-19
+# background points no longer get a randomly drawn sampling method; see `sampling_re_bg`.
 # The large inert experimental comment blocks from the original (subrealm SVCs, SMC
 # initialisation, Poisson alternative) are omitted for clarity.
 #
@@ -51,16 +75,17 @@
 # >= 20 chains (30 chains gave the result above). The n_burnin / n_samples / n_chains
 # defaults below match the original's placeholders -- set real values in the target.
 
-fit_model_multispecies_pp_count_source_effect_reparam <- function(
+os_fit_model_multispecies_pp_count <- function(
     model_data_spatial,
     target_covariate_names,
     target_species,
     bioregion_names,
-    image_name = "outputs/images/multisp_pp_count_sm_reparam.RData",
+    image_name = "outputs/images/model_fit_os.RData",
     n_burnin = 50,
     n_samples = 100,
     n_chains = 4,
-    n_cores = NULL
+    n_cores = NULL,
+    kappa_scale = 0.05
 ){
 
   # model_data_spatial <- model_data_spatial |>
@@ -127,20 +152,30 @@ fit_model_multispecies_pp_count_source_effect_reparam <- function(
   sampling_methods <- row.names(sm_prop)
   n_sampling_methods <- length(sampling_methods)
 
-  ## impute bg sampling methods and species
+  ## background points have no sampling method. In the PO/bg likelihood each one
+  ## takes the method effects averaged over the methods' shares, `sampling_re_bg`.
+  ## Every other record must have a method of its own
   model_data_spatial_bg <- model_data_spatial |>
     mutate(
-      sampling_method = case_when(
-        data_type == "bg" ~ sample(
-          x = sampling_methods,
-          size = n(),
-          replace = TRUE,
-          prob = sm_prop
-        ),
-        .default = sampling_method
-      ),
       sampling_method_id = match(sampling_method, sampling_methods)
     )
+
+  n_no_method <- model_data_spatial_bg |>
+    filter(
+      data_type != "bg",
+      is.na(sampling_method_id)
+    ) |>
+    nrow()
+
+  if (n_no_method > 0) {
+    stop(
+      sprintf(
+        "%i records other than background points have no sampling method",
+        n_no_method
+      ),
+      call. = FALSE
+    )
+  }
 
   bg_data <- model_data_spatial_bg |>
     filter(data_type == "bg") |>
@@ -251,11 +286,21 @@ fit_model_multispecies_pp_count_source_effect_reparam <- function(
   zeta_raw <- normal(0, 1, dim = n_zeta)
   zeta <- zeta_raw * zeta_regularised_sd
 
-  # offset from calculated gambiae adult survival given habitat
-  log_lambda_adults <- log_offset
+  # offset from calculated gambiae adult survival given habitat, raised to a
+  # per-species power: kappa = exp(log_kappa), penalised towards 1 (see header)
+  log_kappa <- student(
+    df = 3,
+    mu = 0,
+    sigma = kappa_scale,
+    dim = n_species
+  )
+  kappa <- exp(log_kappa)
+
+  # [n_pixel x 1] %*% [1 x n_species]: each species' column is kappa[s] * log(offset)
+  log_lambda_adults <- log_offset %*% t(kappa)
 
   # combine larval habitat and adult life-cycle offset
-  log_lambda <- sweep(log_lambda_larval_habitat, 1, log_lambda_adults, "+")
+  log_lambda <- log_lambda_larval_habitat + log_lambda_adults
 
   # bias across pixels (shared coefficient) and species (different intercepts)
   log_bias_coef <- sweep(zeros(n_pixel, n_species), 1, log(z) %*% delta, FUN = "+")
@@ -370,8 +415,37 @@ fit_model_multispecies_pp_count_source_effect_reparam <- function(
 
   log_bias_obs_pobg <- log_bias[pobg_data_loc_sp_idx]
 
+  # The background points stand in for the whole sampled area under every method
+  # at once, so each takes the method effects averaged over the methods' shares
+  # of the records: log(sum_m p_m * exp(sampling_re_m)). That is the expected
+  # value of the random draw this replaced (until 2026-10-19 each point got one
+  # method, drawn with probabilities p), without its noise. With ~250 points, a
+  # rare method got only a handful, its expected PO count came from those few
+  # places, and the draw shifted every method effect and the level of every map
+  # (indoor HLC by 0.35 between two fits of the same data). Equivalent to
+  # copying each point once per method with weight w * p_m.
+  sampling_re_bg <- log(
+    sum(
+      as.numeric(sm_prop) * exp(sampling_re)
+    )
+  )
+
+  pobg_is_bg <- model_data |>
+    filter(data_type %in% c("po", "bg")) |>
+    pull(data_type) == "bg"
+
+  # bg rows index the extra last element
+  pobg_sampling_idx <- ifelse(
+    pobg_is_bg,
+    n_sampling_methods + 1,
+    pobg_data_index$sampling_method_id
+  )
+
   log_lambda_obs_pobg <- log_lambda[pobg_data_loc_sp_idx] +
-    sampling_re[pobg_data_index$sampling_method_id]
+    rbind(
+      sampling_re,
+      sampling_re_bg
+    )[pobg_sampling_idx]
 
   po_data_response_expected <- exp(
     log_lambda_obs_pobg +
@@ -391,7 +465,8 @@ fit_model_multispecies_pp_count_source_effect_reparam <- function(
              beta_raw,
              zeta_raw,
              sampling_re, sampling_re_sd,
-             gamma_nb)
+             gamma_nb,
+             log_kappa)
 
   ###################
   # fit model

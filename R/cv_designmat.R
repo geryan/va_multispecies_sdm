@@ -1,5 +1,5 @@
 # Rebuild the abundance design exactly as
-# fit_model_multispecies_pp_count_source_effect_reparam() builds it, for an arbitrary
+# fit_model_multispecies_pp_count() builds it, for an arbitrary
 # subset of `model_data_spatial`.
 #
 # WHY THIS EXISTS
@@ -14,13 +14,13 @@
 # Anything that predicts from a fit image must come through here and address design rows
 # by `location_id`, so that it uses the same rows the fit did.
 #
-# Transcribed from fit_model_multispecies_pp_count_source_effect_reparam.R:72-112 and
+# Transcribed from fit_model_multispecies_pp_count.R:72-112 and
 # :151-159, :210-211. Kept as one function so there is a single place where the fit's
 # convention lives, and one thing to re-check if that fit ever changes.
 #
 # Returns plain R matrices, not greta data arrays: the prediction path does the
 # design-matrix multiply in R, because pushing it through greta::calculate() materialises
-# a tensor big enough to abort the process (see predict_lambda_reparam.R:19-36).
+# a tensor big enough to abort the process (see predict_lambda.R:19-36).
 cv_designmat <- function(
     dat,
     target_covariate_names,
