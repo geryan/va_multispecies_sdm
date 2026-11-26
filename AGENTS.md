@@ -141,12 +141,16 @@ Fit image `outputs/images/model_fit.RData`; rasters
   (`R/generate_model_data_records.R`); the coluzzii expert map; the main-vectors
   panel and the data-summary targets; the Nigeria climate extract; two
   untracked user scripts in `extras/`; the parked targets
-  (`extras/parked_targets/`) and the fit function's header fix; and these
-  notes.
+  (`extras/parked_targets/`) and the fit function's header fix; the
+  count-misfit record (`extras/count_misfit/`, 2026-11-25); and these notes.
 
 ## Open items
 
 The user's decisions:
+- The count model (analysed 2026-11-25, to be returned to): positive counts are
+  badly under-predicted. Mainly, NB1 makes catches too rare (3% predicted
+  against 13% observed), and no term absorbs the source or duration variation.
+  Evidence and options: `extras/count_misfit/README.md`.
 - The offset-strength model: κ collapsed to ~0 and LOO preferred it, but it
   mixes badly and the ranges spread (`agent_notes/os_model.md`).
 - Counts under the "other" sampling method (larvae and 7 trap types) are kept

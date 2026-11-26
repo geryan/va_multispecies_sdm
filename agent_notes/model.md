@@ -106,12 +106,29 @@ mixing work are in `history.md`.
 
 ## Known misfit and weak spots
 
-- **Count dispersion** (2026-10-21, both models, on the data before the
-  2026-11-06 data-type fix): with `gamma_nb` 176 (arabiensis) and 314 (funestus)
-  the model gives P(0) 0.86 / 0.95 against observed zero shares 0.60 / 0.69, so
-  53% / 73% of positive counts sit above the predictive 97.5% quantile. Neither
-  model reaches the counts over 500. Figure
-  `count_residuals_arabiensis_funestus.png` in `outputs/model_comparison/20261014/`.
+- **Counts are under-predicted** (2026-11-25, read-only, on the 2026-11-22
+  fit). Record: `extras/count_misfit/README.md`; outputs and logs:
+  `outputs/count_misfit/fit_20261122/`.
+  - 57% of the 2,436 positive counts lie beyond the predictive 99th
+    percentile.
+  - The miss is mainly in how often there is a catch. NB1 predicts a catch on
+    3.1% of count records, against 13.3% observed; on the 4,397 reported,
+    non-inferred records, 9.0% against 55.4%.
+  - The PA records carry 94% of the information on each species' level, so λ
+    sits on a detection scale. NB1 can make catches of tens at that mean only
+    with γ ≈ 50–300. Since P(Y > 0) = 1 − exp(−μ ln(1 + γ) / γ), a rare
+    catch's chance is divided by about γ / ln(1 + γ): 21–55 for gambiae,
+    arabiensis and funestus.
+  - The extra variation is structured. Of the variance of log(count/μ) at the
+    positives, 49% is between sources and 28% between location-dates. Its
+    slope on log `study_months` within sources is 0.57. ζ, with its SD fixed
+    at 0.1, can't absorb it.
+  - The `gamma_nb` prior is binding: the counts alone would choose a γ
+    1.8–6.0× larger.
+  - Neither the duplicates nor the inferred zeros cause it.
+  - Options are the user's decision: estimate ζ's SD; a count intercept and a
+    duration term; then NB2 or Poisson-lognormal with a matching PA link.
+  - The 2026-10-21 figures are in `history.md`.
 - **Structure:** method effects are shared across species (no species × method
   term), and the offset is *An. gambiae*-based for every species. This may
   disadvantage some species, e.g. funestus.

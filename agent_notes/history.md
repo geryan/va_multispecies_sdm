@@ -143,6 +143,17 @@ Notes and scripts in `extras/` still use these.
   comments brought up to date: they still described the July sampler (30 /
   150), `log_size` dispersion and 2000 samples. The three Kenya memories moved
   to the kenya_mess project's memory.
+- **2026-11-25:** the count under-prediction analysed, read-only, on the
+  2026-11-22 fit (`extras/count_misfit/`). That replaced `model.md`'s
+  2026-10-21 bullet, which covered both models on the data before the
+  2026-11-06 data-type fix:
+  - `gamma_nb` was 176 (arabiensis) and 314 (funestus);
+  - P(0) was 0.86 / 0.95, against observed zero shares of 0.60 / 0.69;
+  - so 53% / 73% of positive counts sat above the predictive 97.5% quantile;
+  - neither model reached the counts over 500.
+
+  Figure: `count_residuals_arabiensis_funestus.png` in
+  `outputs/model_comparison/20261014/`.
 
 ## The background sampling-method draw (found and fixed 2026-10-19)
 
