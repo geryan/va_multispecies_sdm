@@ -28,6 +28,13 @@ still `20261014`, so every refit since has overwritten that run's folders.
   `plot_pred_panel_main_vectors`); dominant species (also masked to
   `expert_maps_buffer_1000`); maxSSS binary ranges (`thresholds_maxsss`,
   `pred_binary`); the RGB main-vector map (`rel_abund_rgb`).
+- **One species with country borders** (2026-11-25,
+  `R/make_distribution_plot_borders.R`): `distplot()` plus the outlines of
+  `atlas_country_boundaries` (cropped to the raster), written as
+  `distribution_borders_<species>.png`. Made for coluzzii; not wired into
+  `_targets.R`. The 50 atlas countries leave out Egypt, Libya, Tunisia, Morocco
+  and Western Sahara, so some North African borders are missing; the user
+  accepted that.
 - `coef_draws`: 1,000 coefficient draws pulled out of the fit image once
   (`extract_cv_draws()`), so the plots below never load the image.
 - **Response curves** (`plot_response_curves`,
